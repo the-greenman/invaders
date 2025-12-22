@@ -60,20 +60,21 @@ export class Player extends Phaser.GameObjects.Sprite {
 
   /**
    * Fire a bullet from the player's position
-   * @returns Bullet object or null if can't shoot
    *
    * TODO:
-   * 1. Check shoot cooldown
-   * 2. Create new Bullet at player position
-   * 3. Update lastShotTime
-   * 4. Return the bullet
+   * 1. Check if player can shoot (cooldown)
+   * 2. Create new bullet at player position
+   * 3. Reset shoot cooldown
+   * 4. Play shoot sound
    */
   shoot(): Bullet | null {
     if (!this.canShoot || !this.active) return null;
 
-    const bullet = new Bullet(this.scene, this.x, this.y - 20);
     this.canShoot = false;
     this.lastShotTime = Date.now();
+    
+    // Create bullet above player
+    const bullet = (this.scene as any).fireBullet?.(this.x, this.y - 20);
     
     return bullet;
   }

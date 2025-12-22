@@ -13,7 +13,7 @@ import { ALIEN_SPACING_X, ALIEN_SPACING_Y } from '../constants';
  */
 
 export class AlienGrid extends Phaser.GameObjects.Container {
-  private aliens: Alien[][] = [];
+  private aliens: (Alien | null)[][] = [];
   private direction: number = 1; // 1 for right, -1 for left
   private speed: number;
   private bombDropChance: number = 0.001;
@@ -221,7 +221,8 @@ export class AlienGrid extends Phaser.GameObjects.Container {
       }
       
       if (bottomAlien && Math.random() < this.bombDropChance) {
-        const bomb = bottomAlien.fireBomb();
+        // Use GameScene's dropBomb method for proper physics group tracking
+        const bomb = (this.scene as any).dropBomb?.(this.x + bottomAlien.x, this.y + bottomAlien.y + 20);
         if (bomb) {
           this.lastBombTime = now;
           break; // Only one bomb per interval
@@ -231,18 +232,42 @@ export class AlienGrid extends Phaser.GameObjects.Container {
   }
 
   /**
+   * Get all aliens in the grid (for physics group integration)
+   * @returns 2D array of all aliens (including null positions)
+   */
+  getAliens(): (Alien | null)[][] {
+    return this.aliens;
+  }
+
+  /**
+   * Get all alive aliens in the grid (for physics group integration)
+   * @returns Flat array of alive aliens
+   */
+  getAliveAliens(): Alien[] {
+    const aliveAliens: Alien[] = [];
+    for (let row = 0; row < this.aliens.length; row++) {
+      for (let col = 0; col < this.aliens[row].length; col++) {
+        const alien = this.aliens[row][col];
+        if (alien && alien.isAlive()) {
+          aliveAliens.push(alien);
+        }
+      }
+    }
+    return aliveAliens;
+  }
+
+  /**
    * Remove an alien from the grid
    * @param alien - Alien to remove
-   *
-   * TODO:
-   * 1. Mark alien as destroyed in grid
-   * 2. Remove from container
-   * 3. Check if all aliens are destroyed
    */
   removeAlien(alien: Alien): void {
-    const pos = alien.getGridPosition();
-    if (this.aliens[pos.row] && this.aliens[pos.row][pos.col] === alien) {
-      this.aliens[pos.row][pos.col] = null as any;
+    for (let row = 0; row < this.aliens.length; row++) {
+      for (let col = 0; col < this.aliens[row].length; col++) {
+        if (this.aliens[row][col] === alien) {
+          this.aliens[row][col] = null;
+          return;
+        }
+      }
     }
   }
 
