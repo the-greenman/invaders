@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Alien } from './Alien';
 import { Bomb } from './Bomb';
-import { ALIEN_SPACING_X, ALIEN_SPACING_Y, GAME_WIDTH } from '../constants';
+import { ALIEN_SPACING_X, ALIEN_SPACING_Y, GAME_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT } from '../constants';
 
 /**
  * Alien Grid Entity
@@ -107,8 +107,8 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     const leftmost = this.getLeftmostAliveAlien();
     const rightmost = this.getRightmostAliveAlien();
     if (leftmost && rightmost) {
-      const leftEdge = leftmost.x - leftmost.displayWidth * 0.5;
-      const rightEdge = rightmost.x + rightmost.displayWidth * 0.5;
+      const leftEdge = leftmost.x - ALIEN_WIDTH * 0.5;
+      const rightEdge = rightmost.x + ALIEN_WIDTH * 0.5;
       const parentFlag = (leftmost as any).parentContainer ? 'IN_CONTAINER' : 'WORLD_SPACE';
       this.debugLog('postCreate', {
         mode: parentFlag,
@@ -192,8 +192,8 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     if (!leftmost || !rightmost) return false;
 
     // Aliens are in world space now
-    const leftEdge = leftmost.x - leftmost.displayWidth * 0.5;
-    const rightEdge = rightmost.x + rightmost.displayWidth * 0.5;
+    const leftEdge = leftmost.x - ALIEN_WIDTH * 0.5;
+    const rightEdge = rightmost.x + ALIEN_WIDTH * 0.5;
     const atEdge = (leftEdge <= margin && this.direction === -1) ||
                    (rightEdge >= GAME_WIDTH - margin && this.direction === 1);
     this.debugLog('edgeCheck2', {

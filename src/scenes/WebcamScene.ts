@@ -16,6 +16,8 @@ export class WebcamScene extends Phaser.Scene {
   private statusText: Phaser.GameObjects.Text | null = null;
   private isInitialized: boolean = false;
   private isCapturing: boolean = false;
+   private lastBBox: { xMin: number; yMin: number; width: number; height: number } | null = null; // normalized
+   private cropPadding: number = 24;
 
   constructor() {
     super({ key: 'WebcamScene' });
@@ -154,8 +156,18 @@ export class WebcamScene extends Phaser.Scene {
       
       // Start face detection loop
       FaceManager.startDetectionLoop(this.videoElement, (results: any) => {
-        // Handle face detection results if needed
-        console.log('Face detection results:', results);
+        const detection = results?.detections?.[0];
+        if (!detection) {
+          this.lastBBox = null;
+          return;
+        }
+        const box = detection.boundingBox || detection.relativeBoundingBox;
+        if (!box) return;
+        const xMin = box.xMin ?? (box.xCenter - box.width / 2);
+        const yMin = box.yMin ?? (box.yCenter - box.height / 2);
+        const width = box.width ?? box.w ?? 0.25;
+        const height = box.height ?? box.h ?? 0.25;
+        this.lastBBox = { xMin, yMin, width, height };
       });
       
       this.isInitialized = true;
@@ -179,8 +191,8 @@ export class WebcamScene extends Phaser.Scene {
     this.updateStatus('Capturing face...');
     
     try {
-      // Capture and save face
-      await FaceManager.captureAndSaveFace(this.videoElement);
+      // Capture and save face using detection bbox + padding (matches debug)
+      await FaceManager.captureAndSaveFace(this.videoElement, this.lastBBox ?? undefined, this.cropPadding);
       
       this.updateStatus('Face captured successfully!');
       

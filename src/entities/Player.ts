@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN } from '../constants';
+import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_CORE_RADIUS } from '../constants';
 import { Bullet } from './Bullet';
 
 /**
@@ -17,18 +17,27 @@ export class Player extends Phaser.GameObjects.Sprite {
   private canShoot: boolean = true;
   private shootCooldown: number = PLAYER_SHOOT_COOLDOWN;
   private lastShotTime: number = 0;
+  private coreCircle?: Phaser.GameObjects.Arc;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'player');
+  constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string = 'player') {
+    super(scene, x, y, textureKey);
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    (this.body as Phaser.Physics.Arcade.Body).setSize(32, 24);
-    (this.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
-    (this.body as Phaser.Physics.Arcade.Body).setImmovable(true);
+    this.setDisplaySize(PLAYER_WIDTH, PLAYER_HEIGHT);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setSize(PLAYER_WIDTH, PLAYER_HEIGHT, true); // center body to sprite
+    body.setCollideWorldBounds(true);
+    body.setImmovable(true);
 
     this.cursors = scene.input.keyboard?.createCursorKeys()!;
     this.spaceKey = scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)!;
+
+    // Core circle placeholder for future face texture
+    this.coreCircle = this.scene.add.circle(this.x, this.y, PLAYER_CORE_RADIUS, 0x000000, 0.8);
+    this.coreCircle.setStrokeStyle(2, 0xffffff, 0.5);
+    this.coreCircle.setDepth(this.depth + 1);
+    this.syncCorePosition();
   }
 
   /**
@@ -61,6 +70,8 @@ export class Player extends Phaser.GameObjects.Sprite {
     if (!this.canShoot && Date.now() - this.lastShotTime > this.shootCooldown) {
       this.canShoot = true;
     }
+
+    this.syncCorePosition();
   }
 
   /**
@@ -119,5 +130,20 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.clearTint();
     this.setActive(true);
     this.setVisible(true);
+    this.syncCorePosition();
+  }
+
+  destroy(fromScene?: boolean): void {
+    if (this.coreCircle) {
+      this.coreCircle.destroy();
+      this.coreCircle = undefined;
+    }
+    super.destroy(fromScene);
+  }
+
+  private syncCorePosition(): void {
+    if (this.coreCircle) {
+      this.coreCircle.setPosition(this.x, this.y);
+    }
   }
 }

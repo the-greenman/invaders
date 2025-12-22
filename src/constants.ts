@@ -5,18 +5,25 @@ export const GAME_HEIGHT = 600;
 export const PLAYER_SPEED = 300;
 export const PLAYER_SHOOT_COOLDOWN = 500;
 export const MAX_BULLETS = 3;
+export const PLAYER_WIDTH = 96;    // doubled for larger face area
+export const PLAYER_HEIGHT = 72;   // doubled for larger face area
+export const PLAYER_CORE_RADIUS = 24;
 
 // Projectiles
 export const BULLET_SPEED = 400;
 export const BOMB_SPEED = 200;
 
 // Aliens
-export const ALIEN_ROWS = 5;
-export const ALIEN_COLS = 11;
-export const ALIEN_SPACING_X = 60;
-export const ALIEN_SPACING_Y = 50;
+export const ALIEN_ROWS = 3;
+export const ALIEN_COLS = 7;       // reduced further to fit larger sprites
+export const ALIEN_SPACING_X = 90; // widened spacing for bigger aliens
+export const ALIEN_SPACING_Y = 70;
 export const ALIEN_START_Y = 100;
-export const ALIEN_START_SPEED = 1000; // ms per move
+export const ALIEN_START_SPEED = 500; // ms per move
+export const ALIEN_WIDTH = 88;     // doubled sprite size
+export const ALIEN_HEIGHT = 64;    // doubled sprite size
+export const ALIEN_CORE_RADIUS = 20;
+export const ALIEN_BODY_SCALE = 0.3; // collision body width/height multiplier vs sprite
 
 // Game
 export const MAX_LIVES = 3;

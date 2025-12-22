@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 import { FaceDetection } from '@mediapipe/face_detection';
 import { Camera } from '@mediapipe/camera_utils';
 import { LocalStorage } from '../utils/localStorage';
@@ -98,12 +99,13 @@ export class FaceManager {
    */
   static async captureAndSaveFace(
     videoElement: HTMLVideoElement,
-    bbox?: { xMin: number; yMin: number; width: number; height: number }
+    bbox?: { xMin: number; yMin: number; width: number; height: number },
+    padding: number = 20
   ): Promise<string> {
     let imageData: string;
     
     if (bbox) {
-      imageData = await ImageProcessor.cropFaceFromVideo(videoElement, bbox);
+      imageData = await ImageProcessor.cropFaceFromVideo(videoElement, bbox, padding);
     } else {
       const canvas = document.createElement('canvas');
       canvas.width = videoElement.videoWidth;
@@ -227,5 +229,90 @@ export class FaceManager {
     });
     
     this.camera.start();
+  }
+
+  /**
+   * Ensure a base64 image is loaded into the TextureManager under a key.
+   */
+  static async addBase64Texture(
+    scene: Phaser.Scene,
+    key: string,
+    dataUrl: string
+  ): Promise<void> {
+    if (scene.textures.exists(key)) {
+      scene.textures.remove(key);
+    }
+    await new Promise<void>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        scene.textures.addImage(key, img);
+        resolve();
+      };
+      img.onerror = () => reject(new Error('Failed to load base64 texture'));
+      img.src = dataUrl;
+    });
+  }
+
+  /**
+   * Compose a face texture into a base sprite and save as a new texture key.
+   * Returns the targetKey used.
+   */
+  static composeFaceTexture(
+    scene: Phaser.Scene,
+    config: {
+      baseKey: string;
+      faceKey: string;
+      targetKey: string;
+      width: number;
+      height: number;
+      coreRadius: number;
+    }
+  ): string {
+    const { baseKey, faceKey, targetKey, width, height, coreRadius } = config;
+    if (!scene.textures.exists(baseKey) || !scene.textures.exists(faceKey)) {
+      return baseKey;
+    }
+
+    if (scene.textures.exists(targetKey)) {
+      scene.textures.remove(targetKey);
+    }
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const rt = scene.add.renderTexture(0, 0, width, height);
+    const ship = scene.add.image(centerX, centerY, baseKey)
+      .setDisplaySize(width, height)
+      .setVisible(false);
+    const face = scene.add.image(centerX, centerY, faceKey)
+      .setDisplaySize(coreRadius * 2, coreRadius * 2)
+      .setVisible(false);
+
+    const maskShape = scene.make.graphics({ x: centerX, y: centerY });
+    maskShape.setVisible(false);
+    maskShape.fillStyle(0xffffff);
+    maskShape.fillCircle(0, 0, coreRadius);
+    const mask = maskShape.createGeometryMask();
+    face.setMask(mask);
+
+    rt.draw(ship, ship.x, ship.y);
+    rt.draw(face, face.x, face.y);
+
+    const outline = scene.make.graphics({ x: centerX, y: centerY });
+    outline.setVisible(false);
+    outline.lineStyle(2, 0xffffff, 0.8);
+    outline.strokeCircle(0, 0, coreRadius + 2);
+    rt.draw(outline);
+
+    rt.saveTexture(targetKey);
+
+    face.clearMask();
+    ship.destroy();
+    face.destroy();
+    maskShape.destroy();
+    outline.destroy();
+    rt.destroy();
+
+    return targetKey;
   }
 }

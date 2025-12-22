@@ -8,7 +8,8 @@ import { Shield } from '../entities/Shield';
 import { ScoreManager } from '../managers/ScoreManager';
 import { LevelManager } from '../managers/LevelManager';
 import { AudioManager } from '../managers/AudioManager';
-import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT } from '../constants';
+import { FaceManager } from '../managers/FaceManager';
+import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT, PLAYER_CORE_RADIUS, PLAYER_HEIGHT, PLAYER_WIDTH } from '../constants';
 
 /**
  * Game Scene
@@ -35,6 +36,7 @@ export class GameScene extends Phaser.Scene {
   private lives: number = 3;
   private useWebcam: boolean = false;
   private gameActive: boolean = true;
+  private playerTextureKey: string = 'player';
   
   // UI elements
   private scoreText: Phaser.GameObjects.Text | null = null;
@@ -52,12 +54,15 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
-  create(): void {
+  async create(): Promise<void> {
     // Get scene data from previous scene
     const data = this.scene.settings.data as { level?: number; score?: number; useWebcam?: boolean };
     this.level = data.level || 1;
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
+
+    // Prepare player texture with face if available
+    await this.preparePlayerTexture();
     
     // Create physics groups first so we can add aliens to them
     this.setupPhysicsGroups();
@@ -121,7 +126,7 @@ export class GameScene extends Phaser.Scene {
 
   private setupGameObjects(): void {
     // Create player
-    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 50);
+    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 50, this.playerTextureKey);
     
     // Create alien grid
     this.levelManager = new LevelManager(this.level);
@@ -376,8 +381,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleAlienPlayerCollision(object1: any, object2: any): void {
-    const alien = object1 as Alien;
-    const player = object2 as Player;
+    const objA = object1 as any;
+    const objB = object2 as any;
+    const alien = objA instanceof Alien ? objA : (objB instanceof Alien ? objB : null);
+    const player = objA instanceof Player ? objA : (objB instanceof Player ? objB : null);
+    if (!alien || !player) return;
     
     if (!alien.isAlive() || !player.active) return;
     
@@ -542,5 +550,33 @@ export class GameScene extends Phaser.Scene {
     
     // Clear game objects
     this.clearGameObjects();
+  }
+
+  /**
+   * Build the player texture with the current face (if any) using shared FaceManager logic.
+   */
+  private async preparePlayerTexture(): Promise<void> {
+    const currentFace = FaceManager.getCurrentFace();
+    if (!currentFace) {
+      this.playerTextureKey = 'player';
+      return;
+    }
+
+    const srcKey = 'player-face-src';
+    const targetKey = 'player-face-composite';
+    try {
+      await FaceManager.addBase64Texture(this, srcKey, currentFace);
+      this.playerTextureKey = FaceManager.composeFaceTexture(this, {
+        baseKey: 'player',
+        faceKey: srcKey,
+        targetKey,
+        width: PLAYER_WIDTH,
+        height: PLAYER_HEIGHT,
+        coreRadius: PLAYER_CORE_RADIUS
+      });
+    } catch (e) {
+      console.warn('Failed to build player face texture, falling back to default', e);
+      this.playerTextureKey = 'player';
+    }
   }
 }
