@@ -72,27 +72,33 @@ export class GameScene extends Phaser.Scene {
 
   update(): void {
     if (!this.gameActive) return;
-    
+
     // Update player
     this.player?.update(16); // Approximate 60fps delta
-    
-    // Update bullets and remove inactive ones
+
+    // Clean up bullets that are out of bounds
     this.bullets?.children.entries.forEach((bullet: any) => {
-      if (bullet && bullet.update) {
-        bullet.update(16);
+      if (bullet && bullet.active) {
+        if (bullet.y < -20) {
+          bullet.setActive(false);
+          bullet.setVisible(false);
+        }
       }
     });
-    
-    // Update bombs and remove inactive ones
+
+    // Clean up bombs that are out of bounds
     this.bombs?.children.entries.forEach((bomb: any) => {
-      if (bomb && bomb.update) {
-        bomb.update(16);
+      if (bomb && bomb.active) {
+        if (bomb.y > GAME_HEIGHT + 20) {
+          bomb.setActive(false);
+          bomb.setVisible(false);
+        }
       }
     });
-    
+
     // Update alien grid
     this.alienGrid?.update(16);
-    
+
     // Check win/lose conditions
     this.checkGameConditions();
   }
@@ -115,10 +121,18 @@ export class GameScene extends Phaser.Scene {
 
   private addAliensToPhysicsGroup(): void {
     if (!this.aliens || !this.alienGrid) return;
-    
+
     const aliveAliens = this.alienGrid.getAliveAliens();
     aliveAliens.forEach(alien => {
       this.aliens!.add(alien);
+
+      // Update physics body to world position after adding to group
+      // (aliens are in a container so their physics bodies need manual sync)
+      const worldTransform = alien.getWorldTransformMatrix();
+      const body = alien.body as Phaser.Physics.Arcade.Body;
+      if (body) {
+        body.reset(worldTransform.tx, worldTransform.ty);
+      }
     });
   }
 
@@ -258,13 +272,27 @@ export class GameScene extends Phaser.Scene {
    */
   fireBullet(x: number, y: number): Bullet | null {
     if (!this.bullets || !this.gameActive) return null;
-    
-    const bullet = new Bullet(this, x, y);
-    this.bullets.add(bullet);
-    
+
+    // Create bullet using the group's create method for proper physics integration
+    const bullet = this.bullets.get(x, y, 'bullet') as Bullet;
+
+    if (bullet) {
+      bullet.setActive(true);
+      bullet.setVisible(true);
+
+      // Set up the bullet's physics body
+      const body = bullet.body as Phaser.Physics.Arcade.Body;
+      body.setSize(4, 12);
+      body.setVelocityY(-400); // BULLET_SPEED upward
+      body.enable = true;
+
+      // Mark as a bullet (custom property to track in update)
+      (bullet as any).isBulletActive = true;
+    }
+
     // Play shoot sound
     this.audioManager?.play('shoot');
-    
+
     return bullet;
   }
 
@@ -274,10 +302,24 @@ export class GameScene extends Phaser.Scene {
    */
   dropBomb(x: number, y: number): Bomb | null {
     if (!this.bombs || !this.gameActive) return null;
-    
-    const bomb = new Bomb(this, x, y);
-    this.bombs.add(bomb);
-    
+
+    // Create bomb using the group's get method for proper physics integration
+    const bomb = this.bombs.get(x, y, 'bomb') as Bomb;
+
+    if (bomb) {
+      bomb.setActive(true);
+      bomb.setVisible(true);
+
+      // Set up the bomb's physics body
+      const body = bomb.body as Phaser.Physics.Arcade.Body;
+      body.setSize(4, 12);
+      body.setVelocityY(200); // BOMB_SPEED downward
+      body.enable = true;
+
+      // Mark as active
+      (bomb as any).isBombActive = true;
+    }
+
     return bomb;
   }
 
@@ -458,10 +500,11 @@ export class GameScene extends Phaser.Scene {
     this.alienGrid?.destroy();
     this.alienGrid = null;
     
-    // Clear physics groups (bullets, bombs, aliens)
-    this.bullets?.clear(true, true);
-    this.bombs?.clear(true, true);
-    this.aliens?.clear(true, true);
+    // Note: Physics groups are automatically cleaned up by Phaser during scene shutdown
+    // We just need to nullify our references
+    this.bullets = null;
+    this.bombs = null;
+    this.aliens = null;
   }
 
   private togglePause(): void {

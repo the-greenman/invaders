@@ -106,7 +106,12 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive();
 
-    this.buttons = [this.startButton, this.webcamButton, this.creditsButton];
+    // Debug button
+    const debugButton = this.add.text(width / 2, height / 2 + 180, 'DEBUG', buttonStyle)
+      .setOrigin(0.5)
+      .setInteractive();
+
+    this.buttons = [this.startButton, this.webcamButton, this.creditsButton, debugButton];
   }
 
   private setupKeyboardControls(): void {
@@ -122,6 +127,11 @@ export class MenuScene extends Phaser.Scene {
 
     this.input.keyboard?.on('keydown-ENTER', () => {
       this.activateSelectedButton();
+    });
+
+    // Quick access to Debug Menu
+    this.input.keyboard?.on('keydown-D', () => {
+      this.scene.start('DebugMenuScene');
     });
   }
 
@@ -169,6 +179,9 @@ export class MenuScene extends Phaser.Scene {
         break;
       case 2: // Credits
         this.showCredits();
+        break;
+      case 3: // Debug
+        this.scene.start('DebugMenuScene');
         break;
     }
   }

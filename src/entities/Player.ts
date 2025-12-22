@@ -52,6 +52,11 @@ export class Player extends Phaser.GameObjects.Sprite {
       (this.body as Phaser.Physics.Arcade.Body).setVelocityX(0);
     }
 
+    // Handle shooting
+    if (this.spaceKey.isDown && this.canShoot) {
+      this.shoot();
+    }
+
     // Update shoot cooldown
     if (!this.canShoot && Date.now() - this.lastShotTime > this.shootCooldown) {
       this.canShoot = true;

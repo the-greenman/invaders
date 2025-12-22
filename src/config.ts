@@ -5,6 +5,11 @@ import { MenuScene } from './scenes/MenuScene';
 import { WebcamScene } from './scenes/WebcamScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
+import { DebugMenuScene } from './scenes/debug/DebugMenuScene';
+import { PlayerTestScene } from './scenes/debug/PlayerTestScene';
+import { ArmadaTestScene } from './scenes/debug/ArmadaTestScene';
+import { CollisionTestScene } from './scenes/debug/CollisionTestScene';
+import { CameraTestScene } from './scenes/debug/CameraTestScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -19,7 +24,18 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false
     }
   },
-  scene: [PreloaderScene, MenuScene, WebcamScene, GameScene, GameOverScene],
+  scene: [
+    PreloaderScene,
+    MenuScene,
+    DebugMenuScene,
+    PlayerTestScene,
+    ArmadaTestScene,
+    CollisionTestScene,
+    CameraTestScene,
+    WebcamScene,
+    GameScene,
+    GameOverScene
+  ],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH

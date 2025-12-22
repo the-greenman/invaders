@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Alien } from './Alien';
 import { Bomb } from './Bomb';
-import { ALIEN_SPACING_X, ALIEN_SPACING_Y } from '../constants';
+import { ALIEN_SPACING_X, ALIEN_SPACING_Y, GAME_WIDTH } from '../constants';
 
 /**
  * Alien Grid Entity
@@ -22,6 +22,8 @@ export class AlienGrid extends Phaser.GameObjects.Container {
   private moveTimer: Phaser.Time.TimerEvent | null = null;
   private rows: number;
   private cols: number;
+  private debugging: boolean = false;
+  private stepIndex: number = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -40,6 +42,33 @@ export class AlienGrid extends Phaser.GameObjects.Container {
 
     this.createAlienGrid(rows, cols);
     this.startMovement();
+
+    // Initial debug info
+    this.debugLog('created', { x: this.x, y: this.y, rows, cols, speed });
+    const b = this.getBounds();
+    this.debugLog('bounds', { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom) });
+  }
+
+  public setDebug(enabled: boolean): void {
+    this.debugging = enabled;
+    this.debugLog('debugging set to', enabled);
+  }
+
+  private debugLog(...args: any[]): void {
+    if (this.debugging) console.log('[AlienGrid]', ...args);
+  }
+
+  public dumpState(label: string = 'dump'): void {
+    const leftmost = this.getLeftmostAliveAlien();
+    const rightmost = this.getRightmostAliveAlien();
+    const mode = leftmost && (leftmost as any).parentContainer ? 'IN_CONTAINER' : 'WORLD_SPACE';
+    const leftEdge = leftmost ? leftmost.x - leftmost.displayWidth * 0.5 : NaN;
+    const rightEdge = rightmost ? rightmost.x + rightmost.displayWidth * 0.5 : NaN;
+    this.debugLog(label, { mode, gridX: Math.round(this.x), gridY: Math.round(this.y),
+      leftmostX: leftmost ? Math.round(leftmost.x) : null,
+      rightmostX: rightmost ? Math.round(rightmost.x) : null,
+      leftEdge: isNaN(leftEdge) ? null : Math.round(leftEdge),
+      rightEdge: isNaN(rightEdge) ? null : Math.round(rightEdge), dir: this.direction });
   }
 
   /**
@@ -59,18 +88,33 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     for (let row = 0; row < rows; row++) {
       this.aliens[row] = [];
       for (let col = 0; col < cols; col++) {
-        const x = col * ALIEN_SPACING_X;
-        const y = row * ALIEN_SPACING_Y;
-        
+        const localX = col * ALIEN_SPACING_X;
+        const localY = row * ALIEN_SPACING_Y;
+
         // Different alien types for different rows
         let type = 0; // bottom rows
         if (row < 1) type = 2; // top row
         else if (row < 3) type = 1; // middle rows
-        
-        const alien = new Alien(this.scene, x, y, type, { row, col });
+
+        // Place in world space relative to grid origin
+        const alien = new Alien(this.scene, this.x + localX, this.y + localY, type, { row, col });
         this.aliens[row][col] = alien;
-        this.add(alien);
+        // Note: do NOT add as a container child; keep in world space to avoid container physics issues
       }
+    }
+
+    // Debug: verify world-space placement and edges
+    const leftmost = this.getLeftmostAliveAlien();
+    const rightmost = this.getRightmostAliveAlien();
+    if (leftmost && rightmost) {
+      const leftEdge = leftmost.x - leftmost.displayWidth * 0.5;
+      const rightEdge = rightmost.x + rightmost.displayWidth * 0.5;
+      const parentFlag = (leftmost as any).parentContainer ? 'IN_CONTAINER' : 'WORLD_SPACE';
+      this.debugLog('postCreate', {
+        mode: parentFlag,
+        leftmostX: Math.round(leftmost.x), rightmostX: Math.round(rightmost.x),
+        leftEdge: Math.round(leftEdge), rightEdge: Math.round(rightEdge)
+      });
     }
   }
 
@@ -91,10 +135,12 @@ export class AlienGrid extends Phaser.GameObjects.Container {
       callbackScope: this,
       loop: true
     });
+    this.debugLog('timer started', { delay: this.speed });
   }
 
   update(delta: number): void {
-    // Bomb dropping is handled in moveStep for better timing
+    // Intentionally light. Physics bodies are synced when aliens actually move
+    // via Alien.move(), avoiding jumpy movement from per-frame resets.
   }
 
   /**
@@ -106,7 +152,7 @@ export class AlienGrid extends Phaser.GameObjects.Container {
    */
   private moveAliens(): void {
     const dx = 20 * this.direction; // Move 20 pixels per step
-    
+    this.debugLog('moveAliens', { step: this.stepIndex, dx });
     for (let row = 0; row < this.aliens.length; row++) {
       for (let col = 0; col < this.aliens[row].length; col++) {
         const alien = this.aliens[row][col];
@@ -117,6 +163,8 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     }
   }
   private moveStep(): void {
+    this.stepIndex++;
+    this.debugLog('moveStep', { step: this.stepIndex, dir: this.direction });
     // Check for edge collision first
     if (this.checkEdgeCollision()) {
       this.moveDownAndReverse();
@@ -138,17 +186,22 @@ export class AlienGrid extends Phaser.GameObjects.Container {
    * 3. Return true if any alien is at edge
    */
   private checkEdgeCollision(): boolean {
+    const margin = 50;
     const leftmost = this.getLeftmostAliveAlien();
     const rightmost = this.getRightmostAliveAlien();
-    
     if (!leftmost || !rightmost) return false;
-    
-    const worldX = this.x;
-    const leftEdge = worldX + leftmost.x;
-    const rightEdge = worldX + rightmost.x;
-    
-    return (leftEdge <= 50 && this.direction === -1) || 
-           (rightEdge >= 750 && this.direction === 1);
+
+    // Aliens are in world space now
+    const leftEdge = leftmost.x - leftmost.displayWidth * 0.5;
+    const rightEdge = rightmost.x + rightmost.displayWidth * 0.5;
+    const atEdge = (leftEdge <= margin && this.direction === -1) ||
+                   (rightEdge >= GAME_WIDTH - margin && this.direction === 1);
+    this.debugLog('edgeCheck2', {
+      leftmostX: Math.round(leftmost.x), rightmostX: Math.round(rightmost.x),
+      leftEdge: Math.round(leftEdge), rightEdge: Math.round(rightEdge),
+      margin, dir: this.direction, atEdge
+    });
+    return atEdge;
   }
 
   /**
@@ -160,7 +213,7 @@ export class AlienGrid extends Phaser.GameObjects.Container {
    */
   private moveDownAndReverse(): void {
     this.direction *= -1;
-    
+    this.debugLog('moveDownAndReverse', { newDir: this.direction });
     for (let row = 0; row < this.aliens.length; row++) {
       for (let col = 0; col < this.aliens[row].length; col++) {
         const alien = this.aliens[row][col];
@@ -169,6 +222,27 @@ export class AlienGrid extends Phaser.GameObjects.Container {
         }
       }
     }
+  }
+
+  /**
+   * Sync all alive alien physics bodies to their world positions.
+   * Called after container moves to keep Arcade bodies aligned.
+   */
+  private syncBodiesToWorld(): void {
+    let count = 0;
+    for (let row = 0; row < this.aliens.length; row++) {
+      for (let col = 0; col < this.aliens[row].length; col++) {
+        const alien = this.aliens[row][col];
+        if (!alien || !alien.isAlive()) continue;
+        const world = alien.getWorldTransformMatrix();
+        const body = alien.body as Phaser.Physics.Arcade.Body;
+        if (body) {
+          body.reset(world.tx, world.ty);
+          count++;
+        }
+      }
+    }
+    this.debugLog('syncBodiesToWorld', { synced: count });
   }
 
   private getLeftmostAliveAlien(): Alien | null {
@@ -221,10 +295,14 @@ export class AlienGrid extends Phaser.GameObjects.Container {
       }
       
       if (bottomAlien && Math.random() < this.bombDropChance) {
-        // Emit dropBomb event for GameScene to handle
-        this.scene.events.emit('dropBomb', this.x + bottomAlien.x, this.y + bottomAlien.y + 20);
+        // Emit dropBomb event for GameScene to handle (aliens are world-space)
+        const wx = bottomAlien.x;
+        const wy = bottomAlien.y + 20;
+        this.debugLog('bombDrop attempt', { col, wx: Math.round(wx), wy: Math.round(wy) });
+        this.scene.events.emit('dropBomb', wx, wy);
         if (this.scene.events.listenerCount('dropBomb') > 0) {
           this.lastBombTime = now;
+          this.debugLog('bombDrop success');
           break; // Only one bomb per interval
         }
       }

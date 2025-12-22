@@ -224,8 +224,15 @@ export class Shield extends Phaser.GameObjects.Sprite {
    * Cleanup resources
    */
   destroy(): void {
-    // Clean up texture
-    this.scene.textures.remove(this.textureKey);
+    // Clean up texture only if scene and texture manager still exist
+    if (this.scene && this.scene.textures && this.textureKey) {
+      try {
+        this.scene.textures.remove(this.textureKey);
+      } catch (error) {
+        // Texture might already be removed or scene is shutting down
+        console.warn('Shield texture cleanup failed:', error);
+      }
+    }
     super.destroy();
   }
 }
