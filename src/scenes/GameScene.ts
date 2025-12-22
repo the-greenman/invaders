@@ -45,6 +45,8 @@ export class GameScene extends Phaser.Scene {
   private scoreManager: ScoreManager | null = null;
   private levelManager: LevelManager | null = null;
   private audioManager: AudioManager | null = null;
+  private debugCollisions: boolean = false;
+  private lastDebugLog: number = 0;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -57,8 +59,9 @@ export class GameScene extends Phaser.Scene {
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
     
-    this.setupGameObjects();
+    // Create physics groups first so we can add aliens to them
     this.setupPhysicsGroups();
+    this.setupGameObjects();
     this.setupCollisions();
     this.setupUI();
     this.setupManagers();
@@ -101,6 +104,19 @@ export class GameScene extends Phaser.Scene {
 
     // Check win/lose conditions
     this.checkGameConditions();
+
+    // Periodic collision debug
+    if (this.debugCollisions) {
+      const now = this.time.now;
+      if (now - this.lastDebugLog > 500) {
+        const bulletsCount = this.bullets ? this.bullets.getChildren().length : 0;
+        const aliensCount = this.aliens ? this.aliens.getChildren().length : 0;
+        // @ts-ignore
+        const anyOverlap = this.physics.overlap(this.bullets as any, this.aliens as any);
+        console.log('[GameScene][dbg] bullets:', bulletsCount, 'aliens:', aliensCount, 'overlap?', anyOverlap);
+        this.lastDebugLog = now;
+      }
+    }
   }
 
   private setupGameObjects(): void {
@@ -125,15 +141,9 @@ export class GameScene extends Phaser.Scene {
     const aliveAliens = this.alienGrid.getAliveAliens();
     aliveAliens.forEach(alien => {
       this.aliens!.add(alien);
-
-      // Update physics body to world position after adding to group
-      // (aliens are in a container so their physics bodies need manual sync)
-      const worldTransform = alien.getWorldTransformMatrix();
-      const body = alien.body as Phaser.Physics.Arcade.Body;
-      if (body) {
-        body.reset(worldTransform.tx, worldTransform.ty);
-      }
     });
+    // Debug: confirm count
+    // console.log('[GameScene] aliens in group:', this.aliens.getChildren().length);
   }
 
   private createShields(): void {
@@ -212,6 +222,8 @@ export class GameScene extends Phaser.Scene {
       undefined,
       this
     );
+    // Debug: log setup complete
+    // console.log('[GameScene] collisions set up');
   }
 
   private setupUI(): void {
@@ -264,6 +276,12 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-P', () => {
       this.togglePause();
     });
+
+    // Toggle collision debug
+    this.input.keyboard?.on('keydown-L', () => {
+      this.debugCollisions = !this.debugCollisions;
+      console.log('[GameScene] collision debug', this.debugCollisions ? 'ON' : 'OFF');
+    });
   }
 
   /**
@@ -272,23 +290,9 @@ export class GameScene extends Phaser.Scene {
    */
   fireBullet(x: number, y: number): Bullet | null {
     if (!this.bullets || !this.gameActive) return null;
-
-    // Create bullet using the group's create method for proper physics integration
-    const bullet = this.bullets.get(x, y, 'bullet') as Bullet;
-
-    if (bullet) {
-      bullet.setActive(true);
-      bullet.setVisible(true);
-
-      // Set up the bullet's physics body
-      const body = bullet.body as Phaser.Physics.Arcade.Body;
-      body.setSize(4, 12);
-      body.setVelocityY(-400); // BULLET_SPEED upward
-      body.enable = true;
-
-      // Mark as a bullet (custom property to track in update)
-      (bullet as any).isBulletActive = true;
-    }
+    const bullet = this.bullets.get(x, y, 'bullet') as Bullet | null;
+    if (!bullet) return null;
+    bullet.launch(x, y);
 
     // Play shoot sound
     this.audioManager?.play('shoot');
@@ -302,24 +306,8 @@ export class GameScene extends Phaser.Scene {
    */
   dropBomb(x: number, y: number): Bomb | null {
     if (!this.bombs || !this.gameActive) return null;
-
-    // Create bomb using the group's get method for proper physics integration
-    const bomb = this.bombs.get(x, y, 'bomb') as Bomb;
-
-    if (bomb) {
-      bomb.setActive(true);
-      bomb.setVisible(true);
-
-      // Set up the bomb's physics body
-      const body = bomb.body as Phaser.Physics.Arcade.Body;
-      body.setSize(4, 12);
-      body.setVelocityY(200); // BOMB_SPEED downward
-      body.enable = true;
-
-      // Mark as active
-      (bomb as any).isBombActive = true;
-    }
-
+    const bomb = new Bomb(this, x, y);
+    this.bombs.add(bomb);
     return bomb;
   }
 
@@ -328,7 +316,8 @@ export class GameScene extends Phaser.Scene {
     const alien = object2 as Alien;
     
     if (!bullet.isActive() || !alien.isAlive()) return;
-    
+    // console.log('[GameScene] overlap bullet-alien', bullet.x, bullet.y, alien.x, alien.y);
+
     // Destroy bullet
     bullet.hit();
     
@@ -463,8 +452,8 @@ export class GameScene extends Phaser.Scene {
     this.level++;
     this.gameActive = true;
     
-    // Clear existing entities
-    this.clearGameObjects();
+    // Clear existing entities but keep physics groups and colliders
+    this.clearForNextLevel();
     
     // Setup new level
     this.levelManager = new LevelManager(this.level);
@@ -480,6 +469,27 @@ export class GameScene extends Phaser.Scene {
     // Update display
     if (this.levelText) {
       this.levelText.setText(`LEVEL: ${this.level}`);
+    }
+  }
+
+  // For level transitions: keep physics groups/colliders, clear entities only
+  private clearForNextLevel(): void {
+    // Remove alien grid
+    this.alienGrid?.destroy();
+    this.alienGrid = null;
+
+    // Deactivate/destroy remaining bullets and bombs
+    if (this.bullets) {
+      (this.bullets.getChildren() as any[]).forEach(c => c.setActive(false).setVisible(false));
+    }
+    if (this.bombs) {
+      (this.bombs.getChildren() as any[]).forEach(c => c.setActive(false).setVisible(false));
+    }
+
+    // Remove old aliens from group entirely
+    if (this.aliens) {
+      (this.aliens.getChildren() as any[]).forEach(a => a.destroy());
+      this.aliens.clear(true, true);
     }
   }
 

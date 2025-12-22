@@ -72,12 +72,8 @@ export class Alien extends Phaser.GameObjects.Sprite {
 
     this.x += dx;
     this.y += dy;
-
-    // Manually calculate world position accounting for parent container
-    // Containers don't automatically sync physics bodies
-    const worldTransform = this.getWorldTransformMatrix();
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.reset(worldTransform.tx, worldTransform.ty);
+    body.reset(this.x, this.y);
   }
 
   /**

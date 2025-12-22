@@ -52,13 +52,8 @@ export class CollisionTestScene extends Phaser.Scene {
   }
 
   private fireBullet(x: number, y: number) {
-    const b = this.bullets.get(x, y, 'bullet') as Bullet;
-    if (!b) return;
-    b.setActive(true).setVisible(true);
-    const body = b.body as Phaser.Physics.Arcade.Body;
-    body.setSize(4, 12);
-    body.setVelocityY(-400);
-    body.enable = true;
+    const b = this.bullets.get(x, y, 'bullet') as Bullet | null;
+    b?.launch(x, y);
   }
 
   update(): void {

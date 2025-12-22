@@ -24,6 +24,26 @@ export class Bullet extends Phaser.GameObjects.Sprite {
   }
 
   /**
+   * (Re)activate a bullet from the pool with the correct physics settings.
+   */
+  launch(x: number, y: number): this {
+    this.isBulletActive = true;
+    this.setActive(true).setVisible(true);
+    this.setPosition(x, y);
+
+    if (!this.body) {
+      this.scene.physics.add.existing(this);
+    }
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.enable = true;
+    body.reset(x, y);
+    body.setSize(4, 12);
+    body.setVelocity(0, -this.speed);
+    return this;
+  }
+
+  /**
    * Update bullet state
    * @param delta - Time since last frame in ms
    *
@@ -81,8 +101,11 @@ export class Bullet extends Phaser.GameObjects.Sprite {
   /**
    * Deactivate and remove bullet
    */
-  destroy(): void {
+  destroy(fromScene?: boolean): void {
     this.isBulletActive = false;
-    super.destroy();
+    if (this.body) {
+      (this.body as Phaser.Physics.Arcade.Body).enable = false;
+    }
+    super.destroy(fromScene);
   }
 }
