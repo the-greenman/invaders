@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from './constants';
-import { BootScene } from './scenes/BootScene';
+import { PreloaderScene } from './scenes/PreloaderScene';
 import { MenuScene } from './scenes/MenuScene';
 import { WebcamScene } from './scenes/WebcamScene';
 import { GameScene } from './scenes/GameScene';
@@ -19,7 +19,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false
     }
   },
-  scene: [BootScene, MenuScene, WebcamScene, GameScene, GameOverScene],
+  scene: [PreloaderScene, MenuScene, WebcamScene, GameScene, GameOverScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH

@@ -221,9 +221,9 @@ export class AlienGrid extends Phaser.GameObjects.Container {
       }
       
       if (bottomAlien && Math.random() < this.bombDropChance) {
-        // Use GameScene's dropBomb method for proper physics group tracking
-        const bomb = (this.scene as any).dropBomb?.(this.x + bottomAlien.x, this.y + bottomAlien.y + 20);
-        if (bomb) {
+        // Emit dropBomb event for GameScene to handle
+        this.scene.events.emit('dropBomb', this.x + bottomAlien.x, this.y + bottomAlien.y + 20);
+        if (this.scene.events.listenerCount('dropBomb') > 0) {
           this.lastBombTime = now;
           break; // Only one bomb per interval
         }

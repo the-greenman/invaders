@@ -236,8 +236,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   private setupInput(): void {
-    // Player shooting is handled by Player class
-    // Additional game controls can be added here
+    // Player shooting is handled by Player class via events
+    // Listen for projectile events from entities
+    this.events.on('fireBullet', (x: number, y: number) => {
+      this.fireBullet(x, y);
+    });
+    
+    this.events.on('dropBomb', (x: number, y: number) => {
+      this.dropBomb(x, y);
+    });
+    
+    // Additional game controls
     this.input.keyboard?.on('keydown-P', () => {
       this.togglePause();
     });

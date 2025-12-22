@@ -67,16 +67,14 @@ export class Player extends Phaser.GameObjects.Sprite {
    * 3. Reset shoot cooldown
    * 4. Play shoot sound
    */
-  shoot(): Bullet | null {
-    if (!this.canShoot || !this.active) return null;
+  shoot(): void {
+    if (!this.canShoot || !this.active) return;
 
     this.canShoot = false;
     this.lastShotTime = Date.now();
     
-    // Create bullet above player
-    const bullet = (this.scene as any).fireBullet?.(this.x, this.y - 20);
-    
-    return bullet;
+    // Emit fireBullet event for GameScene to handle
+    this.scene.events.emit('fireBullet', this.x, this.y - 20);
   }
 
   /**
