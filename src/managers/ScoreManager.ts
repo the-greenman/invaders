@@ -1,4 +1,5 @@
 import { LocalStorage } from '../utils/localStorage';
+import { FaceManager } from './FaceManager';
 import { HighScore } from '../types';
 
 /**
@@ -68,11 +69,15 @@ export class ScoreManager {
    * 2. Use LocalStorage.addHighScore() to save it
    */
   saveHighScore(name: string, level: number): void {
+    const history = LocalStorage.getFaceHistory();
+    const currentFace = FaceManager.getCurrentFace() || LocalStorage.getCurrentFace() || null;
+    const fallbackFace = history.length > 0 ? history[history.length - 1].imageData : undefined;
     const highScore: HighScore = {
       name,
       score: this.currentScore,
       level,
-      date: Date.now()
+      date: Date.now(),
+      faceImage: currentFace || fallbackFace || undefined
     };
     LocalStorage.addHighScore(highScore);
   }

@@ -6,6 +6,7 @@ import { WebcamScene } from './scenes/WebcamScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
 import { AbductionScene } from './scenes/AbductionScene';
+import { HighScoreScene } from './scenes/HighScoreScene';
 import { DebugMenuScene } from './scenes/debug/DebugMenuScene';
 import { PlayerTestScene } from './scenes/debug/PlayerTestScene';
 import { ArmadaTestScene } from './scenes/debug/ArmadaTestScene';
@@ -47,6 +48,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     StoredFacesScene,
     AbductionLineScene,
     WebcamScene,
+    HighScoreScene,
     GameScene,
     AbductionScene,
     GameOverScene

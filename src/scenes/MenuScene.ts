@@ -29,6 +29,7 @@ export class MenuScene extends Phaser.Scene {
   private startButton: Phaser.GameObjects.Text | null = null;
   private webcamButton: Phaser.GameObjects.Text | null = null;
   private creditsButton: Phaser.GameObjects.Text | null = null;
+  private highScoresButton: Phaser.GameObjects.Text | null = null;
   private selectedButton: number = 0;
   private buttons: Phaser.GameObjects.Text[] = [];
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
@@ -180,7 +181,12 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive();
 
-    this.buttons = [this.webcamButton];
+    // High scores
+    this.highScoresButton = this.add.text(width / 2, height / 2 + 80, 'HIGH SCORES', buttonStyle)
+      .setOrigin(0.5)
+      .setInteractive();
+
+    this.buttons = [this.webcamButton, this.highScoresButton];
   }
 
   private setupKeyboardControls(): void {
@@ -318,6 +324,9 @@ export class MenuScene extends Phaser.Scene {
     switch (this.selectedButton) {
       case 0: // Webcam-first Start
         this.openWebcam();
+        break;
+      case 1: // High scores
+        this.scene.start('HighScoreScene');
         break;
     }
   }
@@ -645,6 +654,7 @@ export class MenuScene extends Phaser.Scene {
     this.startButton = null;
     this.webcamButton = null;
     this.creditsButton = null;
+    this.highScoresButton = null;
     this.privacyText = null;
     this.crawlText = null;
     this.bgAliens.forEach(a => a.sprite.destroy());

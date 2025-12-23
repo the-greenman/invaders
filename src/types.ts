@@ -15,6 +15,7 @@ export interface HighScore {
   score: number;
   level: number;
   date: number;
+  faceImage?: string; // base64 image data for the player face at the time of the score
 }
 
 export interface LevelConfig {
