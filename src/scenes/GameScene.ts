@@ -55,7 +55,10 @@ export class GameScene extends Phaser.Scene {
   private alienFaceTextures: string[] = [];
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private backButtonIndex: number = 10;
+  private muteButtonIndex: number = 4;
   private prevBackPressed: boolean = false;
+  private prevMutePressed: boolean = false;
+  private muteButton: Phaser.GameObjects.Text | null = null;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -257,6 +260,17 @@ export class GameScene extends Phaser.Scene {
       color: '#00ff00'
     });
 
+    // Mute button
+    const isMuted = this.audioManager?.isMuted() ?? false;
+    this.muteButton = this.add.text(GAME_WIDTH - 20, 20, isMuted ? 'MUSIC: OFF' : 'MUSIC: ON', {
+      fontSize: '20px',
+      fontFamily: 'Courier New',
+      color: '#00ff00'
+    })
+    .setOrigin(1, 0) // Top-right anchor
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => this.handleMuteToggle());
+
     // Abduction threshold line
     const thresholdY = ABDUCTION_THRESHOLD_Y;
     const line = this.add.line(0, 0, 0, thresholdY, GAME_WIDTH, thresholdY, 0x00ff00, 0.3);
@@ -364,6 +378,22 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.prevBackPressed = !!backPressed;
+
+    // Check mute toggle
+    const mutePressed = this.gamepad.buttons[this.muteButtonIndex]?.pressed;
+    if (mutePressed && !this.prevMutePressed) {
+      this.handleMuteToggle();
+    }
+    this.prevMutePressed = !!mutePressed;
+  }
+
+  private handleMuteToggle(): void {
+    if (!this.audioManager) return;
+    this.audioManager.toggleMute();
+    const isMuted = this.audioManager.isMuted();
+    if (this.muteButton) {
+      this.muteButton.setText(isMuted ? 'MUSIC: OFF' : 'MUSIC: ON');
+    }
   }
 
   private handleBulletAlienCollision(object1: any, object2: any): void {

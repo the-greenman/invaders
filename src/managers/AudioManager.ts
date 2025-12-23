@@ -61,7 +61,7 @@ export class AudioManager {
    * @param config - Optional Phaser sound config (volume, rate, etc.)
    */
   play(key: string, config?: Phaser.Types.Sound.SoundConfig): void {
-    if (this.muted) return;
+    // SFX always plays regardless of music mute state
     const sound = this.sounds.get(key);
     if (sound) {
       sound.play(config);
@@ -74,42 +74,46 @@ export class AudioManager {
    * Start playing background music
    * @param key - Music key from asset loader
    * @param loop - Whether to loop the music (default true)
-   *
-   * TODO:
-   * 1. Stop existing music if playing (this.stopMusic())
-   * 2. Create music sound: this.scene.sound.add(key, { loop, volume: 0.5 })
-   * 3. Store in this.music
-   * 4. If not muted, call this.music.play()
    */
   playMusic(key: string, loop: boolean = true): void {
     if (this.music) this.music.stop();
-    this.music = this.scene.sound.add(key, { loop, volume: 0.5 });
+    this.music = this.scene.sound.add(key, { loop, volume: 0.4 });
+    
+    // Check for potential loading/decoding issues
+    if (this.music.duration < 1 && this.music.duration > 0) {
+      console.warn(`AudioManager: Music '${key}' is suspiciously short (${this.music.duration}s). Might be corrupt or failing to decode.`);
+    }
+
     if (!this.muted) this.music.play();
   }
 
   /**
    * Stop the background music
-   *
-   * TODO: If music exists, call this.music.stop()
    */
   stopMusic(): void {
     if (this.music) this.music.stop();
   }
 
   /**
-   * Toggle mute state for all audio
+   * Toggle mute state for music only
    * Saves the preference to localStorage
-   *
-   * TODO:
-   * 1. Toggle this.muted boolean
-   * 2. Set this.scene.sound.mute = this.muted
-   * 3. Get settings from LocalStorage
-   * 4. Update muted property
-   * 5. Save settings back to LocalStorage
    */
   toggleMute(): void {
     this.muted = !this.muted;
-    this.scene.sound.mute = this.muted;
+    
+    // Update current music state
+    if (this.music) {
+      if (this.muted) {
+        this.music.pause();
+      } else {
+        if (this.music.isPaused) {
+          this.music.resume();
+        } else {
+          this.music.play();
+        }
+      }
+    }
+
     const settings = LocalStorage.getSettings();
     settings.muted = this.muted;
     LocalStorage.saveSettings(settings);

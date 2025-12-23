@@ -80,7 +80,7 @@ export class PreloaderScene extends Phaser.Scene {
     this.load.audio('explosion', 'assets/sounds/explosion.mp3');
     this.load.audio('alien-hit', 'assets/sounds/alien-hit.mp3');
     this.load.audio('player-hit', 'assets/sounds/player-hit.mp3');
-    this.load.audio('background-music', 'assets/sounds/background-music.mp3');
+    this.load.audio('background-music', ['assets/sounds/background-music.mp3']);
   }
 
   private createProceduralAssets(): void {
