@@ -1,9 +1,19 @@
 import Phaser from 'phaser';
-import type { FaceDetection } from '@mediapipe/face_detection';
-import type { Camera } from '@mediapipe/camera_utils';
 import { LocalStorage } from '../utils/localStorage';
 import { ImageProcessor } from '../utils/imageProcessor';
 import { COLORS } from '../constants';
+
+// TypeScript declarations for MediaPipe global objects (loaded via CDN)
+declare global {
+  interface Window {
+    FaceDetection: any;
+    Camera: any;
+  }
+}
+
+// Use global MediaPipe objects
+type FaceDetection = any;
+type Camera = any;
 
 /**
  * Face Manager
@@ -40,11 +50,13 @@ export class FaceManager {
   static async initMediaPipe(): Promise<FaceDetection> {
     if (this.faceDetection) return this.faceDetection;
 
-    // Dynamic import to avoid bundling issues in production
-    const { FaceDetection } = await import('@mediapipe/face_detection');
+    // Use MediaPipe loaded from CDN (global window.FaceDetection)
+    if (!window.FaceDetection) {
+      throw new Error('MediaPipe FaceDetection not loaded. Ensure script tags are in index.html');
+    }
 
-    this.faceDetection = new FaceDetection({
-      locateFile: (file) => {
+    this.faceDetection = new window.FaceDetection({
+      locateFile: (file: string) => {
         return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
       }
     });
@@ -184,7 +196,14 @@ export class FaceManager {
    */
   static cleanup(): void {
     if (this.camera) {
-      this.camera.stop();
+      try {
+        // MediaPipe Camera from CDN may have different API
+        if (typeof this.camera.stop === 'function') {
+          this.camera.stop();
+        }
+      } catch (e) {
+        console.warn('Camera cleanup error:', e);
+      }
       this.camera = null;
     }
     if (this.mediaStream) {
@@ -192,7 +211,11 @@ export class FaceManager {
       this.mediaStream = null;
     }
     if (this.faceDetection) {
-      this.faceDetection.close();
+      try {
+        this.faceDetection.close();
+      } catch (e) {
+        console.warn('FaceDetection cleanup error:', e);
+      }
       this.faceDetection = null;
     }
   }
@@ -221,12 +244,14 @@ export class FaceManager {
       throw new Error('MediaPipe not initialized. Call initMediaPipe() first.');
     }
 
-    // Dynamic import to avoid bundling issues in production
-    const { Camera } = await import('@mediapipe/camera_utils');
+    // Use MediaPipe Camera loaded from CDN (global window.Camera)
+    if (!window.Camera) {
+      throw new Error('MediaPipe Camera not loaded. Ensure script tags are in index.html');
+    }
 
     this.faceDetection.onResults(onResults);
 
-    this.camera = new Camera(videoElement, {
+    this.camera = new window.Camera(videoElement, {
       onFrame: async () => {
         if (!this.faceDetection) return;
         try {

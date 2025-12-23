@@ -259,7 +259,7 @@ export class GameScene extends Phaser.Scene {
     const thresholdY = ABDUCTION_THRESHOLD_Y;
     const line = this.add.line(0, 0, 0, thresholdY, GAME_WIDTH, thresholdY, 0x00ff00, 0.3);
     line.setOrigin(0, 0);
-    this.add.text(GAME_WIDTH - 150, thresholdY - 20, 'ABDUCTION LINE', {
+    this.add.text(GAME_WIDTH - 150, thresholdY - 20, 'Don\'t let them get here!', {
       fontSize: '14px',
       fontFamily: 'Courier New',
       color: '#00ff00'
