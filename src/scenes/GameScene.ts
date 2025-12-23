@@ -42,7 +42,6 @@ export class GameScene extends Phaser.Scene {
   
   // UI elements
   private scoreText: Phaser.GameObjects.Text | null = null;
-  private livesText: Phaser.GameObjects.Text | null = null;
   private levelText: Phaser.GameObjects.Text | null = null;
   
   // Managers
@@ -246,15 +245,8 @@ export class GameScene extends Phaser.Scene {
       color: '#00ff00'
     });
     
-    // Lives display
-    this.livesText = this.add.text(10, 40, `LIVES: ${this.lives}`, {
-      fontSize: '20px',
-      fontFamily: 'Courier New',
-      color: '#00ff00'
-    });
-    
     // Level display
-    this.levelText = this.add.text(10, 70, `LEVEL: ${this.level}`, {
+    this.levelText = this.add.text(10, 40, `LEVEL: ${this.level}`, {
       fontSize: '20px',
       fontFamily: 'Courier New',
       color: '#00ff00'
@@ -500,9 +492,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateLivesDisplay(): void {
-    if (this.livesText) {
-      this.livesText.setText(`LIVES: ${this.lives}`);
-    }
   }
 
   private checkGameConditions(): void {
