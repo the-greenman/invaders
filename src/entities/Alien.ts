@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { POINTS, ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, ALIEN_BODY_SCALE } from '../constants';
+import { POINTS, ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_BODY_SCALE } from '../constants';
 import { Bomb } from './Bomb';
 
 /**
@@ -16,7 +16,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
   private alienType: number; // 0, 1, or 2 for different alien types
   private gridPosition: { row: number; col: number };
   private alive: boolean = true;
-  private coreCircle?: Phaser.GameObjects.Arc;
 
   constructor(
     scene: Phaser.Scene,
@@ -45,12 +44,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
     if (this.scene.anims.exists(`alien-${type}-anim`)) {
       this.play(`alien-${type}-anim`);
     }
-
-    // Core circle placeholder for future face textures
-    this.coreCircle = this.scene.add.circle(this.x, this.y, ALIEN_CORE_RADIUS, 0x000000, 0.8);
-    this.coreCircle.setStrokeStyle(2, 0xffffff, 0.5);
-    this.coreCircle.setDepth(this.depth + 1);
-    this.syncCorePosition();
   }
 
   /**
@@ -84,7 +77,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
     this.y += dy;
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.reset(this.x, this.y);
-    this.syncCorePosition();
   }
 
   /**
@@ -115,10 +107,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
     // Could play sound here
     // this.scene.sound.play('explosion');
     
-    if (this.coreCircle) {
-      this.coreCircle.destroy();
-      this.coreCircle = undefined;
-    }
     super.destroy();
     return this.points;
   }
@@ -163,14 +151,5 @@ export class Alien extends Phaser.GameObjects.Sprite {
    */
   getGridPosition(): { row: number; col: number } {
     return this.gridPosition;
-  }
-
-  /**
-   * Keep core graphic aligned with sprite
-   */
-  private syncCorePosition(): void {
-    if (this.coreCircle) {
-      this.coreCircle.setPosition(this.x, this.y);
-    }
   }
 }

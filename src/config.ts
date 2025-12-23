@@ -10,6 +10,8 @@ import { PlayerTestScene } from './scenes/debug/PlayerTestScene';
 import { ArmadaTestScene } from './scenes/debug/ArmadaTestScene';
 import { CollisionTestScene } from './scenes/debug/CollisionTestScene';
 import { CameraTestScene } from './scenes/debug/CameraTestScene';
+import { SpriteDebugScene } from './scenes/debug/SpriteDebugScene';
+import { CompareScene } from './scenes/debug/CompareScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -32,6 +34,8 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     ArmadaTestScene,
     CollisionTestScene,
     CameraTestScene,
+    SpriteDebugScene,
+    CompareScene,
     WebcamScene,
     GameScene,
     GameOverScene

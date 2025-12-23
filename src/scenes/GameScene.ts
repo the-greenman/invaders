@@ -56,10 +56,14 @@ export class GameScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     // Get scene data from previous scene
-    const data = this.scene.settings.data as { level?: number; score?: number; useWebcam?: boolean };
+    const data = this.scene.settings.data as { level?: number; score?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number } };
     this.level = data.level || 1;
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
+    // Optional viewport for split-screen debug
+    if (data.viewport) {
+      this.cameras.main.setViewport(data.viewport.x, data.viewport.y, data.viewport.width, data.viewport.height);
+    }
 
     // Prepare player texture with face if available
     await this.preparePlayerTexture();
@@ -575,13 +579,18 @@ export class GameScene extends Phaser.Scene {
     const targetKey = 'player-face-composite';
     try {
       await FaceManager.addBase64Texture(this, srcKey, currentFace);
+      const meta = this.cache.json.get('player-face-meta');
       this.playerTextureKey = FaceManager.composeFaceTexture(this, {
         baseKey: 'player',
         faceKey: srcKey,
         targetKey,
         width: PLAYER_WIDTH,
         height: PLAYER_HEIGHT,
-        coreRadius: PLAYER_CORE_RADIUS
+        coreRadius: meta?.rx ?? PLAYER_CORE_RADIUS,
+        faceCenterX: meta ? meta.relativeX * PLAYER_WIDTH : undefined,
+        faceCenterY: meta ? meta.relativeY * PLAYER_HEIGHT : undefined,
+        faceScale: 1.0,
+        backingAlpha: 1.0
       });
     } catch (e) {
       console.warn('Failed to build player face texture, falling back to default', e);

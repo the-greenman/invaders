@@ -271,9 +271,24 @@ export class FaceManager {
       width: number;
       height: number;
       coreRadius: number;
+      faceCenterX?: number;
+      faceCenterY?: number;
+      faceScale?: number;
+      backingAlpha?: number;
     }
   ): string {
-    const { baseKey, faceKey, targetKey, width, height, coreRadius } = config;
+    const {
+      baseKey,
+      faceKey,
+      targetKey,
+      width,
+      height,
+      coreRadius,
+      faceCenterX,
+      faceCenterY,
+      faceScale = 1,
+      backingAlpha = 1.0
+    } = config;
     if (!scene.textures.exists(baseKey) || !scene.textures.exists(faceKey)) {
       return baseKey;
     }
@@ -282,15 +297,15 @@ export class FaceManager {
       scene.textures.remove(targetKey);
     }
 
-    const centerX = width / 2;
-    const centerY = height / 2;
+    const centerX = faceCenterX ?? width / 2;
+    const centerY = faceCenterY ?? height / 2;
 
     const rt = scene.add.renderTexture(0, 0, width, height);
     const ship = scene.add.image(centerX, centerY, baseKey)
       .setDisplaySize(width, height)
       .setVisible(false);
     const face = scene.add.image(centerX, centerY, faceKey)
-      .setDisplaySize(coreRadius * 2.1, coreRadius * 2.1)
+      .setDisplaySize(coreRadius * 2.1 * faceScale, coreRadius * 2.1 * faceScale)
       .setVisible(false)
       .setTint(0xffffff);
 
@@ -301,11 +316,11 @@ export class FaceManager {
     const mask = maskShape.createGeometryMask();
     face.setMask(mask);
 
-    // Fully opaque white backing - no transparency
+    // Backing to control brightness
     const backing = scene.make.graphics({ x: centerX, y: centerY });
     backing.setVisible(false);
-    backing.fillStyle(0xffffff, 1.0);  // Fully opaque white background
-    backing.fillCircle(0, 0, coreRadius);
+    backing.fillStyle(0xffffff, backingAlpha);
+    backing.fillCircle(0, 0, coreRadius * 1.05);
 
     rt.draw(ship, ship.x, ship.y);
     rt.draw(backing);
