@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { FaceDetection } from '@mediapipe/face_detection';
-import { Camera } from '@mediapipe/camera_utils';
+import type { FaceDetection } from '@mediapipe/face_detection';
+import type { Camera } from '@mediapipe/camera_utils';
 import { LocalStorage } from '../utils/localStorage';
 import { ImageProcessor } from '../utils/imageProcessor';
 import { COLORS } from '../constants';
@@ -39,18 +39,21 @@ export class FaceManager {
    */
   static async initMediaPipe(): Promise<FaceDetection> {
     if (this.faceDetection) return this.faceDetection;
-    
+
+    // Dynamic import to avoid bundling issues in production
+    const { FaceDetection } = await import('@mediapipe/face_detection');
+
     this.faceDetection = new FaceDetection({
       locateFile: (file) => {
         return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
       }
     });
-    
+
     this.faceDetection.setOptions({
       model: 'short',
       minDetectionConfidence: 0.5
     });
-    
+
     await this.faceDetection.initialize();
     return this.faceDetection;
   }
@@ -210,16 +213,19 @@ export class FaceManager {
    * 4. Start camera
    * 5. Store camera instance for cleanup
    */
-  static startDetectionLoop(
+  static async startDetectionLoop(
     videoElement: HTMLVideoElement,
     onResults: (results: any) => void
-  ): void {
+  ): Promise<void> {
     if (!this.faceDetection) {
       throw new Error('MediaPipe not initialized. Call initMediaPipe() first.');
     }
-    
+
+    // Dynamic import to avoid bundling issues in production
+    const { Camera } = await import('@mediapipe/camera_utils');
+
     this.faceDetection.onResults(onResults);
-    
+
     this.camera = new Camera(videoElement, {
       onFrame: async () => {
         if (!this.faceDetection) return;
@@ -232,7 +238,7 @@ export class FaceManager {
       width: 640,
       height: 480
     });
-    
+
     this.camera.start();
   }
 

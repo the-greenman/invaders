@@ -61,7 +61,7 @@ export class CameraTestScene extends Phaser.Scene {
       await FaceManager.initMediaPipe();
       await FaceManager.startWebcam(this.videoEl);
       this.setupLiveTexture();
-      FaceManager.startDetectionLoop(this.videoEl, (results: any) => this.handleDetection(results));
+      await FaceManager.startDetectionLoop(this.videoEl, (results: any) => this.handleDetection(results));
       this.statusText.setText('Camera: ready (press C to capture)');
       this.videoReady = true;
     } catch (e) {

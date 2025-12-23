@@ -170,9 +170,9 @@ export class WebcamScene extends Phaser.Scene {
       // Start webcam
       await FaceManager.startWebcam(this.videoElement);
       this.setupLiveTexture();
-      
+
       // Start face detection loop
-      FaceManager.startDetectionLoop(this.videoElement, (results: any) => {
+      await FaceManager.startDetectionLoop(this.videoElement, (results: any) => {
         const detection = results?.detections?.[0];
         if (!detection) {
           this.lastBBox = null;
