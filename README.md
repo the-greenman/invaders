@@ -9,7 +9,10 @@ A modern take on the classic Space Invaders game with webcam face capture integr
 - Wave-based alien progression
 - Destructible shields
 - High score tracking with localStorage persistence
-- Gamepad/controller support
+- **Multi-Platform Controls**:
+  - Keyboard support (Arrow keys + Spacebar)
+  - Gamepad/controller support (configurable buttons)
+  - Touch controls for iPad/mobile (auto-detected)
 
 ### 📸 Face Capture System
 - **Webcam Integration**: Capture faces using your device's camera
@@ -91,6 +94,16 @@ npm run preview
 - **Fire + Back Buttons**: Open debug menu (from main menu)
 
 Controller button mappings can be customized in the game settings.
+
+### Touch Controls (iPad/Mobile)
+Touch controls automatically appear on devices with touchscreen support:
+- **Left/Right Buttons**: Tap and hold to move left or right
+- **Fire Button**: Tap to shoot
+
+The touch control interface includes:
+- Semi-transparent virtual buttons at the bottom of the screen
+- Visual feedback when buttons are pressed
+- Optimized for tablet and mobile gameplay
 
 ## Project Structure
 

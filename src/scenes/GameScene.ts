@@ -9,6 +9,7 @@ import { ScoreManager } from '../managers/ScoreManager';
 import { LevelManager } from '../managers/LevelManager';
 import { AudioManager } from '../managers/AudioManager';
 import { FaceManager } from '../managers/FaceManager';
+import { TouchControlManager } from '../managers/TouchControlManager';
 import { LocalStorage } from '../utils/localStorage';
 import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT, PLAYER_CORE_RADIUS, PLAYER_HEIGHT, PLAYER_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, ABDUCTION_THRESHOLD_Y } from '../constants';
 
@@ -48,6 +49,7 @@ export class GameScene extends Phaser.Scene {
   private scoreManager: ScoreManager | null = null;
   private levelManager: LevelManager | null = null;
   private audioManager: AudioManager | null = null;
+  private touchControlManager: TouchControlManager | null = null;
   private debugCollisions: boolean = false;
   private lastDebugLog: number = 0;
   private alienFaceTextures: string[] = [];
@@ -259,7 +261,7 @@ export class GameScene extends Phaser.Scene {
     const thresholdY = ABDUCTION_THRESHOLD_Y;
     const line = this.add.line(0, 0, 0, thresholdY, GAME_WIDTH, thresholdY, 0x00ff00, 0.3);
     line.setOrigin(0, 0);
-    this.add.text(GAME_WIDTH - 150, thresholdY - 20, 'Don\'t let them get here!', {
+    this.add.text(GAME_WIDTH - 150, thresholdY - 20, '', {
       fontSize: '14px',
       fontFamily: 'Courier New',
       color: '#00ff00'
@@ -271,6 +273,7 @@ export class GameScene extends Phaser.Scene {
     this.scoreManager = new ScoreManager();
     this.levelManager = new LevelManager(this.level);
     this.audioManager = new AudioManager(this);
+    this.touchControlManager = new TouchControlManager(this);
 
     // Register all sound effects
     this.audioManager.registerSound('shoot');
@@ -279,11 +282,16 @@ export class GameScene extends Phaser.Scene {
     this.audioManager.registerSound('player-hit');
 
     // Start background music
-    // this.audioManager.playMusic('background-music');
+    this.audioManager.playMusic('background-music');
 
     // Load initial score
     if (this.score > 0) {
       this.scoreManager.addPoints(this.score);
+    }
+
+    // Set touch controls on player if available
+    if (this.player && this.touchControlManager) {
+      this.player.setTouchControls(this.touchControlManager);
     }
   }
 
@@ -591,7 +599,9 @@ export class GameScene extends Phaser.Scene {
   shutdown(): void {
     // Cleanup managers
     this.audioManager?.cleanup();
-    
+    this.touchControlManager?.destroy();
+    this.touchControlManager = null;
+
     // Clear game objects
     this.clearGameObjects();
   }
