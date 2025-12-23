@@ -8,6 +8,7 @@ export const MAX_BULLETS = 3;
 export const PLAYER_WIDTH = 96;    // doubled for larger face area
 export const PLAYER_HEIGHT = 72;   // doubled for larger face area
 export const PLAYER_CORE_RADIUS = 24;
+export const PLAYER_BODY_SCALE = 0.4; // reduce collision box size
 
 // Projectiles
 export const BULLET_SPEED = 400;
@@ -23,7 +24,9 @@ export const ALIEN_START_SPEED = 500; // ms per move
 export const ALIEN_WIDTH = 88;     // doubled sprite size
 export const ALIEN_HEIGHT = 64;    // doubled sprite size
 export const ALIEN_CORE_RADIUS = 20;
-export const ALIEN_BODY_SCALE = 0.3; // collision body width/height multiplier vs sprite
+export const ALIEN_BODY_SCALE = 0.7; // collision body width/height multiplier vs sprite
+export const ALIEN_TINT_ALPHA = 0.6; // tint strength for alien faces (0-1)
+export const ABDUCTION_THRESHOLD_Y = 500; // y level at which aliens trigger game over
 
 // Game
 export const MAX_LIVES = 3;

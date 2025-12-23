@@ -12,7 +12,6 @@ export class CollisionTestScene extends Phaser.Scene {
   private target!: Alien;
   private grid: AlienGrid | null = null;
   private mode: 'single' | 'armada' = 'single';
-  private debugGraphics!: Phaser.GameObjects.Graphics;
   private modeText!: Phaser.GameObjects.Text;
 
   constructor() { super({ key: 'CollisionTestScene' }); }
@@ -24,11 +23,17 @@ export class CollisionTestScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.add.text(20, 80,
-      'Shoot aliens. Arrows move, Space shoot. A: toggle single/armada. B: show bounds. ESC back.',
+      'Shoot aliens. Arrows move, Space shoot. A: toggle single/armada. B: toggle physics debug. ESC back.',
       { fontSize: '18px', fontFamily: 'Courier New', color: '#ffffff' }
     );
 
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // Enable physics debug
+    this.physics.world.createDebugGraphic();
+    if (this.physics.world.debugGraphic) {
+      this.physics.world.debugGraphic.setVisible(true);
+    }
 
     // Player
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 60);
@@ -40,8 +45,6 @@ export class CollisionTestScene extends Phaser.Scene {
     // Aliens group
     this.aliens = this.physics.add.group({ classType: Alien, runChildUpdate: false });
 
-    // Debug graphics for bounds
-    this.debugGraphics = this.add.graphics({ lineStyle: { width: 2, color: 0x00ffff, alpha: 0.6 } });
     this.modeText = this.add.text(20, 110, 'Mode: SINGLE', { fontSize: '16px', fontFamily: 'Courier New', color: '#ffff00' });
 
     this.spawnSingleTarget();
@@ -104,8 +107,9 @@ export class CollisionTestScene extends Phaser.Scene {
   }
 
   private toggleBounds() {
-    const visible = !this.debugGraphics.visible;
-    this.debugGraphics.setVisible(visible);
+    if (this.physics.world.debugGraphic) {
+      this.physics.world.debugGraphic.setVisible(!this.physics.world.debugGraphic.visible);
+    }
   }
 
   update(): void {
@@ -119,22 +123,6 @@ export class CollisionTestScene extends Phaser.Scene {
     // Update grid movement in armada mode
     if (this.mode === 'armada') {
       this.grid?.update(16);
-    }
-
-    // Draw collision bounds if visible
-    if (this.debugGraphics.visible) {
-      this.debugGraphics.clear();
-      this.debugGraphics.lineStyle(2, 0x00ffff, 0.6);
-      (this.aliens.getChildren() as Alien[]).forEach(alien => {
-        if (!alien.body) return;
-        const body = alien.body as Phaser.Physics.Arcade.Body;
-        this.debugGraphics.strokeRect(body.x, body.y, body.width, body.height);
-      });
-      (this.bullets.getChildren() as Bullet[]).forEach(b => {
-        if (!b.body) return;
-        const body = b.body as Phaser.Physics.Arcade.Body;
-        this.debugGraphics.strokeRect(body.x, body.y, body.width, body.height);
-      });
     }
   }
 }

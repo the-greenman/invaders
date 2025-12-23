@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Alien } from './Alien';
 import { Bomb } from './Bomb';
-import { ALIEN_SPACING_X, ALIEN_SPACING_Y, GAME_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT } from '../constants';
+import { ALIEN_SPACING_X, ALIEN_SPACING_Y, GAME_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT, ABDUCTION_THRESHOLD_Y } from '../constants';
 
 /**
  * Alien Grid Entity
@@ -24,6 +24,8 @@ export class AlienGrid extends Phaser.GameObjects.Container {
   private cols: number;
   private debugging: boolean = false;
   private stepIndex: number = 0;
+  private faceTextures: string[];
+  private faceTextureIndex: number = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -31,7 +33,8 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     y: number,
     rows: number,
     cols: number,
-    speed: number
+    speed: number,
+    faceTextures: string[] = []
   ) {
     super(scene, x, y);
     scene.add.existing(this);
@@ -39,6 +42,7 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     this.speed = speed;
     this.rows = rows;
     this.cols = cols;
+    this.faceTextures = faceTextures;
 
     this.createAlienGrid(rows, cols);
     this.startMovement();
@@ -96,8 +100,12 @@ export class AlienGrid extends Phaser.GameObjects.Container {
         if (row < 1) type = 2; // top row
         else if (row < 3) type = 1; // middle rows
 
+        const texKey = this.faceTextures.length > 0
+          ? this.faceTextures[this.faceTextureIndex++ % this.faceTextures.length]
+          : undefined;
+
         // Place in world space relative to grid origin
-        const alien = new Alien(this.scene, this.x + localX, this.y + localY, type, { row, col });
+        const alien = new Alien(this.scene, this.x + localX, this.y + localY, type, { row, col }, texKey);
         this.aliens[row][col] = alien;
         // Note: do NOT add as a container child; keep in world space to avoid container physics issues
       }
@@ -390,7 +398,9 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     for (let row = 0; row < this.aliens.length; row++) {
       for (let col = 0; col < this.aliens[row].length; col++) {
         const alien = this.aliens[row][col];
-        if (alien && alien.isAlive() && this.y + alien.y > 500) {
+        if (!alien || !alien.isAlive()) continue;
+        const bottom = alien.y + alien.displayHeight * 0.5;
+        if (bottom >= ABDUCTION_THRESHOLD_Y) {
           return true;
         }
       }

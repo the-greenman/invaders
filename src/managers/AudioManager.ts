@@ -45,8 +45,13 @@ export class AudioManager {
    */
   registerSound(key: string): void {
     if (!this.sounds.has(key)) {
-      const sound = this.scene.sound.add(key);
-      this.sounds.set(key, sound);
+      if (this.scene.cache.audio.exists(key)) {
+        const sound = this.scene.sound.add(key);
+        this.sounds.set(key, sound);
+        // console.log(`AudioManager: Registered sound '${key}'`);
+      } else {
+        console.warn(`AudioManager: Sound '${key}' not found in cache`);
+      }
     }
   }
 
@@ -54,16 +59,15 @@ export class AudioManager {
    * Play a registered sound effect
    * @param key - Sound key to play
    * @param config - Optional Phaser sound config (volume, rate, etc.)
-   *
-   * TODO:
-   * 1. Check if muted - if yes, return early
-   * 2. Get sound from this.sounds Map
-   * 3. If sound exists, call sound.play(config)
    */
   play(key: string, config?: Phaser.Types.Sound.SoundConfig): void {
     if (this.muted) return;
     const sound = this.sounds.get(key);
-    if (sound) sound.play(config);
+    if (sound) {
+      sound.play(config);
+    } else {
+      console.warn(`AudioManager: Cannot play missing sound '${key}'`);
+    }
   }
 
   /**

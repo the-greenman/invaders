@@ -24,6 +24,13 @@ export class GameOverScene extends Phaser.Scene {
   private selectedButton: number = 0;
   private buttons: Phaser.GameObjects.Text[] = [];
 
+  // Input state
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevUp: boolean = false;
+  private prevDown: boolean = false;
+  private prevFire: boolean = false;
+  private lastStickMove: number = 0;
+
   constructor() {
     super({ key: 'GameOverScene' });
   }
@@ -39,10 +46,19 @@ export class GameOverScene extends Phaser.Scene {
     this.setupInput();
     this.setupAnimations();
     
+    // Initial gamepad check
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      this.gamepad = this.input.gamepad.getPad(0);
+    }
+
     // Setup shutdown event for cleanup
     this.events.on('shutdown', () => {
       this.cleanup();
     });
+  }
+
+  update(): void {
+    this.handleGamepadInput();
   }
 
   private createBackground(): void {
@@ -166,6 +182,51 @@ export class GameOverScene extends Phaser.Scene {
         button.setStyle({ color: '#00ff00' });
       });
     });
+  }
+
+  private handleGamepadInput(): void {
+    if (!this.input.gamepad) return;
+    
+    // Refresh gamepad if needed
+    if (!this.gamepad || !this.gamepad.connected) {
+      this.gamepad = this.input.gamepad.getPad(0);
+    }
+    
+    if (!this.gamepad || !this.gamepad.connected) return;
+
+    const now = Date.now();
+    const axisY = this.gamepad.axes[1].getValue();
+    const dpadUp = this.gamepad.up;
+    const dpadDown = this.gamepad.down;
+
+    // Up
+    const isUp = dpadUp || axisY < -0.5;
+    if (isUp && !this.prevUp) {
+      if (now - this.lastStickMove > 200) {
+        this.selectedButton = (this.selectedButton - 1 + this.buttons.length) % this.buttons.length;
+        this.updateButtonHighlight();
+        this.lastStickMove = now;
+      }
+    }
+    this.prevUp = isUp;
+
+    // Down
+    const isDown = dpadDown || axisY > 0.5;
+    if (isDown && !this.prevDown) {
+      if (now - this.lastStickMove > 200) {
+        this.selectedButton = (this.selectedButton + 1) % this.buttons.length;
+        this.updateButtonHighlight();
+        this.lastStickMove = now;
+      }
+    }
+    this.prevDown = isDown;
+
+    // Select (A button)
+    const isFire = this.gamepad.A || this.gamepad.buttons[0]?.pressed;
+    if (isFire && !this.prevFire) {
+      this.activateSelectedButton();
+    }
+    this.prevFire = isFire;
   }
 
   private setupAnimations(): void {

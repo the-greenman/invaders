@@ -17,6 +17,9 @@ export class MenuScene extends Phaser.Scene {
   private buttons: Phaser.GameObjects.Text[] = [];
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevFirePressed: boolean = false;
+  private prevUpPressed: boolean = false;
+  private prevDownPressed: boolean = false;
+  private lastStickMove: number = 0;
 
   constructor() {
     super({ key: 'MenuScene' });
@@ -168,15 +171,49 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private updateButtonSelection(): void {
-    // Gamepad polling for fire to start webcam
-    if (this.gamepad && !this.gamepad.connected) {
-      this.gamepad = null;
+    // Gamepad polling
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      if (!this.gamepad || !this.gamepad.connected) {
+        this.gamepad = this.input.gamepad.getPad(0);
+      }
     }
-    const firePressed = this.gamepad
-      ? (this.gamepad.A || this.gamepad.buttons[0]?.pressed)
-      : false;
+
+    if (!this.gamepad || !this.gamepad.connected) {
+      return;
+    }
+
+    // Navigation
+    const now = Date.now();
+    const axisY = this.gamepad.axes[1].getValue();
+    const dpadUp = this.gamepad.up;
+    const dpadDown = this.gamepad.down;
+    
+    // Check UP input
+    const isUp = dpadUp || axisY < -0.5;
+    if (isUp && !this.prevUpPressed) {
+      if (now - this.lastStickMove > 200) {
+        this.selectedButton = (this.selectedButton - 1 + this.buttons.length) % this.buttons.length;
+        this.updateButtonHighlight();
+        this.lastStickMove = now;
+      }
+    }
+    this.prevUpPressed = isUp;
+
+    // Check DOWN input
+    const isDown = dpadDown || axisY > 0.5;
+    if (isDown && !this.prevDownPressed) {
+      if (now - this.lastStickMove > 200) {
+        this.selectedButton = (this.selectedButton + 1) % this.buttons.length;
+        this.updateButtonHighlight();
+        this.lastStickMove = now;
+      }
+    }
+    this.prevDownPressed = isDown;
+
+    // Selection
+    const firePressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed;
     if (firePressed && !this.prevFirePressed) {
-      this.openWebcam();
+      this.activateSelectedButton();
     }
     this.prevFirePressed = firePressed;
   }

@@ -44,6 +44,13 @@ export class LocalStorage {
   }
 
   /**
+   * Remove the current player's face
+   */
+  static removeCurrentFace(): void {
+    localStorage.removeItem(KEYS.CURRENT_FACE);
+  }
+
+  /**
    * Get array of previously captured faces
    * @returns Array of StoredFace objects, or empty array if none exist
    *
@@ -85,6 +92,14 @@ export class LocalStorage {
     };
     history.push(newFace);
     if (history.length > 10) history.shift();
+    localStorage.setItem(KEYS.FACE_HISTORY, JSON.stringify(history));
+  }
+
+  /**
+   * Remove a face from history by id.
+   */
+  static removeFaceById(id: string): void {
+    const history = this.getFaceHistory().filter(face => face.id !== id);
     localStorage.setItem(KEYS.FACE_HISTORY, JSON.stringify(history));
   }
 
@@ -189,5 +204,13 @@ export class LocalStorage {
     Object.values(KEYS).forEach(key => {
       localStorage.removeItem(key);
     });
+  }
+
+  /**
+   * Clear only face data (current + history)
+   */
+  static clearFaces(): void {
+    localStorage.removeItem(KEYS.CURRENT_FACE);
+    localStorage.removeItem(KEYS.FACE_HISTORY);
   }
 }

@@ -22,9 +22,10 @@ export class Alien extends Phaser.GameObjects.Sprite {
     x: number,
     y: number,
     type: number = 0,
-    gridPosition: { row: number; col: number }
+    gridPosition: { row: number; col: number },
+    textureKey?: string
   ) {
-    super(scene, x, y, `alien-${type}`);
+    super(scene, x, y, textureKey || `alien-${type}`);
     scene.add.existing(this);
     scene.physics.add.existing(this);
 

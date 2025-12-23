@@ -9,7 +9,8 @@ import { ScoreManager } from '../managers/ScoreManager';
 import { LevelManager } from '../managers/LevelManager';
 import { AudioManager } from '../managers/AudioManager';
 import { FaceManager } from '../managers/FaceManager';
-import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT, PLAYER_CORE_RADIUS, PLAYER_HEIGHT, PLAYER_WIDTH } from '../constants';
+import { LocalStorage } from '../utils/localStorage';
+import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT, PLAYER_CORE_RADIUS, PLAYER_HEIGHT, PLAYER_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, ABDUCTION_THRESHOLD_Y } from '../constants';
 
 /**
  * Game Scene
@@ -49,6 +50,7 @@ export class GameScene extends Phaser.Scene {
   private audioManager: AudioManager | null = null;
   private debugCollisions: boolean = false;
   private lastDebugLog: number = 0;
+  private alienFaceTextures: string[] = [];
 
   constructor() {
     super({ key: 'GameScene' });
@@ -60,13 +62,21 @@ export class GameScene extends Phaser.Scene {
     this.level = data.level || 1;
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
+    
+    // Reset game state
+    this.gameActive = true;
+    if (this.level === 1 && this.score === 0) {
+      this.lives = 3;
+    }
+
     // Optional viewport for split-screen debug
     if (data.viewport) {
       this.cameras.main.setViewport(data.viewport.x, data.viewport.y, data.viewport.width, data.viewport.height);
     }
 
-    // Prepare player texture with face if available
+    // Prepare textures with faces if available
     await this.preparePlayerTexture();
+    await this.prepareAlienFaceTextures();
     
     // Create physics groups first so we can add aliens to them
     this.setupPhysicsGroups();
@@ -135,7 +145,7 @@ export class GameScene extends Phaser.Scene {
     // Create alien grid
     this.levelManager = new LevelManager(this.level);
     const levelConfig = this.levelManager.getLevelConfig();
-    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed);
+    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures);
     
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
@@ -253,6 +263,16 @@ export class GameScene extends Phaser.Scene {
     // Level display
     this.levelText = this.add.text(10, 70, `LEVEL: ${this.level}`, {
       fontSize: '20px',
+      fontFamily: 'Courier New',
+      color: '#00ff00'
+    });
+
+    // Abduction threshold line
+    const thresholdY = ABDUCTION_THRESHOLD_Y;
+    const line = this.add.line(0, 0, 0, thresholdY, GAME_WIDTH, thresholdY, 0x00ff00, 0.3);
+    line.setOrigin(0, 0);
+    this.add.text(GAME_WIDTH - 150, thresholdY - 20, 'ABDUCTION LINE', {
+      fontSize: '14px',
       fontFamily: 'Courier New',
       color: '#00ff00'
     });
@@ -469,7 +489,7 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private startNextLevel(): void {
+  private async startNextLevel(): Promise<void> {
     this.level++;
     this.gameActive = true;
     
@@ -479,7 +499,8 @@ export class GameScene extends Phaser.Scene {
     // Setup new level
     this.levelManager = new LevelManager(this.level);
     const levelConfig = this.levelManager.getLevelConfig();
-    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed);
+    await this.prepareAlienFaceTextures();
+    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures);
     
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
@@ -523,7 +544,11 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Transition to game over scene
-    this.scene.start('GameOverScene', { score: this.score, level: this.level });
+    this.scene.start('AbductionScene', {
+      score: this.score,
+      level: this.level,
+      playerTextureKey: this.playerTextureKey
+    });
   }
 
   private clearGameObjects(): void {
@@ -596,5 +621,53 @@ export class GameScene extends Phaser.Scene {
       console.warn('Failed to build player face texture, falling back to default', e);
       this.playerTextureKey = 'player';
     }
+  }
+
+  /**
+   * Build alien face textures from stored face history (applied to alien-0 variants).
+   */
+  private async prepareAlienFaceTextures(): Promise<void> {
+    const history = LocalStorage.getFaceHistory();
+    if (history.length === 0) {
+      this.alienFaceTextures = [];
+      return;
+    }
+    const meta = this.cache.json.get('alien1-face-meta');
+    const coreRadius = meta?.rx ?? ALIEN_CORE_RADIUS;
+    const centerX = meta ? meta.relativeX * ALIEN_WIDTH : undefined;
+    const centerY = meta ? meta.relativeY * ALIEN_HEIGHT : undefined;
+
+    const textures: string[] = [];
+    for (const face of history) {
+      const srcKey = `alien-face-src-${face.id}`;
+      const targetKey = `alien-face-${face.id}`;
+      try {
+        await FaceManager.addBase64Texture(this, srcKey, face.imageData);
+        // Tint faces green for aliens
+        const tintedKey = `${srcKey}-green`;
+        try {
+          const tinted = await FaceManager.tintImage(face.imageData, COLORS.GREEN_TINT);
+          await FaceManager.addBase64Texture(this, tintedKey, tinted);
+        } catch {
+          // fallback to original if tint fails
+        }
+        FaceManager.composeFaceTexture(this, {
+          baseKey: 'alien-0',
+          faceKey: (this.textures.exists(tintedKey) ? tintedKey : srcKey),
+          targetKey,
+          width: ALIEN_WIDTH,
+          height: ALIEN_HEIGHT,
+          coreRadius,
+          faceCenterX: centerX,
+          faceCenterY: centerY,
+          faceScale: 1.0,
+          backingAlpha: ALIEN_TINT_ALPHA
+        });
+        textures.push(targetKey);
+      } catch (e) {
+        console.warn('Failed to build alien face texture', e);
+      }
+    }
+    this.alienFaceTextures = textures;
   }
 }

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT } from '../constants';
+import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_BODY_SCALE } from '../constants';
 import { Bullet } from './Bullet';
 
 /**
@@ -27,7 +27,7 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     this.setDisplaySize(PLAYER_WIDTH, PLAYER_HEIGHT);
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(PLAYER_WIDTH, PLAYER_HEIGHT, true); // center body to sprite
+    body.setSize(PLAYER_WIDTH * PLAYER_BODY_SCALE, PLAYER_HEIGHT * PLAYER_BODY_SCALE, true); // center body to sprite
     body.setCollideWorldBounds(true);
     body.setImmovable(true);
 
@@ -35,25 +35,37 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.spaceKey = scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)!;
 
     // Gamepad setup
-    if (scene.input.gamepad) {
-      const pad = scene.input.gamepad.gamepads.find(p => p && p.connected) as Phaser.Input.Gamepad.Gamepad | undefined;
-      if (pad) {
-        this.gamepad = pad;
-        console.log('Gamepad connected:', pad.id);
-      }
-      
-      scene.input.gamepad.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
-        this.gamepad = pad;
-        console.log('Gamepad connected:', pad.id);
-      });
+    this.setupGamepad();
+  }
 
-      scene.input.gamepad.on('disconnected', (pad: Phaser.Input.Gamepad.Gamepad) => {
-        if (this.gamepad === pad) {
-          this.gamepad = null;
-          console.log('Gamepad disconnected:', pad.id);
-        }
-      });
+  private setupGamepad(): void {
+    if (!this.scene.input.gamepad) {
+      console.warn('Player: Input Gamepad Plugin missing!');
+      return;
     }
+
+    // Try to get existing pad
+    if (this.scene.input.gamepad.total > 0) {
+      this.gamepad = this.scene.input.gamepad.getPad(0);
+      if (this.gamepad) console.log('Player: Gamepad found on init:', this.gamepad.id);
+    } else {
+      console.log('Player: No gamepads found on init. Total:', this.scene.input.gamepad.total);
+    }
+
+    // Listen for new connections
+    this.scene.input.gamepad.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      if (!this.gamepad) {
+        this.gamepad = pad;
+        console.log('Player: Gamepad connected event:', pad.id);
+      }
+    });
+
+    this.scene.input.gamepad.on('disconnected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      if (this.gamepad === pad) {
+        this.gamepad = null;
+        console.log('Player: Gamepad disconnected event:', pad.id);
+      }
+    });
   }
 
   /**
@@ -68,9 +80,16 @@ export class Player extends Phaser.GameObjects.Sprite {
   update(delta: number): void {
     if (!this.active) return;
 
+    // Lazy acquisition: if no gamepad yet, check if one is available
+    if (!this.gamepad && this.scene.input.gamepad && this.scene.input.gamepad.total > 0) {
+      this.gamepad = this.scene.input.gamepad.getPad(0);
+      if (this.gamepad) console.log('Player: Lazy acquired gamepad:', this.gamepad.id);
+    }
+
     // Handle gamepad disconnect
     if (this.gamepad && !this.gamepad.connected) {
       this.gamepad = null;
+      console.log('Player: Gamepad disconnected check');
     }
 
     // Handle movement
@@ -166,6 +185,11 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   destroy(fromScene?: boolean): void {
+    // Cleanup listeners
+    if (this.scene && this.scene.input && this.scene.input.gamepad) {
+      this.scene.input.gamepad.off('connected');
+      this.scene.input.gamepad.off('disconnected');
+    }
     super.destroy(fromScene);
   }
 }

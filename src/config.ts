@@ -5,6 +5,7 @@ import { MenuScene } from './scenes/MenuScene';
 import { WebcamScene } from './scenes/WebcamScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
+import { AbductionScene } from './scenes/AbductionScene';
 import { DebugMenuScene } from './scenes/debug/DebugMenuScene';
 import { PlayerTestScene } from './scenes/debug/PlayerTestScene';
 import { ArmadaTestScene } from './scenes/debug/ArmadaTestScene';
@@ -13,6 +14,8 @@ import { CameraTestScene } from './scenes/debug/CameraTestScene';
 import { SpriteDebugScene } from './scenes/debug/SpriteDebugScene';
 import { CompareScene } from './scenes/debug/CompareScene';
 import { ControllerDebugScene } from './scenes/debug/ControllerDebugScene';
+import { StoredFacesScene } from './scenes/debug/StoredFacesScene';
+import { AbductionLineScene } from './scenes/debug/AbductionLineScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -41,8 +44,11 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     SpriteDebugScene,
     CompareScene,
     ControllerDebugScene,
+    StoredFacesScene,
+    AbductionLineScene,
     WebcamScene,
     GameScene,
+    AbductionScene,
     GameOverScene
   ],
   scale: {

@@ -24,6 +24,8 @@ export class WebcamScene extends Phaser.Scene {
   private helmet?: Phaser.GameObjects.Image;
   private helmetOffset = { x: 0, y: 0 };
   private videoScale: number = 1;
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevFirePressed: boolean = false;
 
   constructor() {
     super({ key: 'WebcamScene' });
@@ -48,6 +50,23 @@ export class WebcamScene extends Phaser.Scene {
   update(): void {
     // Update webcam display and face detection status
     this.updateStatusDisplay();
+
+    // Gamepad polling
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      if (!this.gamepad || !this.gamepad.connected) {
+        this.gamepad = this.input.gamepad.getPad(0);
+      }
+    }
+
+    if (this.gamepad && this.gamepad.connected) {
+      const firePressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed;
+      if (firePressed && !this.prevFirePressed) {
+        if (this.isInitialized && !this.isCapturing) {
+          this.captureFace();
+        }
+      }
+      this.prevFirePressed = firePressed;
+    }
   }
 
   destroy(): void {
@@ -172,7 +191,7 @@ export class WebcamScene extends Phaser.Scene {
       });
       
       this.isInitialized = true;
-      this.updateStatus('Ready! Position your face and press CAPTURE');
+      this.updateStatus('Ready Defender! Climb into your suit and press FIRE!');
       
     } catch (error) {
       console.error('Failed to initialize webcam:', error);

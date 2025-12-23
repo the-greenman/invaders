@@ -348,4 +348,34 @@ export class FaceManager {
 
     return targetKey;
   }
+
+  /**
+   * Apply a color tint to a base64 image.
+   */
+  static async tintImage(imageData: string, color: number): Promise<string> {
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = reject;
+      img.src = imageData;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return imageData;
+    ctx.drawImage(img, 0, 0);
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = data.data;
+    const r = (color >> 16) & 0xff;
+    const g = (color >> 8) & 0xff;
+    const b = color & 0xff;
+    for (let i = 0; i < d.length; i += 4) {
+      d[i] = (d[i] * r) / 255;
+      d[i + 1] = (d[i + 1] * g) / 255;
+      d[i + 2] = (d[i + 2] * b) / 255;
+    }
+    ctx.putImageData(data, 0, 0);
+    return canvas.toDataURL('image/png');
+  }
 }
