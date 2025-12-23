@@ -43,6 +43,8 @@ export class TouchControlManager {
     this.enabled = this.isTouchDevice();
 
     if (this.enabled) {
+      // Allow multiple simultaneous touches (drag + fire)
+      this.scene.input.addPointer(4);
       this.createTouchControls();
       this.disableDirectionalButtons();
       this.setupDragControls();
@@ -147,11 +149,11 @@ export class TouchControlManager {
    */
   private setupDragControls(): void {
     this.pointerDownHandler = (pointer: Phaser.Input.Pointer) => {
+      if (this.isInFireZone(pointer)) {
+        // Let the fire button handle this touch; don't start drag
+        return;
+      }
       if (this.dragPointerId === null) {
-        if (this.isInFireZone(pointer)) {
-          // Let the fire button handle this touch; don't start drag
-          return;
-        }
         this.dragPointerId = pointer.id;
         this.dragX = pointer.x;
       }
