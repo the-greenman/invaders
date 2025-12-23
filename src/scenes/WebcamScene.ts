@@ -13,7 +13,6 @@ import { LocalStorage } from '../utils/localStorage';
 export class WebcamScene extends Phaser.Scene {
   private videoElement: HTMLVideoElement | null = null;
   private captureButton: Phaser.GameObjects.Text | null = null;
-  private backButton: Phaser.GameObjects.Text | null = null;
   private statusText: Phaser.GameObjects.Text | null = null;
   private isInitialized: boolean = false;
   private isCapturing: boolean = false;
@@ -28,9 +27,8 @@ export class WebcamScene extends Phaser.Scene {
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevFirePressed: boolean = false;
   private prevStartPressed: boolean = false;
-  private prevBackPressed: boolean = false;
+  private fireButtonIndex: number = 0;
   private startButtonIndex: number = 11;
-  private backButtonIndex: number = 10;
 
   constructor() {
     super({ key: 'WebcamScene' });
@@ -42,8 +40,8 @@ export class WebcamScene extends Phaser.Scene {
 
   create(): void {
     const settings = LocalStorage.getSettings();
+    this.fireButtonIndex = settings.controllerFireButton ?? 0;
     this.startButtonIndex = settings.controllerStartButton ?? 11;
-    this.backButtonIndex = settings.controllerBackButton ?? 10;
 
     this.createBackground();
     this.createUI();
@@ -68,20 +66,15 @@ export class WebcamScene extends Phaser.Scene {
     }
 
     if (this.gamepad && this.gamepad.connected) {
-      const firePressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed;
+      const firePressed = this.gamepad.buttons[this.fireButtonIndex]?.pressed;
       const startPressed = this.gamepad.buttons[this.startButtonIndex]?.pressed;
-      const backPressed = this.gamepad.buttons[this.backButtonIndex]?.pressed;
       if ((firePressed || startPressed) && !this.prevFirePressed && !this.prevStartPressed) {
         if (this.isInitialized && !this.isCapturing) {
           this.captureFace();
         }
       }
-      if (backPressed && !this.prevBackPressed) {
-        this.scene.start('MenuScene');
-      }
-      this.prevFirePressed = firePressed;
+      this.prevFirePressed = !!firePressed;
       this.prevStartPressed = !!startPressed;
-      this.prevBackPressed = !!backPressed;
     }
   }
 
@@ -126,19 +119,10 @@ export class WebcamScene extends Phaser.Scene {
     }).setOrigin(0.5);
     
     // Create capture button
-    this.captureButton = this.add.text(width / 2 - 100, height / 2 + 300, 'CAPTURE FACE', {
+    this.captureButton = this.add.text(width / 2, height / 2 + 300, 'CAPTURE FACE', {
       fontSize: '20px',
       fontFamily: 'Courier New',
       color: '#00ff00',
-      backgroundColor: '#000000',
-      padding: { x: 15, y: 8 }
-    }).setOrigin(0.5).setInteractive();
-    
-    // Create back button
-    this.backButton = this.add.text(width / 2 + 100, height / 2 + 300, 'BACK', {
-      fontSize: '20px',
-      fontFamily: 'Courier New',
-      color: '#ff0000',
       backgroundColor: '#000000',
       padding: { x: 15, y: 8 }
     }).setOrigin(0.5).setInteractive();
@@ -148,11 +132,6 @@ export class WebcamScene extends Phaser.Scene {
     // Capture button click
     this.captureButton?.on('pointerdown', () => {
       this.captureFace();
-    });
-    
-    // Back button click
-    this.backButton?.on('pointerdown', () => {
-      this.returnToMenu();
     });
     
     // Keyboard controls
@@ -167,10 +146,6 @@ export class WebcamScene extends Phaser.Scene {
       }
     });
     
-    this.input.keyboard?.on('keydown-ESC', () => {
-      this.returnToMenu();
-    });
-    
     // Cleanup on scene shutdown
     this.events.on('shutdown', () => {
       this.cleanupWebcam();
@@ -181,6 +156,12 @@ export class WebcamScene extends Phaser.Scene {
     try {
       if (!this.videoElement) {
         throw new Error('Video element not created');
+      }
+      const hasCamera = await this.hasWebcam();
+      if (!hasCamera) {
+        // Skip directly if no camera is available
+        this.scene.start('MenuScene');
+        return;
       }
       
       // Initialize MediaPipe Face Detection
@@ -383,6 +364,19 @@ export class WebcamScene extends Phaser.Scene {
     });
   }
 
+  private async hasWebcam(): Promise<boolean> {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        return false;
+      }
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      return devices.some(d => d.kind === 'videoinput');
+    } catch (e) {
+      console.warn('Unable to enumerate devices', e);
+      return false;
+    }
+  }
+
   private cleanup(): void {
     // Clean up keyboard listeners
     this.input.keyboard?.removeAllKeys();
@@ -390,7 +384,6 @@ export class WebcamScene extends Phaser.Scene {
     // Clear references
     this.videoElement = null;
     this.captureButton = null;
-    this.backButton = null;
     this.statusText = null;
     this.isInitialized = false;
     this.isCapturing = false;

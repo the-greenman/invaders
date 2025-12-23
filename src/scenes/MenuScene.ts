@@ -33,6 +33,7 @@ export class MenuScene extends Phaser.Scene {
   private buttons: Phaser.GameObjects.Text[] = [];
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevFirePressed: boolean = false;
+  private prevComboPressed: boolean = false;
   private prevBackPressed: boolean = false;
   private prevUpPressed: boolean = false;
   private prevDownPressed: boolean = false;
@@ -142,12 +143,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive();
 
-    // Debug button
-    const debugButton = this.add.text(width / 2, height / 2 + 140, 'DEBUG', buttonStyle)
-      .setOrigin(0.5)
-      .setInteractive();
-
-    this.buttons = [this.webcamButton, this.creditsButton, debugButton];
+    this.buttons = [this.webcamButton, this.creditsButton];
   }
 
   private setupKeyboardControls(): void {
@@ -250,14 +246,22 @@ export class MenuScene extends Phaser.Scene {
     const firePressed = this.gamepad.buttons[this.fireButtonIndex]?.pressed;
     const startPressed = this.gamepad.buttons[this.startButtonIndex]?.pressed;
     const backPressed = this.backButtonIndex >= 0 ? this.gamepad.buttons[this.backButtonIndex]?.pressed : false;
+    const comboPressed = firePressed && backPressed;
+
+    if (comboPressed && !this.prevComboPressed) {
+      this.scene.start('DebugMenuScene');
+      this.prevComboPressed = true;
+      this.prevFirePressed = firePressed || startPressed;
+      this.prevBackPressed = !!backPressed;
+      return;
+    }
+
     if ((firePressed || startPressed) && !this.prevFirePressed) {
       this.activateSelectedButton();
     }
-    if (backPressed && !this.prevBackPressed) {
-      // Already on home; no navigation needed
-    }
     this.prevFirePressed = firePressed || startPressed;
     this.prevBackPressed = !!backPressed;
+    this.prevComboPressed = comboPressed;
   }
 
   private activateSelectedButton(): void {
