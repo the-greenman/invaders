@@ -222,7 +222,12 @@ export class FaceManager {
     
     this.camera = new Camera(videoElement, {
       onFrame: async () => {
-        await this.faceDetection!.send({ image: videoElement });
+        if (!this.faceDetection) return;
+        try {
+          await this.faceDetection.send({ image: videoElement });
+        } catch (e) {
+          console.warn('Face detection send skipped:', e);
+        }
       },
       width: 640,
       height: 480
@@ -285,8 +290,9 @@ export class FaceManager {
       .setDisplaySize(width, height)
       .setVisible(false);
     const face = scene.add.image(centerX, centerY, faceKey)
-      .setDisplaySize(coreRadius * 2, coreRadius * 2)
-      .setVisible(false);
+      .setDisplaySize(coreRadius * 2.1, coreRadius * 2.1)
+      .setVisible(false)
+      .setTint(0xffffff);
 
     const maskShape = scene.make.graphics({ x: centerX, y: centerY });
     maskShape.setVisible(false);
@@ -295,7 +301,18 @@ export class FaceManager {
     const mask = maskShape.createGeometryMask();
     face.setMask(mask);
 
+    // Fully opaque white backing - no transparency
+    const backing = scene.make.graphics({ x: centerX, y: centerY });
+    backing.setVisible(false);
+    backing.fillStyle(0xffffff, 1.0);  // Fully opaque white background
+    backing.fillCircle(0, 0, coreRadius);
+
     rt.draw(ship, ship.x, ship.y);
+    rt.draw(backing);
+
+    // Set face to use normal blend mode with no tinting
+    face.setBlendMode(Phaser.BlendModes.NORMAL);
+    face.setAlpha(1.0);  // Ensure full opacity
     rt.draw(face, face.x, face.y);
 
     const outline = scene.make.graphics({ x: centerX, y: centerY });
@@ -310,6 +327,7 @@ export class FaceManager {
     ship.destroy();
     face.destroy();
     maskShape.destroy();
+    backing.destroy();
     outline.destroy();
     rt.destroy();
 

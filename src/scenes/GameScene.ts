@@ -259,7 +259,16 @@ export class GameScene extends Phaser.Scene {
     this.scoreManager = new ScoreManager();
     this.levelManager = new LevelManager(this.level);
     this.audioManager = new AudioManager(this);
-    
+
+    // Register all sound effects
+    this.audioManager.registerSound('shoot');
+    this.audioManager.registerSound('explosion');
+    this.audioManager.registerSound('alien-hit');
+    this.audioManager.registerSound('player-hit');
+
+    // Start background music
+    // this.audioManager.playMusic('background-music');
+
     // Load initial score
     if (this.score > 0) {
       this.scoreManager.addPoints(this.score);

@@ -114,8 +114,9 @@ export class CameraTestScene extends Phaser.Scene {
     ctx.drawImage(this.videoEl, 0, 0, w, h);
 
     // Create / update texture and show sprite
-    const tex = this.textures.get(this.snapshotKey);
-    if (tex) this.textures.remove(this.snapshotKey);
+    if (this.textures.exists(this.snapshotKey)) {
+      this.textures.remove(this.snapshotKey);
+    }
     this.textures.addCanvas(this.snapshotKey, canvas);
 
     const img = this.add.image(400, 300, this.snapshotKey).setScale(0.5);

@@ -59,6 +59,7 @@ export class PreloaderScene extends Phaser.Scene {
   private loadAssets(): void {
     // Skip loading actual assets and create procedural graphics instead
     this.createProceduralAssets();
+    this.load.image('space-helmet-clipart-xl', 'assets/images/space-helmet-clipart-xl.png');
     
     // Load sounds (will be handled gracefully if missing)
     this.load.audio('shoot', 'assets/sounds/shoot.mp3');
