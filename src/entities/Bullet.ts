@@ -37,6 +37,7 @@ export class Bullet extends Phaser.GameObjects.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.enable = true;
+    body.checkCollision.none = false;
     body.reset(x, y);
     body.setSize(4, 12);
     body.setVelocity(0, -this.speed);
@@ -72,6 +73,13 @@ export class Bullet extends Phaser.GameObjects.Sprite {
     if (!this.isBulletActive) return;
 
     this.isBulletActive = false;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.stop();
+      body.enable = false;
+      body.checkCollision.none = true;
+    }
+    this.setActive(false).setVisible(false);
     
     // Could play explosion effect here
     // this.scene.sound.play('explosion');
