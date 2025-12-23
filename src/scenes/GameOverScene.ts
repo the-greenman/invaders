@@ -31,6 +31,7 @@ export class GameOverScene extends Phaser.Scene {
   private prevDown: boolean = false;
   private prevFire: boolean = false;
   private lastStickMove: number = 0;
+  private fireButtonIndex: number = 0;
   private startButtonIndex: number = 11;
   private backButtonIndex: number = 10;
 
@@ -40,6 +41,7 @@ export class GameOverScene extends Phaser.Scene {
 
   create(): void {
     const settings = LocalStorage.getSettings();
+    this.fireButtonIndex = settings.controllerFireButton ?? 0;
     this.startButtonIndex = settings.controllerStartButton ?? 11;
     this.backButtonIndex = settings.controllerBackButton ?? 10;
 
@@ -228,7 +230,7 @@ export class GameOverScene extends Phaser.Scene {
     }
     this.prevDown = isDown;
 
-    const isFire = this.gamepad.buttons[this.startButtonIndex]?.pressed;
+    const isFire = this.gamepad.buttons[this.fireButtonIndex]?.pressed || this.gamepad.buttons[this.startButtonIndex]?.pressed;
     const isBack = this.gamepad.buttons[this.backButtonIndex]?.pressed;
     if (isFire && !this.prevFire) {
       this.activateSelectedButton();

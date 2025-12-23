@@ -148,6 +148,10 @@ export class TouchControlManager {
   private setupDragControls(): void {
     this.pointerDownHandler = (pointer: Phaser.Input.Pointer) => {
       if (this.dragPointerId === null) {
+        if (this.isInFireZone(pointer)) {
+          // Let the fire button handle this touch; don't start drag
+          return;
+        }
         this.dragPointerId = pointer.id;
         this.dragX = pointer.x;
       }
@@ -280,6 +284,15 @@ export class TouchControlManager {
    */
   getDragX(): number | null {
     return this.dragX;
+  }
+
+  /**
+   * Check if pointer is within fire button zone
+   */
+  private isInFireZone(pointer: Phaser.Input.Pointer): boolean {
+    if (!this.fireZone) return false;
+    const bounds = this.fireZone.getBounds();
+    return Phaser.Geom.Rectangle.Contains(bounds, pointer.x, pointer.y);
   }
 
   /**
