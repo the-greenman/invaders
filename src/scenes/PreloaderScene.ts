@@ -63,6 +63,7 @@ export class PreloaderScene extends Phaser.Scene {
     // Skip loading actual assets and create procedural graphics instead
     this.createProceduralAssets();
     this.load.image('space-helmet-clipart-xl', 'assets/images/space-helmet-clipart-xl.png');
+    this.load.image('default-face', 'assets/images/et.png');
 
     // Load SVG for alien designs
     this.load.text('alien1-svg', 'assets/images/alien1.svg');

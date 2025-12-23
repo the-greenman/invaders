@@ -642,6 +642,28 @@ export class GameScene extends Phaser.Scene {
   private async preparePlayerTexture(): Promise<void> {
     const currentFace = FaceManager.getCurrentFace();
     if (!currentFace) {
+      const meta = this.cache.json.get('player-face-meta');
+      if (this.textures.exists('default-face')) {
+        const targetKey = 'player-face-default';
+        try {
+          FaceManager.composeFaceTexture(this, {
+            baseKey: 'player',
+            faceKey: 'default-face',
+            targetKey,
+            width: PLAYER_WIDTH,
+            height: PLAYER_HEIGHT,
+            coreRadius: meta?.rx ?? PLAYER_CORE_RADIUS,
+            faceCenterX: meta ? meta.relativeX * PLAYER_WIDTH : undefined,
+            faceCenterY: meta ? meta.relativeY * PLAYER_HEIGHT : undefined,
+            faceScale: 1.0,
+            backingAlpha: 1.0
+          });
+          this.playerTextureKey = targetKey;
+          return;
+        } catch (e) {
+          console.warn('Failed to compose default player face', e);
+        }
+      }
       this.playerTextureKey = 'player';
       return;
     }
@@ -673,18 +695,20 @@ export class GameScene extends Phaser.Scene {
    * Build alien face textures from stored face history (applied to alien-0 variants).
    */
   private async prepareAlienFaceTextures(): Promise<void> {
+    const levelConfig = new LevelManager(this.level).getLevelConfig();
+    const totalAliens = levelConfig.alienRows * levelConfig.alienCols;
     const history = LocalStorage.getFaceHistory();
-    if (history.length === 0) {
-      this.alienFaceTextures = [];
-      return;
-    }
+    const textures: string[] = [];
+    const defaultKey = await this.ensureDefaultAlienFaceTexture();
+
+    // Use each stored face at most once per armada
+    const facesToUse = history.slice(0, totalAliens);
     const meta = this.cache.json.get('alien1-face-meta');
     const coreRadius = meta?.rx ?? ALIEN_CORE_RADIUS;
     const centerX = meta ? meta.relativeX * ALIEN_WIDTH : undefined;
     const centerY = meta ? meta.relativeY * ALIEN_HEIGHT : undefined;
 
-    const textures: string[] = [];
-    for (const face of history) {
+    for (const face of facesToUse) {
       const srcKey = `alien-face-src-${face.id}`;
       const targetKey = `alien-face-${face.id}`;
       try {
@@ -714,6 +738,54 @@ export class GameScene extends Phaser.Scene {
         console.warn('Failed to build alien face texture', e);
       }
     }
+    // Fill remaining slots with default face so there are no duplicates of captured faces
+    while (textures.length < totalAliens && defaultKey) {
+      textures.push(defaultKey);
+    }
+
     this.alienFaceTextures = textures;
+  }
+
+  /**
+   * Build (or reuse) the default face texture for aliens.
+   */
+  private async ensureDefaultAlienFaceTexture(): Promise<string | null> {
+    if (!this.textures.exists('default-face')) return null;
+    const meta = this.cache.json.get('alien1-face-meta');
+    const coreRadius = meta?.rx ?? ALIEN_CORE_RADIUS;
+    const centerX = meta ? meta.relativeX * ALIEN_WIDTH : undefined;
+    const centerY = meta ? meta.relativeY * ALIEN_HEIGHT : undefined;
+    const targetKey = 'alien-face-default';
+
+    if (this.textures.exists(targetKey)) {
+      return targetKey;
+    }
+
+    let faceKey: string = 'default-face';
+    const base64 = this.textures.getBase64('default-face');
+    if (base64) {
+      try {
+        const tinted = await FaceManager.tintImage(base64, COLORS.GREEN_TINT);
+        const tintedKey = 'alien-face-default-tinted';
+        await FaceManager.addBase64Texture(this, tintedKey, tinted);
+        faceKey = tintedKey;
+      } catch (e) {
+        console.warn('Failed to tint default face for aliens, using original', e);
+      }
+    }
+
+    FaceManager.composeFaceTexture(this, {
+      baseKey: 'alien-0',
+      faceKey,
+      targetKey,
+      width: ALIEN_WIDTH,
+      height: ALIEN_HEIGHT,
+      coreRadius,
+      faceCenterX: centerX,
+      faceCenterY: centerY,
+      faceScale: 1.0,
+      backingAlpha: ALIEN_TINT_ALPHA
+    });
+    return targetKey;
   }
 }
