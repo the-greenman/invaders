@@ -25,7 +25,7 @@ export const ALIEN_WIDTH = 88;     // doubled sprite size
 export const ALIEN_HEIGHT = 64;    // doubled sprite size
 export const ALIEN_CORE_RADIUS = 20;
 export const ALIEN_BODY_SCALE = 0.7; // collision body width/height multiplier vs sprite
-export const ALIEN_TINT_ALPHA = 0.6; // tint strength for alien faces (0-1)
+export const ALIEN_TINT_ALPHA = 0.3; // tint strength for alien faces (0-1)
 export const ABDUCTION_THRESHOLD_Y = 500; // y level at which aliens trigger game over
 
 // Game
@@ -49,5 +49,5 @@ export const COLORS = {
   BULLET: 0xffff00,
   BOMB: 0xff00ff,
   SHIELD: 0x00ff00,
-  GREEN_TINT: 0x00ff00
+  GREEN_TINT: 0x88ff88
 };
