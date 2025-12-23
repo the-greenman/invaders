@@ -12,6 +12,7 @@ import { CollisionTestScene } from './scenes/debug/CollisionTestScene';
 import { CameraTestScene } from './scenes/debug/CameraTestScene';
 import { SpriteDebugScene } from './scenes/debug/SpriteDebugScene';
 import { CompareScene } from './scenes/debug/CompareScene';
+import { ControllerDebugScene } from './scenes/debug/ControllerDebugScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -36,6 +37,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     CameraTestScene,
     SpriteDebugScene,
     CompareScene,
+    ControllerDebugScene,
     WebcamScene,
     GameScene,
     GameOverScene

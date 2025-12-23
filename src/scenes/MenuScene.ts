@@ -15,6 +15,8 @@ export class MenuScene extends Phaser.Scene {
   private creditsButton: Phaser.GameObjects.Text | null = null;
   private selectedButton: number = 0;
   private buttons: Phaser.GameObjects.Text[] = [];
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevFirePressed: boolean = false;
 
   constructor() {
     super({ key: 'MenuScene' });
@@ -91,27 +93,22 @@ export class MenuScene extends Phaser.Scene {
       padding: { x: 20, y: 10 }
     };
 
-    // Start Game button
-    this.startButton = this.add.text(width / 2, height / 2, 'START GAME', buttonStyle)
-      .setOrigin(0.5)
-      .setInteractive();
-    
-    // Webcam button
-    this.webcamButton = this.add.text(width / 2, height / 2 + 60, 'WEBCAM SETUP', buttonStyle)
+    // Primary entry: always webcam first
+    this.webcamButton = this.add.text(width / 2, height / 2, 'START GAME', buttonStyle)
       .setOrigin(0.5)
       .setInteractive();
     
     // Credits button
-    this.creditsButton = this.add.text(width / 2, height / 2 + 120, 'CREDITS', buttonStyle)
+    this.creditsButton = this.add.text(width / 2, height / 2 + 80, 'CREDITS', buttonStyle)
       .setOrigin(0.5)
       .setInteractive();
 
     // Debug button
-    const debugButton = this.add.text(width / 2, height / 2 + 180, 'DEBUG', buttonStyle)
+    const debugButton = this.add.text(width / 2, height / 2 + 140, 'DEBUG', buttonStyle)
       .setOrigin(0.5)
       .setInteractive();
 
-    this.buttons = [this.startButton, this.webcamButton, this.creditsButton, debugButton];
+    this.buttons = [this.webcamButton, this.creditsButton, debugButton];
   }
 
   private setupKeyboardControls(): void {
@@ -132,6 +129,11 @@ export class MenuScene extends Phaser.Scene {
     // Quick access to Debug Menu
     this.input.keyboard?.on('keydown-D', () => {
       this.scene.start('DebugMenuScene');
+    });
+
+    // Gamepad support (fire to start webcam)
+    this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      this.gamepad = pad;
     });
   }
 
@@ -166,29 +168,31 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private updateButtonSelection(): void {
-    // Additional animation logic if needed
+    // Gamepad polling for fire to start webcam
+    if (this.gamepad && !this.gamepad.connected) {
+      this.gamepad = null;
+    }
+    const firePressed = this.gamepad
+      ? (this.gamepad.A || this.gamepad.buttons[0]?.pressed)
+      : false;
+    if (firePressed && !this.prevFirePressed) {
+      this.openWebcam();
+    }
+    this.prevFirePressed = firePressed;
   }
 
   private activateSelectedButton(): void {
     switch (this.selectedButton) {
-      case 0: // Start Game
-        this.startGame();
-        break;
-      case 1: // Webcam
+      case 0: // Webcam-first Start
         this.openWebcam();
         break;
-      case 2: // Credits
+      case 1: // Credits
         this.showCredits();
         break;
-      case 3: // Debug
+      case 2: // Debug
         this.scene.start('DebugMenuScene');
         break;
     }
-  }
-
-  private startGame(): void {
-    // Start game with default settings
-    this.scene.start('GameScene', { level: 1, score: 0, useWebcam: false });
   }
 
   private openWebcam(): void {

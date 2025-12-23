@@ -21,6 +21,7 @@ export class DebugMenuScene extends Phaser.Scene {
       '4 - Camera Capture to Sprite',
       '5 - Sprite Debug (SVG & Faces)',
       '6 - Compare: Game vs Sprite Debug',
+      '7 - Controller Debug',
       'ESC - Back to Main Menu'
     ];
 
@@ -38,6 +39,7 @@ export class DebugMenuScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-FOUR', () => this.scene.start('CameraTestScene'));
     this.input.keyboard?.on('keydown-FIVE', () => this.scene.start('SpriteDebugScene'));
     this.input.keyboard?.on('keydown-SIX', () => this.scene.start('CompareScene'));
+    this.input.keyboard?.on('keydown-SEVEN', () => this.scene.start('ControllerDebugScene'));
     this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
   }
 }

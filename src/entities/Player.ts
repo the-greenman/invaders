@@ -17,6 +17,8 @@ export class Player extends Phaser.GameObjects.Sprite {
   private canShoot: boolean = true;
   private shootCooldown: number = PLAYER_SHOOT_COOLDOWN;
   private lastShotTime: number = 0;
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevShootPressed: boolean = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string = 'player') {
     super(scene, x, y, textureKey);
@@ -31,6 +33,15 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     this.cursors = scene.input.keyboard?.createCursorKeys()!;
     this.spaceKey = scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)!;
+
+    // Gamepad setup
+    if (scene.input.gamepad) {
+      const pad = scene.input.gamepad.gamepads.find(p => p && p.connected) as Phaser.Input.Gamepad.Gamepad | undefined;
+      if (pad) this.gamepad = pad;
+      scene.input.gamepad.once('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+        this.gamepad = pad;
+      });
+    }
   }
 
   /**
@@ -45,19 +56,38 @@ export class Player extends Phaser.GameObjects.Sprite {
   update(delta: number): void {
     if (!this.active) return;
 
-    // Handle movement
-    if (this.cursors.left.isDown) {
-      (this.body as Phaser.Physics.Arcade.Body).setVelocityX(-PLAYER_SPEED);
-    } else if (this.cursors.right.isDown) {
-      (this.body as Phaser.Physics.Arcade.Body).setVelocityX(PLAYER_SPEED);
-    } else {
-      (this.body as Phaser.Physics.Arcade.Body).setVelocityX(0);
+    // Handle gamepad disconnect
+    if (this.gamepad && !this.gamepad.connected) {
+      this.gamepad = null;
     }
 
+    // Handle movement
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    let moveX = 0;
+
+    if (this.cursors.left.isDown) moveX = -1;
+    else if (this.cursors.right.isDown) moveX = 1;
+
+    if (this.gamepad) {
+      const axisX = this.gamepad.axes.length > 0 ? this.gamepad.axes[0].getValue() : 0;
+      if (Math.abs(axisX) > 0.15) {
+        moveX = axisX;
+      } else {
+        if (this.gamepad.left) moveX = -1;
+        else if (this.gamepad.right) moveX = 1;
+      }
+    }
+
+    body.setVelocityX(moveX * PLAYER_SPEED);
+
     // Handle shooting
+    const padShoot = this.gamepad ? (this.gamepad.A || this.gamepad.buttons[0]?.pressed) : false;
     if (this.spaceKey.isDown && this.canShoot) {
       this.shoot();
+    } else if (padShoot && this.canShoot && !this.prevShootPressed) {
+      this.shoot();
     }
+    this.prevShootPressed = padShoot || this.spaceKey.isDown;
 
     // Update shoot cooldown
     if (!this.canShoot && Date.now() - this.lastShotTime > this.shootCooldown) {
