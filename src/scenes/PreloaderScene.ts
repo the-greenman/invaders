@@ -72,6 +72,9 @@ export class PreloaderScene extends Phaser.Scene {
     // Load SVG for defender/player
     this.load.text('defender-svg', 'assets/images/defender.svg');
 
+    // Load crawl text
+    this.load.text('crawl', 'assets/text/crawl.txt');
+
     // Load sounds (will be handled gracefully if missing)
     this.load.audio('shoot', 'assets/sounds/shoot.mp3');
     this.load.audio('explosion', 'assets/sounds/explosion.mp3');

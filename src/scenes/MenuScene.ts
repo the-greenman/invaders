@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { LocalStorage } from '../utils/localStorage';
 import { FaceManager } from '../managers/FaceManager';
-import { ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA } from '../constants';
+import { ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, MAX_STORED_FACES } from '../constants';
 
 interface BackgroundAlien {
   sprite: Phaser.GameObjects.Sprite;
@@ -41,11 +41,16 @@ export class MenuScene extends Phaser.Scene {
   private fireButtonIndex: number = 0;
   private backButtonIndex: number = 10;
   private startButtonIndex: number = 11;
+  private privacyText: Phaser.GameObjects.Text | null = null;
 
   // Background Aliens
   private bgAliens: BackgroundAlien[] = [];
   private alienFaceTextures: string[] = [];
   private lastSpawnTime: number = 0;
+  private crawlText: Phaser.GameObjects.Text | null = null;
+  private crawlRT: Phaser.GameObjects.RenderTexture | null = null;
+  private crawlPlane: Phaser.GameObjects.Mesh | null = null;
+  private crawlContentHeight: number = 0;
 
   constructor() {
     super({ key: 'MenuScene' });
@@ -62,18 +67,52 @@ export class MenuScene extends Phaser.Scene {
     this.startButtonIndex = settings.controllerStartButton ?? 11;
 
     this.createBackground();
+    // this.setupCrawl(); // Add crawl behind title/buttons
     this.createTitle();
     this.createButtons();
+    this.createPrivacyNotice();
     this.setupKeyboardControls();
     this.setupButtonAnimations();
-    
+
     // Prepare background aliens
     await this.prepareAlienTextures();
-    
+
     // Setup shutdown event for cleanup
     this.events.on('shutdown', () => {
       this.cleanup();
     });
+
+    // Expose crawl controls to console
+    (window as any).crawl = {
+      show: () => {
+        if (this.crawlPlane) this.crawlPlane.setVisible(true);
+        console.log('Crawl visible:', this.crawlPlane?.visible);
+      },
+      hide: () => {
+        if (this.crawlPlane) this.crawlPlane.setVisible(false);
+        console.log('Crawl visible:', this.crawlPlane?.visible);
+      },
+      toggle: () => {
+        if (this.crawlPlane) this.crawlPlane.setVisible(!this.crawlPlane.visible);
+        console.log('Crawl visible:', this.crawlPlane?.visible);
+      },
+      reset: () => {
+        const { height } = this.cameras.main;
+        if (this.crawlText) this.crawlText.y = height * 3;
+        console.log('Crawl reset to start position');
+      },
+      getInfo: () => {
+        console.log('Crawl info:', {
+          visible: this.crawlPlane?.visible,
+          textY: this.crawlText?.y,
+          meshVertices: this.crawlPlane?.vertices.length,
+          rtExists: !!this.crawlRT,
+          meshExists: !!this.crawlPlane
+        });
+      }
+    };
+
+    console.log('Crawl controls available: crawl.show(), crawl.hide(), crawl.toggle(), crawl.reset(), crawl.getInfo()');
   }
 
   update(time: number, delta: number): void {
@@ -82,6 +121,9 @@ export class MenuScene extends Phaser.Scene {
     
     // Update background aliens
     this.updateBackgroundAliens(time, delta);
+    
+    // Update crawl
+    this.updateCrawl(delta);
   }
 
   private createBackground(): void {
@@ -137,13 +179,8 @@ export class MenuScene extends Phaser.Scene {
     this.webcamButton = this.add.text(width / 2, height / 2, 'START GAME', buttonStyle)
       .setOrigin(0.5)
       .setInteractive();
-    
-    // Credits button
-    this.creditsButton = this.add.text(width / 2, height / 2 + 80, 'CREDITS', buttonStyle)
-      .setOrigin(0.5)
-      .setInteractive();
 
-    this.buttons = [this.webcamButton, this.creditsButton];
+    this.buttons = [this.webcamButton];
   }
 
   private setupKeyboardControls(): void {
@@ -190,6 +227,19 @@ export class MenuScene extends Phaser.Scene {
 
     // Initial highlight
     this.updateButtonHighlight();
+  }
+
+  private createPrivacyNotice(): void {
+    const { width, height } = this.cameras.main;
+    const storedFaces = LocalStorage.getFaceHistory().length;
+    const maxFaces = Number(MAX_STORED_FACES);
+    const message = `No images are uploaded. Faces wipe after ${maxFaces} game${maxFaces === 1 ? '' : 's'}. (${storedFaces} stored)`;
+    this.privacyText = this.add.text(width / 2, height - 24, message, {
+      fontSize: '16px',
+      fontFamily: 'Courier New',
+      color: '#00ff00',
+      align: 'center'
+    }).setOrigin(0.5);
   }
 
   private updateButtonHighlight(): void {
@@ -269,12 +319,6 @@ export class MenuScene extends Phaser.Scene {
       case 0: // Webcam-first Start
         this.openWebcam();
         break;
-      case 1: // Credits
-        this.showCredits();
-        break;
-      case 2: // Debug
-        this.scene.start('DebugMenuScene');
-        break;
     }
   }
 
@@ -309,6 +353,116 @@ export class MenuScene extends Phaser.Scene {
       overlay.destroy();
       creditsText.destroy();
     });
+  }
+
+  private setupCrawl(): void {
+    const content = this.cache.text.get('crawl');
+    if (!content) return;
+
+    const { width, height } = this.cameras.main;
+
+    // Create text object but don't add to scene (use make.text)
+    this.crawlText = this.make.text({
+      x: width / 2,
+      y: height,
+      text: content,
+      style: {
+        fontFamily: 'Courier New',
+        fontSize: '20px',
+        color: '#ffff00',
+        align: 'center',
+        wordWrap: { width: width * 0.4 },
+        lineSpacing: 4,
+        fontStyle: 'bold'
+      }
+    }).setOrigin(0.5, 0);
+
+    this.crawlContentHeight = this.crawlText.height;
+
+    // Create Render Texture - make it taller to accommodate scrolling
+    const rtHeight = height * 3;
+    this.crawlRT = this.add.renderTexture(0, 0, width, rtHeight).setVisible(false);
+
+    // Create custom mesh with trapezoid vertices for perspective effect
+    this.createPerspectiveMesh(width, height, rtHeight);
+
+    // Initial draw position
+    this.crawlText.y = rtHeight;
+  }
+
+  private createPerspectiveMesh(screenWidth: number, screenHeight: number, rtHeight: number): void {
+    // Define trapezoid dimensions for vanishing point effect
+    const topWidth = screenWidth * 0.12;      // Narrow at top for vanishing point
+    const bottomWidth = screenWidth * 0.9;    // Wide at bottom
+    const meshHeight = screenHeight * 1.4;    // Height of the visible mesh
+
+    // Mesh will be positioned at this screen location
+    const centerX = screenWidth / 2;
+    const centerY = screenHeight * 0.6;
+
+    // Create vertices in LOCAL space (relative to mesh position at 0,0)
+    // The mesh's origin is at its center
+    const halfHeight = meshHeight / 2;
+
+    const vertices = [
+      // Vertex 0: top-left (relative to mesh center)
+      -topWidth / 2, -halfHeight,
+      // Vertex 1: top-right
+      topWidth / 2, -halfHeight,
+      // Vertex 2: bottom-left
+      -bottomWidth / 2, halfHeight,
+      // Vertex 3: bottom-right
+      bottomWidth / 2, halfHeight
+    ];
+
+    // UV coordinates (texture mapping)
+    const uvs = [
+      0, 0,  // top-left
+      1, 0,  // top-right
+      0, 1,  // bottom-left
+      1, 1   // bottom-right
+    ];
+
+    // Indices to create two triangles from the 4 vertices
+    const indices = [
+      0, 1, 2,  // First triangle
+      1, 3, 2   // Second triangle
+    ];
+
+    // Create mesh at screen position with local vertices
+    // Use the render texture key so the mesh can sample it correctly
+    this.crawlPlane = this.add.mesh(centerX, centerY, this.crawlRT!.texture.key);
+    this.crawlPlane.addVertices(vertices, uvs, indices);
+    this.crawlPlane.setDepth(0);
+
+    console.log('Mesh created with trapezoid vertices:', {
+      topWidth,
+      bottomWidth,
+      meshHeight,
+      vertexCount: vertices.length / 2
+    });
+  }
+
+  private updateCrawl(delta: number): void {
+    if (!this.crawlText || !this.crawlRT) return;
+
+    const { height } = this.cameras.main;
+    const rtHeight = height * 3;
+    const speed = 0.025; // Slower speed for better readability with perspective
+
+    // Move text up
+    this.crawlText.y -= delta * speed;
+
+    // Reset loop when text has scrolled completely off the top
+    if (this.crawlText.y < -this.crawlContentHeight) {
+      this.crawlText.y = rtHeight;
+    }
+
+    // Clear and redraw
+    this.crawlRT.clear();
+
+    // Draw text onto RT
+    this.crawlRT.draw(this.crawlText);
   }
 
   // --- Background Aliens Logic ---
@@ -491,6 +645,8 @@ export class MenuScene extends Phaser.Scene {
     this.startButton = null;
     this.webcamButton = null;
     this.creditsButton = null;
+    this.privacyText = null;
+    this.crawlText = null;
     this.bgAliens.forEach(a => a.sprite.destroy());
     this.bgAliens = [];
   }

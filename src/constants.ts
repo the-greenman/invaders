@@ -32,7 +32,7 @@ export const ABDUCTION_THRESHOLD_Y = 500; // y level at which aliens trigger gam
 export const MAX_LIVES = 3;
 export const SHIELD_COUNT = 4;
 export const SHIELD_Y = 480;
-export const MAX_STORED_FACES = 10;
+export const MAX_STORED_FACES = 20;
 
 // Points
 export const POINTS = {

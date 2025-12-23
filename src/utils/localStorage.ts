@@ -1,4 +1,5 @@
 import { StoredFace, HighScore, GameSettings } from '../types';
+import { MAX_STORED_FACES } from '../constants';
 
 /**
  * localStorage Utility Module
@@ -73,15 +74,9 @@ export class LocalStorage {
 
   /**
    * Add a face image to the history
-   * Maintains a maximum of 10 faces (FIFO queue)
+   * Maintains a maximum of MAX_STORED_FACES faces (FIFO queue)
+   * Oldest faces are automatically removed when limit is reached
    * @param imageData - Base64 encoded image string
-   *
-   * TODO:
-   * 1. Get current history using getFaceHistory()
-   * 2. Create new StoredFace object with id, imageData, timestamp
-   * 3. Add to history array
-   * 4. If length > 10, remove oldest (shift)
-   * 5. Save back to localStorage as JSON string
    */
   static addToFaceHistory(imageData: string): void {
     const history = this.getFaceHistory();
@@ -91,7 +86,12 @@ export class LocalStorage {
       timestamp: Date.now()
     };
     history.push(newFace);
-    if (history.length > 10) history.shift();
+
+    // FIFO: Remove oldest faces if we exceed the limit
+    while (history.length > MAX_STORED_FACES) {
+      history.shift();
+    }
+
     localStorage.setItem(KEYS.FACE_HISTORY, JSON.stringify(history));
   }
 

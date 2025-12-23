@@ -158,8 +158,6 @@ export class GameScene extends Phaser.Scene {
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
     
-    // Create shields
-    this.createShields();
   }
 
   private addAliensToPhysicsGroup(): void {
@@ -219,24 +217,6 @@ export class GameScene extends Phaser.Scene {
       this.bombs,
       this.player,
       this.handleBombPlayerCollision,
-      undefined,
-      this
-    );
-    
-    // Bullet vs Shield
-    this.physics.add.overlap(
-      this.bullets,
-      this.shields,
-      this.handleBulletShieldCollision,
-      undefined,
-      this
-    );
-    
-    // Bomb vs Shield
-    this.physics.add.overlap(
-      this.bombs,
-      this.shields,
-      this.handleBombShieldCollision,
       undefined,
       this
     );
@@ -533,9 +513,6 @@ export class GameScene extends Phaser.Scene {
     
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
-    
-    // Reset shields
-    this.shields.forEach(shield => shield.reset());
     
     // Update display
     if (this.levelText) {
