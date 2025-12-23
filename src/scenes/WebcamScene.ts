@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { FaceManager } from '../managers/FaceManager';
+import { LocalStorage } from '../utils/localStorage';
 
 /**
  * Webcam Scene
@@ -26,6 +27,10 @@ export class WebcamScene extends Phaser.Scene {
   private videoScale: number = 1;
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevFirePressed: boolean = false;
+  private prevStartPressed: boolean = false;
+  private prevBackPressed: boolean = false;
+  private startButtonIndex: number = 11;
+  private backButtonIndex: number = 10;
 
   constructor() {
     super({ key: 'WebcamScene' });
@@ -36,6 +41,10 @@ export class WebcamScene extends Phaser.Scene {
   }
 
   create(): void {
+    const settings = LocalStorage.getSettings();
+    this.startButtonIndex = settings.controllerStartButton ?? 11;
+    this.backButtonIndex = settings.controllerBackButton ?? 10;
+
     this.createBackground();
     this.createUI();
     this.setupEventListeners();
@@ -60,12 +69,19 @@ export class WebcamScene extends Phaser.Scene {
 
     if (this.gamepad && this.gamepad.connected) {
       const firePressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed;
-      if (firePressed && !this.prevFirePressed) {
+      const startPressed = this.gamepad.buttons[this.startButtonIndex]?.pressed;
+      const backPressed = this.gamepad.buttons[this.backButtonIndex]?.pressed;
+      if ((firePressed || startPressed) && !this.prevFirePressed && !this.prevStartPressed) {
         if (this.isInitialized && !this.isCapturing) {
           this.captureFace();
         }
       }
+      if (backPressed && !this.prevBackPressed) {
+        this.scene.start('MenuScene');
+      }
       this.prevFirePressed = firePressed;
+      this.prevStartPressed = !!startPressed;
+      this.prevBackPressed = !!backPressed;
     }
   }
 
@@ -81,7 +97,7 @@ export class WebcamScene extends Phaser.Scene {
     graphics.fillRect(0, 0, this.cameras.main.width, this.cameras.main.height);
     
     // Add title
-    this.add.text(this.cameras.main.width / 2, 50, 'WEBCAM SETUP', {
+    this.add.text(this.cameras.main.width / 2, 50, 'ASTRONAUT SETUP', {
       fontSize: '36px',
       fontFamily: 'Courier New',
       color: '#00ff00'

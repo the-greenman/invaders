@@ -175,12 +175,12 @@ export class LocalStorage {
   static getSettings(): GameSettings {
     try {
       const data = localStorage.getItem(KEYS.SETTINGS);
-      if (!data) return { muted: false, difficulty: 'normal' };
+      if (!data) return { muted: false, difficulty: 'normal', controllerFireButton: 0, controllerBackButton: 10, controllerStartButton: 11 };
       const parsed = JSON.parse(data);
-      return { muted: false, difficulty: 'normal', ...parsed };
+      return { muted: false, difficulty: 'normal', controllerFireButton: 0, controllerBackButton: 10, controllerStartButton: 11, ...parsed };
     } catch (error) {
       console.error('Error parsing settings:', error);
-      return { muted: false, difficulty: 'normal' };
+      return { muted: false, difficulty: 'normal', controllerFireButton: 0, controllerBackButton: 10, controllerStartButton: 11 };
     }
   }
 

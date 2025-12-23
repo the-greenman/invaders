@@ -51,6 +51,9 @@ export class GameScene extends Phaser.Scene {
   private debugCollisions: boolean = false;
   private lastDebugLog: number = 0;
   private alienFaceTextures: string[] = [];
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private backButtonIndex: number = 10;
+  private prevBackPressed: boolean = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -74,6 +77,9 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.setViewport(data.viewport.x, data.viewport.y, data.viewport.width, data.viewport.height);
     }
 
+    const settings = LocalStorage.getSettings();
+    this.backButtonIndex = settings.controllerBackButton ?? 10;
+
     // Prepare textures with faces if available
     await this.preparePlayerTexture();
     await this.prepareAlienFaceTextures();
@@ -94,6 +100,8 @@ export class GameScene extends Phaser.Scene {
 
   update(): void {
     if (!this.gameActive) return;
+
+    this.pollGamepadNavigation();
 
     // Update player
     this.player?.update(16); // Approximate 60fps delta
@@ -320,6 +328,10 @@ export class GameScene extends Phaser.Scene {
       this.debugCollisions = !this.debugCollisions;
       console.log('[GameScene] collision debug', this.debugCollisions ? 'ON' : 'OFF');
     });
+
+    this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      this.gamepad = pad;
+    });
   }
 
   /**
@@ -347,6 +359,23 @@ export class GameScene extends Phaser.Scene {
     const bomb = new Bomb(this, x, y);
     this.bombs.add(bomb);
     return bomb;
+  }
+
+  private pollGamepadNavigation(): void {
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      if (!this.gamepad || !this.gamepad.connected) {
+        this.gamepad = this.input.gamepad.getPad(0);
+      }
+    }
+    if (!this.gamepad || !this.gamepad.connected) {
+      return;
+    }
+    const backPressed = this.backButtonIndex >= 0 ? this.gamepad.buttons[this.backButtonIndex]?.pressed : false;
+    if (backPressed && !this.prevBackPressed) {
+      this.scene.start('MenuScene');
+      return;
+    }
+    this.prevBackPressed = !!backPressed;
   }
 
   private handleBulletAlienCollision(object1: any, object2: any): void {

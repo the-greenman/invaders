@@ -42,4 +42,7 @@ export type AlienType = 'top' | 'middle' | 'bottom';
 export interface GameSettings {
   muted: boolean;
   difficulty: 'easy' | 'normal' | 'hard';
+  controllerFireButton?: number; // index of gamepad button used for fire/start
+  controllerBackButton?: number; // index of gamepad button used for back/escape
+  controllerStartButton?: number; // index of gamepad button used for start on menus
 }

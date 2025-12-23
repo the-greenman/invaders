@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_BODY_SCALE } from '../constants';
 import { Bullet } from './Bullet';
+import { LocalStorage } from '../utils/localStorage';
 
 /**
  * Player Entity
@@ -19,6 +20,7 @@ export class Player extends Phaser.GameObjects.Sprite {
   private lastShotTime: number = 0;
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevShootPressed: boolean = false;
+  private fireButtonIndex: number = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string = 'player') {
     super(scene, x, y, textureKey);
@@ -33,6 +35,9 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     this.cursors = scene.input.keyboard?.createCursorKeys()!;
     this.spaceKey = scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)!;
+
+    const settings = LocalStorage.getSettings();
+    this.fireButtonIndex = settings.controllerFireButton ?? 0;
 
     // Gamepad setup
     this.setupGamepad();
@@ -112,7 +117,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     body.setVelocityX(moveX * PLAYER_SPEED);
 
     // Handle shooting
-    const padShoot = this.gamepad ? (this.gamepad.A || this.gamepad.buttons[0]?.pressed) : false;
+    const padShoot = this.gamepad ? this.gamepad.buttons[this.fireButtonIndex]?.pressed : false;
     if (this.spaceKey.isDown && this.canShoot) {
       this.shoot();
     } else if (padShoot && this.canShoot && !this.prevShootPressed) {

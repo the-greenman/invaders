@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { LocalStorage } from '../../utils/localStorage';
 
 /**
  * Controller Debug Scene
@@ -13,6 +14,13 @@ export class ControllerDebugScene extends Phaser.Scene {
   private buttonTexts: Phaser.GameObjects.Text[] = [];
   private axisIndicators: Phaser.GameObjects.Rectangle[] = [];
   private axisTexts: Phaser.GameObjects.Text[] = [];
+  private prevButtons: boolean[] = [];
+  private awaitingFireBind: boolean = false;
+  private awaitingBackBind: boolean = false;
+  private awaitingStartBind: boolean = false;
+  private fireButtonIndex: number = 0;
+  private backButtonIndex: number = 1;
+  private startButtonIndex: number = 11;
 
   constructor() {
     super({ key: 'ControllerDebugScene' });
@@ -26,13 +34,18 @@ export class ControllerDebugScene extends Phaser.Scene {
       color: '#00ff00'
     }).setOrigin(0.5);
 
-    this.add.text(20, 90, 'Move sticks / press buttons. ESC: Back to Debug Menu', {
+    this.add.text(20, 90, 'Move sticks / press buttons. F: FIRE, B: BACK/HOME, T: START. ESC: Back', {
       fontSize: '16px',
       fontFamily: 'Courier New',
       color: '#ffffff'
     });
 
-    this.infoText = this.add.text(20, 130, 'Waiting for controller...', {
+    const settings = LocalStorage.getSettings();
+    this.fireButtonIndex = settings.controllerFireButton ?? 0;
+    this.backButtonIndex = settings.controllerBackButton ?? 10;
+    this.startButtonIndex = settings.controllerStartButton ?? 11;
+
+    this.infoText = this.add.text(20, 130, `Waiting... FIRE:B${this.fireButtonIndex} BACK:B${this.backButtonIndex} START:B${this.startButtonIndex}`, {
       fontSize: '16px',
       fontFamily: 'Courier New',
       color: '#00ffff'
@@ -47,7 +60,7 @@ export class ControllerDebugScene extends Phaser.Scene {
       
       this.input.gamepad.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
         this.pad = pad;
-        this.infoText.setText(`Controller Connected: ${pad.id}`);
+        this.infoText.setText(`Controller Connected: ${pad.id} | FIRE: B${this.fireButtonIndex}`);
       });
       
       this.input.gamepad.on('disconnected', (pad: Phaser.Input.Gamepad.Gamepad) => {
@@ -59,6 +72,9 @@ export class ControllerDebugScene extends Phaser.Scene {
     }
 
     this.input.keyboard?.on('keydown-ESC', () => this.scene.start('DebugMenuScene'));
+    this.input.keyboard?.on('keydown-F', () => this.beginFireBind());
+    this.input.keyboard?.on('keydown-B', () => this.beginBackBind());
+    this.input.keyboard?.on('keydown-T', () => this.beginStartBind());
 
     this.events.on('shutdown', () => {
       this.input.keyboard?.removeAllListeners();
@@ -115,6 +131,7 @@ export class ControllerDebugScene extends Phaser.Scene {
       this.buttonIndicators.forEach(b => b.setFillStyle(0x333333));
       this.axisIndicators.forEach(a => a.x = 200);
       this.axisTexts.forEach(t => t.setText('0.00'));
+      this.prevButtons = [];
       return;
     }
 
@@ -149,7 +166,58 @@ export class ControllerDebugScene extends Phaser.Scene {
       }
     });
 
+    // Binding detection
+    this.detectBinding();
+
     // Info text
-    this.infoText.setText(`Connected: ${this.pad.id}`);
+    this.infoText.setText(`Connected: ${this.pad.id} | FIRE:B${this.fireButtonIndex}${this.awaitingFireBind ? ' (bind...)' : ''} | BACK:B${this.backButtonIndex}${this.awaitingBackBind ? ' (bind...)' : ''} | START:B${this.startButtonIndex}${this.awaitingStartBind ? ' (bind...)' : ''}`);
+  }
+
+  private beginFireBind(): void {
+    this.awaitingFireBind = true;
+  }
+
+  private beginBackBind(): void {
+    this.awaitingBackBind = true;
+  }
+
+  private beginStartBind(): void {
+    this.awaitingStartBind = true;
+  }
+
+  private detectBinding(): void {
+    if (!this.pad) return;
+    const current = this.pad.buttons.map(b => b.pressed);
+    if (this.awaitingFireBind || this.awaitingBackBind || this.awaitingStartBind) {
+      for (let i = 0; i < current.length; i++) {
+        const pressed = current[i];
+        const prev = this.prevButtons[i] || false;
+        if (pressed && !prev) {
+          const settings = LocalStorage.getSettings();
+          if (this.awaitingFireBind) {
+            this.fireButtonIndex = i;
+            // clear collisions
+            if (this.backButtonIndex === i) this.backButtonIndex = -1;
+            if (this.startButtonIndex === i) this.startButtonIndex = -1;
+            LocalStorage.saveSettings({ ...settings, controllerFireButton: i, controllerBackButton: this.backButtonIndex, controllerStartButton: this.startButtonIndex });
+            this.awaitingFireBind = false;
+          } else if (this.awaitingBackBind) {
+            this.backButtonIndex = i;
+            if (this.fireButtonIndex === i) this.fireButtonIndex = -1;
+            if (this.startButtonIndex === i) this.startButtonIndex = -1;
+            LocalStorage.saveSettings({ ...settings, controllerFireButton: this.fireButtonIndex, controllerBackButton: i, controllerStartButton: this.startButtonIndex });
+            this.awaitingBackBind = false;
+          } else if (this.awaitingStartBind) {
+            this.startButtonIndex = i;
+            if (this.fireButtonIndex === i) this.fireButtonIndex = -1;
+            if (this.backButtonIndex === i) this.backButtonIndex = -1;
+            LocalStorage.saveSettings({ ...settings, controllerFireButton: this.fireButtonIndex, controllerBackButton: this.backButtonIndex, controllerStartButton: i });
+            this.awaitingStartBind = false;
+          }
+          break;
+        }
+      }
+    }
+    this.prevButtons = current;
   }
 }

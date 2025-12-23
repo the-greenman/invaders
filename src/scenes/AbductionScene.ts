@@ -29,7 +29,8 @@ export class AbductionScene extends Phaser.Scene {
     this.dataIn = data;
     this.cameras.main.setBackgroundColor(0x000000);
 
-    const defenderKey = data.playerTextureKey || 'player';
+    // Use base player sprite (no face) so only the floating face is visible during abduction
+    const defenderKey = 'player';
     this.defender = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT - PLAYER_HEIGHT, defenderKey)
       .setDisplaySize(PLAYER_WIDTH, PLAYER_HEIGHT);
 

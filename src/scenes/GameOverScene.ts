@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ScoreManager } from '../managers/ScoreManager';
+import { LocalStorage } from '../utils/localStorage';
 
 /**
  * Game Over Scene
@@ -30,12 +31,18 @@ export class GameOverScene extends Phaser.Scene {
   private prevDown: boolean = false;
   private prevFire: boolean = false;
   private lastStickMove: number = 0;
+  private startButtonIndex: number = 11;
+  private backButtonIndex: number = 10;
 
   constructor() {
     super({ key: 'GameOverScene' });
   }
 
   create(): void {
+    const settings = LocalStorage.getSettings();
+    this.startButtonIndex = settings.controllerStartButton ?? 11;
+    this.backButtonIndex = settings.controllerBackButton ?? 10;
+
     // Get scene data from GameScene
     const data = this.scene.settings.data as { score?: number; level?: number };
     this.score = data.score || 0;
@@ -221,12 +228,14 @@ export class GameOverScene extends Phaser.Scene {
     }
     this.prevDown = isDown;
 
-    // Select (A button)
-    const isFire = this.gamepad.A || this.gamepad.buttons[0]?.pressed;
+    const isFire = this.gamepad.buttons[this.startButtonIndex]?.pressed;
+    const isBack = this.gamepad.buttons[this.backButtonIndex]?.pressed;
     if (isFire && !this.prevFire) {
       this.activateSelectedButton();
+    } else if (isBack && !this.prevFire) {
+      this.returnToMenu();
     }
-    this.prevFire = isFire;
+    this.prevFire = !!(isFire || isBack);
   }
 
   private setupAnimations(): void {
@@ -278,8 +287,8 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
-    // Restart game from level 1
-    this.scene.start('GameScene', { level: 1, score: 0, useWebcam: false });
+    // Restart game from webcam scene to capture fresh face
+    this.scene.start('WebcamScene');
   }
 
   private returnToMenu(): void {
