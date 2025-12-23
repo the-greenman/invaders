@@ -37,9 +37,21 @@ export class Player extends Phaser.GameObjects.Sprite {
     // Gamepad setup
     if (scene.input.gamepad) {
       const pad = scene.input.gamepad.gamepads.find(p => p && p.connected) as Phaser.Input.Gamepad.Gamepad | undefined;
-      if (pad) this.gamepad = pad;
-      scene.input.gamepad.once('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      if (pad) {
         this.gamepad = pad;
+        console.log('Gamepad connected:', pad.id);
+      }
+      
+      scene.input.gamepad.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+        this.gamepad = pad;
+        console.log('Gamepad connected:', pad.id);
+      });
+
+      scene.input.gamepad.on('disconnected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+        if (this.gamepad === pad) {
+          this.gamepad = null;
+          console.log('Gamepad disconnected:', pad.id);
+        }
       });
     }
   }
