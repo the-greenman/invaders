@@ -24,6 +24,7 @@ export class WebcamScene extends Phaser.Scene {
   private helmet?: Phaser.GameObjects.Image;
   private helmetOffset = { x: 0, y: 0 };
   private videoScale: number = 1;
+  private pointerCaptureHandler?: (pointer: Phaser.Input.Pointer) => void;
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevFirePressed: boolean = false;
   private prevStartPressed: boolean = false;
@@ -133,7 +134,23 @@ export class WebcamScene extends Phaser.Scene {
     this.captureButton?.on('pointerdown', () => {
       this.captureFace();
     });
-    
+
+    // Global tap/click capture for mobile (anywhere on screen)
+    this.pointerCaptureHandler = () => {
+      if (this.isInitialized && !this.isCapturing) {
+        this.captureFace();
+      }
+    };
+    this.input.on('pointerdown', this.pointerCaptureHandler);
+
+    // Touch anywhere to capture (mobile-friendly)
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      // Only trigger if initialized and not already capturing
+      if (this.isInitialized && !this.isCapturing) {
+        this.captureFace();
+      }
+    });
+
     // Keyboard controls
     this.input.keyboard?.on('keydown-ENTER', () => {
       if (this.isInitialized && !this.isCapturing) {
@@ -145,7 +162,7 @@ export class WebcamScene extends Phaser.Scene {
         this.captureFace();
       }
     });
-    
+
     // Cleanup on scene shutdown
     this.events.on('shutdown', () => {
       this.cleanupWebcam();
@@ -188,7 +205,7 @@ export class WebcamScene extends Phaser.Scene {
       });
       
       this.isInitialized = true;
-      this.updateStatus('Ready Defender! Climb into your suit and press FIRE!');
+      this.updateStatus('Ready Defender! Tap screen or press FIRE to capture!');
       
     } catch (error) {
       console.error('Failed to initialize webcam:', error);
@@ -380,6 +397,9 @@ export class WebcamScene extends Phaser.Scene {
   private cleanup(): void {
     // Clean up keyboard listeners
     this.input.keyboard?.removeAllKeys();
+    if (this.pointerCaptureHandler) {
+      this.input.off('pointerdown', this.pointerCaptureHandler);
+    }
     
     // Clear references
     this.videoElement = null;

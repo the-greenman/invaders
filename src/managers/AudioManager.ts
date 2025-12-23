@@ -77,14 +77,27 @@ export class AudioManager {
    */
   playMusic(key: string, loop: boolean = true): void {
     if (this.music) this.music.stop();
-    this.music = this.scene.sound.add(key, { loop, volume: 0.4 });
-    
-    // Check for potential loading/decoding issues
-    if (this.music.duration < 1 && this.music.duration > 0) {
-      console.warn(`AudioManager: Music '${key}' is suspiciously short (${this.music.duration}s). Might be corrupt or failing to decode.`);
+
+    // Verify asset exists
+    if (!this.scene.cache.audio.exists(key)) {
+      console.warn(`AudioManager: Music key '${key}' not found in cache. Playback skipped.`);
+      return;
     }
 
-    if (!this.muted) this.music.play();
+    try {
+      this.music = this.scene.sound.add(key, { loop, volume: 0.4 });
+      
+      // Check for potential loading/decoding issues
+      if (this.music.duration < 1 && this.music.duration > 0) {
+        console.warn(`AudioManager: Music '${key}' is suspiciously short (${this.music.duration}s). Might be corrupt or failing to decode.`);
+      }
+
+      if (!this.muted) {
+        this.music.play();
+      }
+    } catch (e) {
+      console.error(`AudioManager: Failed to play music '${key}'`, e);
+    }
   }
 
   /**

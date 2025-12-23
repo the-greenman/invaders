@@ -14,6 +14,8 @@ export class TouchControlManager {
   // Touch input state
   private moveDirection: number = 0; // -1 for left, 1 for right, 0 for none
   private shootRequested: boolean = false;
+  private dragX: number | null = null;
+  private dragPointerId: number | null = null;
 
   // Visual elements
   private leftButton?: Phaser.GameObjects.Graphics;
@@ -27,6 +29,9 @@ export class TouchControlManager {
   private leftZone?: Phaser.GameObjects.Zone;
   private rightZone?: Phaser.GameObjects.Zone;
   private fireZone?: Phaser.GameObjects.Zone;
+  private pointerDownHandler?: (pointer: Phaser.Input.Pointer) => void;
+  private pointerMoveHandler?: (pointer: Phaser.Input.Pointer) => void;
+  private pointerUpHandler?: (pointer: Phaser.Input.Pointer) => void;
 
   // Touch state tracking
   private activeTouches: Map<number, { zone: 'left' | 'right' | 'fire' }> = new Map();
@@ -39,6 +44,8 @@ export class TouchControlManager {
 
     if (this.enabled) {
       this.createTouchControls();
+      this.disableDirectionalButtons();
+      this.setupDragControls();
     }
   }
 
@@ -121,6 +128,48 @@ export class TouchControlManager {
 
     // Setup touch events
     this.setupTouchEvents();
+  }
+
+  /**
+   * Disable on-screen left/right controls if drag is preferred
+   */
+  private disableDirectionalButtons(): void {
+    this.leftButton?.setVisible(false);
+    this.rightButton?.setVisible(false);
+    this.leftButtonText?.setVisible(false);
+    this.rightButtonText?.setVisible(false);
+    this.leftZone?.disableInteractive();
+    this.rightZone?.disableInteractive();
+  }
+
+  /**
+   * Enable drag anywhere to move horizontally
+   */
+  private setupDragControls(): void {
+    this.pointerDownHandler = (pointer: Phaser.Input.Pointer) => {
+      if (this.dragPointerId === null) {
+        this.dragPointerId = pointer.id;
+        this.dragX = pointer.x;
+      }
+    };
+
+    this.pointerMoveHandler = (pointer: Phaser.Input.Pointer) => {
+      if (this.dragPointerId === pointer.id) {
+        this.dragX = pointer.x;
+      }
+    };
+
+    this.pointerUpHandler = (pointer: Phaser.Input.Pointer) => {
+      if (this.dragPointerId === pointer.id) {
+        this.dragPointerId = null;
+        this.dragX = null;
+      }
+    };
+
+    this.scene.input.on('pointerdown', this.pointerDownHandler);
+    this.scene.input.on('pointermove', this.pointerMoveHandler);
+    this.scene.input.on('pointerup', this.pointerUpHandler);
+    this.scene.input.on('pointerupoutside', this.pointerUpHandler);
   }
 
   /**
@@ -227,6 +276,13 @@ export class TouchControlManager {
   }
 
   /**
+   * Get current drag X position (if dragging)
+   */
+  getDragX(): number | null {
+    return this.dragX;
+  }
+
+  /**
    * Check if shoot was requested and consume the request
    * @returns true if shoot was requested
    */
@@ -273,6 +329,12 @@ export class TouchControlManager {
    * Clean up touch controls
    */
   destroy(): void {
+    if (this.pointerDownHandler) this.scene.input.off('pointerdown', this.pointerDownHandler);
+    if (this.pointerMoveHandler) this.scene.input.off('pointermove', this.pointerMoveHandler);
+    if (this.pointerUpHandler) {
+      this.scene.input.off('pointerup', this.pointerUpHandler);
+      this.scene.input.off('pointerupoutside', this.pointerUpHandler);
+    }
     this.leftButton?.destroy();
     this.rightButton?.destroy();
     this.fireButton?.destroy();

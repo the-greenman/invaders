@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_BODY_SCALE } from '../constants';
+import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_BODY_SCALE, GAME_WIDTH } from '../constants';
 import { Bullet } from './Bullet';
 import { LocalStorage } from '../utils/localStorage';
 import { TouchControlManager } from '../managers/TouchControlManager';
@@ -126,10 +126,18 @@ export class Player extends Phaser.GameObjects.Sprite {
     }
 
     // Touch input (overrides keyboard and gamepad)
+    const dragX = this.touchControls && this.touchControls.isEnabled() ? this.touchControls.getDragX() : null;
     if (this.touchControls && this.touchControls.isEnabled()) {
-      const touchMove = this.touchControls.getMoveDirection();
-      if (touchMove !== 0) {
-        moveX = touchMove;
+      if (dragX !== null) {
+        const clamped = Phaser.Math.Clamp(dragX, PLAYER_WIDTH / 2, GAME_WIDTH - PLAYER_WIDTH / 2);
+        this.setX(clamped);
+        body.setVelocityX(0);
+        moveX = 0;
+      } else {
+        const touchMove = this.touchControls.getMoveDirection();
+        if (touchMove !== 0) {
+          moveX = touchMove;
+        }
       }
     }
 
