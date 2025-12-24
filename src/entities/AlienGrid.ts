@@ -1,7 +1,17 @@
 import Phaser from 'phaser';
 import { Alien } from './Alien';
 import { Bomb } from './Bomb';
-import { ALIEN_SPACING_X, ALIEN_SPACING_Y, GAME_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT, ABDUCTION_THRESHOLD_Y } from '../constants';
+import {
+  ALIEN_SPACING_X,
+  ALIEN_SPACING_Y,
+  GAME_WIDTH,
+  ALIEN_WIDTH,
+  ALIEN_HEIGHT,
+  ABDUCTION_THRESHOLD_Y,
+  BOMB_DROP_ENABLED,
+  BOMB_DROP_BASE_CHANCE,
+  BOMB_DROP_LEVEL_INCREASE
+} from '../constants';
 
 /**
  * Alien Grid Entity
@@ -16,9 +26,7 @@ export class AlienGrid extends Phaser.GameObjects.Container {
   private aliens: (Alien | null)[][] = [];
   private direction: number = 1; // 1 for right, -1 for left
   private speed: number;
-  private bombDropChance: number = 0.001;
-  private lastBombTime: number = 0;
-  private bombDropInterval: number = 1000;
+  private level: number = 1; // Current game level for bomb drop scaling
   private moveTimer: Phaser.Time.TimerEvent | null = null;
   private rows: number;
   private cols: number;
@@ -34,7 +42,8 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     rows: number,
     cols: number,
     speed: number,
-    faceTextures: string[] = []
+    faceTextures: string[] = [],
+    level: number = 1
   ) {
     super(scene, x, y);
     scene.add.existing(this);
@@ -43,12 +52,21 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     this.rows = rows;
     this.cols = cols;
     this.faceTextures = faceTextures;
+    this.level = level;
 
     this.createAlienGrid(rows, cols);
     this.startMovement();
 
     // Initial debug info
-    this.debugLog('created', { x: this.x, y: this.y, rows, cols, speed });
+    this.debugLog('created', {
+      x: this.x,
+      y: this.y,
+      rows,
+      cols,
+      speed,
+      level,
+      bombDropChance: this.calculateBombDropChance()
+    });
     const b = this.getBounds();
     this.debugLog('bounds', { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom) });
   }
@@ -149,6 +167,11 @@ export class AlienGrid extends Phaser.GameObjects.Container {
   update(delta: number): void {
     // Intentionally light. Physics bodies are synced when aliens actually move
     // via Alien.move(), avoiding jumpy movement from per-frame resets.
+
+    // Try to drop bombs every frame (using per-frame probability)
+    if (BOMB_DROP_ENABLED) {
+      this.dropBombs();
+    }
   }
 
   /**
@@ -179,9 +202,8 @@ export class AlienGrid extends Phaser.GameObjects.Container {
     } else {
       this.moveAliens();
     }
-    
-    // Try to drop bombs
-    this.dropBombs();
+
+    // Note: Bomb dropping now happens in update() every frame
   }
 
   /**
@@ -278,43 +300,49 @@ export class AlienGrid extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Randomly drop bombs from aliens
-   *
-   * TODO:
-   * 1. Check time since last bomb
-   * 2. Pick random alive alien
-   * 3. Have alien fire bomb
-   * 4. Update last bomb time
+   * Randomly drop bombs from aliens using per-frame probability
+   * This replicates the exact same logic as BombTestScene
    */
   private dropBombs(): void {
-    const now = Date.now();
-    if (now - this.lastBombTime < this.bombDropInterval) return;
-    
-    // Get bottom-most alive alien in each column
-    for (let col = 0; col < this.cols; col++) {
-      let bottomAlien: Alien | null = null;
-      
-      for (let row = this.rows - 1; row >= 0; row--) {
+    const dropChance = this.calculateBombDropChance();
+
+    // Check each alien for bomb drop (per frame, like BombTestScene)
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
         const alien = this.aliens[row][col];
-        if (alien && alien.isAlive()) {
-          bottomAlien = alien;
-          break;
-        }
-      }
-      
-      if (bottomAlien && Math.random() < this.bombDropChance) {
-        // Emit dropBomb event for GameScene to handle (aliens are world-space)
-        const wx = bottomAlien.x;
-        const wy = bottomAlien.y + 20;
-        this.debugLog('bombDrop attempt', { col, wx: Math.round(wx), wy: Math.round(wy) });
-        this.scene.events.emit('dropBomb', wx, wy);
-        if (this.scene.events.listenerCount('dropBomb') > 0) {
-          this.lastBombTime = now;
-          this.debugLog('bombDrop success');
-          break; // Only one bomb per interval
+        if (!alien || !alien.isAlive()) continue;
+
+        // Random chance to drop bomb
+        if (Math.random() < dropChance) {
+          // Find bottom-most alien in this column
+          let bottomAlien: Alien | null = null;
+          for (let r = this.rows - 1; r >= 0; r--) {
+            const a = this.aliens[r][col];
+            if (a && a.isAlive()) {
+              bottomAlien = a;
+              break;
+            }
+          }
+
+          if (bottomAlien) {
+            // Emit dropBomb event for GameScene to handle (aliens are world-space)
+            const wx = bottomAlien.x;
+            const wy = bottomAlien.y + 20;
+            this.debugLog('bombDrop', { col, wx: Math.round(wx), wy: Math.round(wy) });
+            this.scene.events.emit('dropBomb', wx, wy);
+            return; // Only one bomb per frame max
+          }
         }
       }
     }
+  }
+
+  /**
+   * Calculate bomb drop chance for current level
+   * Uses the same formula as BombTestScene
+   */
+  private calculateBombDropChance(): number {
+    return BOMB_DROP_BASE_CHANCE + (BOMB_DROP_LEVEL_INCREASE * (this.level - 1));
   }
 
   /**
@@ -409,19 +437,25 @@ export class AlienGrid extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Increase difficulty (speed and bomb frequency)
+   * Increase difficulty (speed and level-based bomb frequency)
    * @param newSpeed - New movement speed
-   * @param newBombChance - New bomb drop chance
+   * @param newLevel - New game level (used to calculate bomb drop chance)
    */
-  increaseDifficulty(newSpeed: number, newBombChance: number): void {
+  increaseDifficulty(newSpeed: number, newLevel: number): void {
     this.speed = newSpeed;
-    this.bombDropChance = newBombChance;
-    
+    this.level = newLevel;
+
     // Restart timer with new speed
     if (this.moveTimer) {
       this.moveTimer.remove();
     }
     this.startMovement();
+
+    this.debugLog('difficulty increased', {
+      speed: this.speed,
+      level: this.level,
+      bombDropChance: this.calculateBombDropChance()
+    });
   }
 
   destroy(): void {

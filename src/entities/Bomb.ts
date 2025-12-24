@@ -19,8 +19,11 @@ export class Bomb extends Phaser.GameObjects.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    (this.body as Phaser.Physics.Arcade.Body).setSize(4, 12);
-    (this.body as Phaser.Physics.Arcade.Body).setVelocityY(this.speed);
+    this.setDisplaySize(12, 18);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setSize(10, 16, true);
+    body.setVelocity(0, this.speed);
+    body.checkCollision.none = false;
   }
 
   /**
@@ -35,7 +38,7 @@ export class Bomb extends Phaser.GameObjects.Sprite {
     if (!this.isBombActive) return;
 
     // Deactivate if bomb goes off screen
-    if (this.y > 620) {
+    if (this.y > this.scene.scale.height + 30) {
       this.destroy();
     }
   }
@@ -52,6 +55,13 @@ export class Bomb extends Phaser.GameObjects.Sprite {
     if (!this.isBombActive) return;
 
     this.isBombActive = false;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.stop();
+      body.enable = false;
+      body.checkCollision.none = true;
+    }
+    this.setActive(false).setVisible(false);
     
     // Could play explosion effect here
     // this.scene.sound.play('explosion');
@@ -83,6 +93,10 @@ export class Bomb extends Phaser.GameObjects.Sprite {
    */
   destroy(): void {
     this.isBombActive = false;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.enable = false;
+    }
     super.destroy();
   }
 }

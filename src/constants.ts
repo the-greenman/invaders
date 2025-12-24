@@ -14,6 +14,11 @@ export const PLAYER_BODY_SCALE = 0.4; // reduce collision box size
 export const BULLET_SPEED = 400;
 export const BOMB_SPEED = 200;
 
+// Bomb dropping configuration
+export const BOMB_DROP_ENABLED = true; // Enable/disable alien bomb dropping
+export const BOMB_DROP_BASE_CHANCE = 0.0002; // Base chance per alien per frame (level 1)
+export const BOMB_DROP_LEVEL_INCREASE = 0.0005; // Increase per level
+
 // Aliens
 export const ALIEN_ROWS = 3;
 export const ALIEN_COLS = 7;       // reduced further to fit larger sprites

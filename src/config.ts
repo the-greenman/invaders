@@ -17,6 +17,7 @@ import { CompareScene } from './scenes/debug/CompareScene';
 import { ControllerDebugScene } from './scenes/debug/ControllerDebugScene';
 import { StoredFacesScene } from './scenes/debug/StoredFacesScene';
 import { AbductionLineScene } from './scenes/debug/AbductionLineScene';
+import { BombTestScene } from './scenes/debug/BombTestScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -47,6 +48,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     ControllerDebugScene,
     StoredFacesScene,
     AbductionLineScene,
+    BombTestScene,
     WebcamScene,
     HighScoreScene,
     GameScene,

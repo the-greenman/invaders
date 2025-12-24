@@ -31,6 +31,11 @@ export class GameScene extends Phaser.Scene {
   private bullets: Phaser.Physics.Arcade.Group | null = null;
   private bombs: Phaser.Physics.Arcade.Group | null = null;
   private aliens: Phaser.Physics.Arcade.Group | null = null;
+
+  // Colliders
+  private bulletAlienCollider: Phaser.Physics.Arcade.Collider | null = null;
+  private bombPlayerCollider: Phaser.Physics.Arcade.Collider | null = null;
+  private alienPlayerCollider: Phaser.Physics.Arcade.Collider | null = null;
   
   // Game state
   private score: number = 0;
@@ -43,6 +48,7 @@ export class GameScene extends Phaser.Scene {
   // UI elements
   private scoreText: Phaser.GameObjects.Text | null = null;
   private levelText: Phaser.GameObjects.Text | null = null;
+  private livesText: Phaser.GameObjects.Text | null = null;
   
   // Managers
   private scoreManager: ScoreManager | null = null;
@@ -95,11 +101,44 @@ export class GameScene extends Phaser.Scene {
     this.setupUI();
     this.setupManagers();
     this.setupInput();
-    
-    // Setup shutdown event for cleanup
-    this.events.on('shutdown', () => {
-      this.shutdown();
-    });
+
+    // Setup shutdown handler using Phaser's event system
+    this.events.once('shutdown', this.handleShutdown, this);
+  }
+
+  /**
+   * Called when scene is being shut down
+   */
+  private handleShutdown(): void {
+    console.log('[GameScene] shutdown called');
+
+    // Destroy collision handlers first - CRITICAL for preventing duplicate collisions
+    if (this.bulletAlienCollider) {
+      this.bulletAlienCollider.destroy();
+      this.bulletAlienCollider = null;
+    }
+    if (this.bombPlayerCollider) {
+      this.bombPlayerCollider.destroy();
+      this.bombPlayerCollider = null;
+    }
+    if (this.alienPlayerCollider) {
+      this.alienPlayerCollider.destroy();
+      this.alienPlayerCollider = null;
+    }
+
+    // Remove event listeners to prevent memory leaks
+    this.events.off('fireBullet');
+    this.events.off('dropBomb');
+    this.input.keyboard?.off('keydown-P');
+    this.input.keyboard?.off('keydown-L');
+
+    // Cleanup managers
+    this.audioManager?.cleanup();
+    this.touchControlManager?.destroy();
+    this.touchControlManager = null;
+
+    // Clear game objects
+    this.clearGameObjects();
   }
 
   update(): void {
@@ -111,24 +150,28 @@ export class GameScene extends Phaser.Scene {
     this.player?.update(16); // Approximate 60fps delta
 
     // Clean up bullets that are out of bounds
-    this.bullets?.children.entries.forEach((bullet: any) => {
-      if (bullet && bullet.active) {
-        if (bullet.y < -20) {
-          bullet.setActive(false);
-          bullet.setVisible(false);
+    if (this.bullets && this.bullets.children) {
+      this.bullets.children.entries.forEach((bullet: any) => {
+        if (bullet && bullet.active) {
+          if (bullet.y < -20) {
+            bullet.setActive(false);
+            bullet.setVisible(false);
+          }
         }
-      }
-    });
+      });
+    }
 
     // Clean up bombs that are out of bounds
-    this.bombs?.children.entries.forEach((bomb: any) => {
-      if (bomb && bomb.active) {
-        if (bomb.y > GAME_HEIGHT + 20) {
-          bomb.setActive(false);
-          bomb.setVisible(false);
+    if (this.bombs && this.bombs.children) {
+      this.bombs.children.entries.forEach((bomb: any) => {
+        if (bomb && bomb.active) {
+          if (bomb.y > GAME_HEIGHT + 40) {
+            bomb.setActive(false);
+            bomb.setVisible(false);
+          }
         }
-      }
-    });
+      });
+    }
 
     // Update alien grid
     this.alienGrid?.update(16);
@@ -157,7 +200,7 @@ export class GameScene extends Phaser.Scene {
     // Create alien grid
     this.levelManager = new LevelManager(this.level);
     const levelConfig = this.levelManager.getLevelConfig();
-    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures);
+    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures, this.level);
     
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
@@ -195,7 +238,7 @@ export class GameScene extends Phaser.Scene {
     
     this.bombs = this.physics.add.group({
       classType: Bomb,
-      runChildUpdate: false // We'll update manually
+      runChildUpdate: true // Allow bombs to cull themselves
     });
     
     this.aliens = this.physics.add.group({
@@ -206,27 +249,27 @@ export class GameScene extends Phaser.Scene {
 
   private setupCollisions(): void {
     if (!this.bullets || !this.bombs || !this.aliens || !this.player) return;
-    
+
     // Bullet vs Alien
-    this.physics.add.overlap(
+    this.bulletAlienCollider = this.physics.add.overlap(
       this.bullets,
       this.aliens,
       this.handleBulletAlienCollision,
       undefined,
       this
     );
-    
+
     // Bomb vs Player
-    this.physics.add.overlap(
+    this.bombPlayerCollider = this.physics.add.overlap(
       this.bombs,
       this.player,
       this.handleBombPlayerCollision,
       undefined,
       this
     );
-    
+
     // Alien vs Player (game over)
-    this.physics.add.overlap(
+    this.alienPlayerCollider = this.physics.add.overlap(
       this.aliens,
       this.player,
       this.handleAlienPlayerCollision,
@@ -244,9 +287,16 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Courier New',
       color: '#00ff00'
     });
-    
+
     // Level display
     this.levelText = this.add.text(10, 40, `LEVEL: ${this.level}`, {
+      fontSize: '20px',
+      fontFamily: 'Courier New',
+      color: '#00ff00'
+    });
+
+    // Lives display
+    this.livesText = this.add.text(10, 70, `LIVES: ${this.lives}`, {
       fontSize: '20px',
       fontFamily: 'Courier New',
       color: '#00ff00'
@@ -350,8 +400,21 @@ export class GameScene extends Phaser.Scene {
    */
   dropBomb(x: number, y: number): Bomb | null {
     if (!this.bombs || !this.gameActive) return null;
-    const bomb = new Bomb(this, x, y);
-    this.bombs.add(bomb);
+
+    // Get bomb from pool (similar to bullets)
+    const bomb = this.bombs.get(x, y, 'bomb') as Bomb | null;
+    if (!bomb) return null;
+
+    // Ensure bomb is properly initialized
+    bomb.setActive(true);
+    bomb.setVisible(true);
+    const body = bomb.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.enable = true;
+      body.setVelocity(0, 200); // BOMB_SPEED
+      body.checkCollision.none = false;
+    }
+
     return bomb;
   }
 
@@ -389,39 +452,43 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleBulletAlienCollision(object1: any, object2: any): void {
-    const bullet = object1 as Bullet;
-    const alien = object2 as Alien;
-    
+    // Determine which object is which
+    const bullet = object1 instanceof Bullet ? object1 : (object2 instanceof Bullet ? object2 : null);
+    const alien = object1 instanceof Alien ? object1 : (object2 instanceof Alien ? object2 : null);
+    if (!bullet || !alien) return;
+
     if (!bullet.isActive() || !alien.isAlive()) return;
     // console.log('[GameScene] overlap bullet-alien', bullet.x, bullet.y, alien.x, alien.y);
 
     // Destroy bullet
     bullet.hit();
-    
+
     // Destroy alien and get points
     const points = alien.destroy();
     this.addScore(points);
-    
+
     // Remove alien from grid
     this.alienGrid?.removeAlien(alien);
-    
+
     // Play sound
     this.audioManager?.play('alien-hit');
   }
 
   private handleBombPlayerCollision(object1: any, object2: any): void {
-    const bomb = object1 as Bomb;
-    const player = object2 as Player;
-    
+    // Determine which object is which
+    const bomb = object1 instanceof Bomb ? object1 : (object2 instanceof Bomb ? object2 : null);
+    const player = object1 instanceof Player ? object1 : (object2 instanceof Player ? object2 : null);
+    if (!bomb || !player) return;
+
     if (!bomb.isActive() || !player.active) return;
-    
+
     // Destroy bomb
     bomb.hit();
-    
+
     // Damage player
     player.takeDamage();
     this.handlePlayerDeath();
-    
+
     // Play sound
     this.audioManager?.play('player-hit');
   }
@@ -492,6 +559,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateLivesDisplay(): void {
+    if (this.livesText) {
+      this.livesText.setText(`LIVES: ${this.lives}`);
+    }
   }
 
   private checkGameConditions(): void {
@@ -536,7 +606,7 @@ export class GameScene extends Phaser.Scene {
     this.levelManager = new LevelManager(this.level);
     const levelConfig = this.levelManager.getLevelConfig();
     await this.prepareAlienFaceTextures();
-    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures);
+    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures, this.level);
     
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
@@ -615,15 +685,6 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  shutdown(): void {
-    // Cleanup managers
-    this.audioManager?.cleanup();
-    this.touchControlManager?.destroy();
-    this.touchControlManager = null;
-
-    // Clear game objects
-    this.clearGameObjects();
-  }
 
   /**
    * Build the player texture with the current face (if any) using shared FaceManager logic.

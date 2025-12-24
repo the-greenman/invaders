@@ -12,6 +12,7 @@ export class DebugMenuScene extends Phaser.Scene {
     { text: '8 - Stored Faces', scene: 'StoredFacesScene' },
     { text: '9 - Abduction Animation', scene: 'AbductionScene' },
     { text: '0 - Abduction Line', scene: 'AbductionLineScene' },
+    { text: 'B - Bomb Drop Test', scene: 'BombTestScene' },
     { text: 'ESC - Back to Main Menu', scene: 'MenuScene' }
   ];
 
@@ -73,6 +74,7 @@ export class DebugMenuScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-EIGHT', () => this.launchScene(7));
     this.input.keyboard?.on('keydown-NINE', () => this.launchScene(8));
     this.input.keyboard?.on('keydown-ZERO', () => this.launchScene(9));
+    this.input.keyboard?.on('keydown-B', () => this.launchScene(10));
     this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
 
     // Navigation keys
