@@ -8,23 +8,11 @@ import { GAME_WIDTH, GALAGA_FORMATION_SPEED } from '../constants';
  *
  * Manages alien formation with smooth velocity-based movement and wave attacks.
  *
- * TODO FOR CODING AGENT:
- * 1. Make this extend BaseAlienGrid
- * 2. Add constructor that calls super() and creates WaveManager
- * 3. Implement smooth side-to-side movement (velocity-based, NOT step-based)
- * 4. Integrate WaveManager for wave attack coordination
- * 5. Override update() to:
- *    - Calculate smooth movement based on delta time
- *    - Apply velocity: movement = formationSpeed * direction * (delta / 1000)
- *    - Reverse direction at edges (checkEdgeCollision from base)
- *    - Only move aliens IN_FORMATION state (skip attacking/returning aliens)
- *    - Call waveManager.update(delta)
- *    - Call dropBombs() from base
- * 6. Implement increaseDifficulty() to adjust formationSpeed
- *
- * MOVEMENT FORMULA:
- * movement = GALAGA_FORMATION_SPEED * direction * (delta / 1000)
- * This gives smooth pixels-per-second movement instead of discrete steps.
+ * Features:
+ * - Smooth velocity-based movement (pixels per second)
+ * - Wave attack system via WaveManager
+ * - State-based alien filtering (only IN_FORMATION aliens move with grid)
+ * - Delta-based frame-independent physics
  */
 
 export class GalagaGrid extends BaseAlienGrid {
@@ -53,17 +41,10 @@ export class GalagaGrid extends BaseAlienGrid {
   }
 
   /**
-   * TODO: Implement smooth velocity-based movement
+   * Update Galaga grid with smooth velocity-based movement
    *
-   * ALGORITHM:
-   * 1. Calculate movement distance: formationSpeed * direction * (delta / 1000)
-   * 2. Check edge collision (use base.checkEdgeCollision())
-   * 3. If hit edge: reverse direction (this.direction *= -1)
-   * 4. Move only aliens with state === AlienState.IN_FORMATION
-   * 5. Call waveManager.update(delta) to handle waves
-   * 6. Call dropBombs() for formation bombing
-   *
-   * IMPORTANT: Use delta for frame-independent movement!
+   * Moves formation aliens left/right smoothly, updates wave attacks,
+   * and handles bomb dropping. Uses delta for frame-independent movement.
    */
   update(delta: number): void {
     // Smooth movement using pixels-per-second
@@ -98,12 +79,19 @@ export class GalagaGrid extends BaseAlienGrid {
   }
 
   /**
-   * TODO: Adjust formation speed for difficulty scaling
+   * Adjust formation speed for difficulty scaling
    */
   increaseDifficulty(newSpeed: number, newLevel: number): void {
     this.formationSpeed = newSpeed;
     this.level = newLevel;
     // WaveManager will scale wave frequency based on level
+  }
+
+  /**
+   * Get the number of active attack waves (for UI display)
+   */
+  getActiveWaveCount(): number {
+    return this.waveManager.getActiveWaveCount();
   }
 
   /**
