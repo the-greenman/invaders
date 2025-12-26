@@ -86,11 +86,14 @@ export class GameScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     // Get scene data from previous scene
-    const data = this.scene.settings.data as { level?: number; score?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number }, startMode?: GameMode; disableBackToMenu?: boolean };
+    const data = this.scene.settings.data as { level?: number; score?: number; lives?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number }, startMode?: GameMode; disableBackToMenu?: boolean };
     this.level = data.level || 1;
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
     this.disableBackToMenu = !!data.disableBackToMenu;
+    if (typeof data.lives === 'number') {
+      this.lives = data.lives;
+    }
     if (data.startMode !== undefined) {
       this.currentGameMode = data.startMode;
       this.levelsSinceLastSwitch = 0;
@@ -98,7 +101,7 @@ export class GameScene extends Phaser.Scene {
     
     // Reset game state
     this.gameActive = true;
-    if (this.level === 1 && this.score === 0) {
+    if (this.level === 1 && this.score === 0 && typeof data.lives !== 'number') {
       this.lives = 3;
     }
 
@@ -887,6 +890,7 @@ export class GameScene extends Phaser.Scene {
       level: this.level,
       score: this.score,
       useWebcam: this.useWebcam,
+      lives: this.lives,
       advanceLevel: false
     });
   }
@@ -909,6 +913,7 @@ export class GameScene extends Phaser.Scene {
       level: this.level,
       score: this.score,
       useWebcam: this.useWebcam,
+      lives: this.lives,
       advanceLevel: true
     });
   }
