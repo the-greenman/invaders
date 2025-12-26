@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_BODY_SCALE, GAME_WIDTH } from '../constants';
+import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_BODY_SCALE, GAME_WIDTH, GAME_HEIGHT } from '../constants';
 import { Bullet } from './Bullet';
 import { LocalStorage } from '../utils/localStorage';
 import { TouchControlManager } from '../managers/TouchControlManager';
@@ -225,8 +225,8 @@ export class Player extends Phaser.GameObjects.Sprite {
    * 2. Reset shooting cooldown
    * 3. Reset visual state
    */
-  reset(): void {
-    this.setPosition(400, 550);
+  reset(x: number = GAME_WIDTH / 2, y: number = GAME_HEIGHT - 50): void {
+    this.setPosition(x, y);
     (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
     this.canShoot = true;
     this.lastShotTime = 0;
