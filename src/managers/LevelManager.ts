@@ -67,7 +67,6 @@ export class LevelManager {
   getLevelConfig(): LevelConfig {
     const level = this.currentLevel;
 
-    // TODO FOR CODING AGENT:
     // Galaga-specific difficulty scaling:
     // - galagaFormationSpeed: Start at 60px/s, increase 10px/s per level (max 150px/s)
     //   Formula: Math.min(60 + (level - 1) * 10, 150)

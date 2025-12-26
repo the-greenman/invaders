@@ -20,7 +20,7 @@ import { AttackPath } from '../systems/AttackPath';
 /**
  * Alien State Machine (Galaga Mode)
  *
- * TODO FOR CODING AGENT:
+ *
  * - IN_FORMATION: Moving with the grid formation
  * - ATTACKING: Following an attack path curve
  * - RETURNING: Navigating back to formation position
@@ -189,7 +189,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * Get alien's current state
    * @returns Current AlienState
    *
-   * TODO FOR CODING AGENT:
    * This is used by GalagaGrid and WaveManager to determine behavior
    */
   getState(): AlienState {
@@ -200,7 +199,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * Set alien's state
    * @param newState - The state to transition to
    *
-   * TODO FOR CODING AGENT:
    * State transitions:
    * - IN_FORMATION → ATTACKING (when launching wave)
    * - ATTACKING → RETURNING (when attack path complete)
@@ -219,7 +217,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * @param x - Formation X coordinate
    * @param y - Formation Y coordinate
    *
-   * TODO FOR CODING AGENT:
    * Called by WaveManager before launching wave to record home position
    */
   setFormationPosition(x: number, y: number): void {
@@ -230,7 +227,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * Get formation position
    * @returns Formation coordinates {x, y}
    *
-   * TODO FOR CODING AGENT:
    * Used by WaveManager when navigating alien back to formation
    */
   getFormationPosition(): { x: number; y: number } {
@@ -241,7 +237,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * Set attack path for wave attack
    * @param path - AttackPath instance (DiveBomb, Loop, Weave, etc.)
    *
-   * TODO FOR CODING AGENT:
    * Called by WaveManager when launching wave
    * Path must be started with path.start(x, y) before assigning
    */
@@ -253,7 +248,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * Get current attack path
    * @returns AttackPath or null
    *
-   * TODO FOR CODING AGENT:
    * Used by WaveManager to check if path is complete
    */
   getAttackPath(): AttackPath | null {
@@ -264,7 +258,6 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * Follow attack path (update position along curve)
    * @param delta - Time since last frame in ms
    *
-   * TODO FOR CODING AGENT:
    * Called by WaveManager.update() when alien state is ATTACKING
    * Gets current position from path and moves alien there
    *
