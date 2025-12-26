@@ -657,14 +657,15 @@ export class GameScene extends Phaser.Scene {
 
   private checkGameConditions(): void {
     if (!this.alienGrid) return;
-    
+
     // Check if all aliens destroyed
     if (this.alienGrid.isAllDestroyed()) {
       this.levelComplete();
     }
-    
-    // Check if aliens reached player
-    if (this.alienGrid.reachedPlayer()) {
+
+    // Check if aliens reached player (Space Invaders only)
+    // In Galaga, aliens can dive past the player and return to formation
+    if (this.currentGameMode === GameMode.SPACE_INVADERS && this.alienGrid.reachedPlayer()) {
       this.gameOver();
     }
   }
