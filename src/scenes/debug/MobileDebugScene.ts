@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPEED } from '../../constants';
 import { TouchControlManager } from '../../managers/TouchControlManager';
+import { DebugBaseScene } from './DebugBaseScene';
 
 /**
  * Mobile Debug Scene
@@ -9,7 +10,7 @@ import { TouchControlManager } from '../../managers/TouchControlManager';
  * Displays a player sprite that can be controlled with touch thumbpad.
  * Shows real-time debug information about touch input state.
  */
-export class MobileDebugScene extends Phaser.Scene {
+export class MobileDebugScene extends DebugBaseScene {
   private player?: Phaser.GameObjects.Rectangle;
   private touchControlManager?: TouchControlManager;
 
@@ -26,6 +27,8 @@ export class MobileDebugScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(0x000033);
+
+    this.initDebugBase();
 
     // Title
     this.titleText = this.add.text(GAME_WIDTH / 2, 30, 'MOBILE TOUCH CONTROLS DEBUG', {
@@ -67,6 +70,8 @@ export class MobileDebugScene extends Phaser.Scene {
 
   update(): void {
     if (!this.player) return;
+
+    this.pollBackToDebugMenu();
 
     this.updatePlayerMovement();
     this.updateDebugDisplay();
@@ -194,7 +199,7 @@ export class MobileDebugScene extends Phaser.Scene {
 
   private exitScene(): void {
     this.touchControlManager?.destroy();
-    this.scene.start('DebugMenuScene');
+    this.startExclusive('DebugMenuScene');
   }
 
   shutdown(): void {

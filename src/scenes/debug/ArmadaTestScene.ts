@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { SpaceInvadersGrid } from '../../entities/SpaceInvadersGrid';
 import { GAME_WIDTH } from '../../constants';
+import { DebugBaseScene } from './DebugBaseScene';
 
-export class ArmadaTestScene extends Phaser.Scene {
+export class ArmadaTestScene extends DebugBaseScene {
   private grid!: SpaceInvadersGrid;
   private info!: Phaser.GameObjects.Text;
   private debugOn: boolean = true;
@@ -11,6 +12,8 @@ export class ArmadaTestScene extends Phaser.Scene {
 
   create(): void {
     const { width } = this.cameras.main;
+
+    this.initDebugBase();
     this.add.text(width / 2, 40, 'ARMADA MOVEMENT TEST', {
       fontSize: '28px', fontFamily: 'Courier New', color: '#00ff00'
     }).setOrigin(0.5);
@@ -28,7 +31,7 @@ export class ArmadaTestScene extends Phaser.Scene {
     this.info = this.add.text(20, 120, '', { fontSize: '16px', fontFamily: 'Courier New', color: '#00ffff' })
       .setDepth(1000);
 
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('DebugMenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => this.startExclusive('DebugMenuScene'));
     this.input.keyboard?.on('keydown-L', () => {
       this.debugOn = !this.debugOn;
       this.grid.setDebug(this.debugOn);
@@ -45,9 +48,11 @@ export class ArmadaTestScene extends Phaser.Scene {
         x: Math.round(this.grid.x), y: Math.round(this.grid.y)
       });
     });
+
   }
 
   update(): void {
+    this.pollBackToDebugMenu();
     this.grid?.update(16);
 
     // Update debug overlay

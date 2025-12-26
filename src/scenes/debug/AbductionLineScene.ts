@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
 import { SpaceInvadersGrid } from '../../entities/SpaceInvadersGrid';
 import { ABDUCTION_THRESHOLD_Y, GAME_HEIGHT, GAME_WIDTH } from '../../constants';
+import { DebugBaseScene } from './DebugBaseScene';
 
 /**
  * Abduction Line Debug Scene
  *
  * Shows the abduction threshold line and an alien grid to see when the game over triggers.
  */
-export class AbductionLineScene extends Phaser.Scene {
+  
+export class AbductionLineScene extends DebugBaseScene {
   private grid!: SpaceInvadersGrid;
   private info!: Phaser.GameObjects.Text;
 
@@ -17,6 +19,8 @@ export class AbductionLineScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(0x000000);
+
+    this.initDebugBase();
 
     this.add.text(GAME_WIDTH / 2, 40, 'ABDUCTION LINE DEBUG', {
       fontSize: '28px',
@@ -51,10 +55,11 @@ export class AbductionLineScene extends Phaser.Scene {
       color: '#00ffff'
     });
 
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('DebugMenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => this.startExclusive('DebugMenuScene'));
   }
 
   update(): void {
+    this.pollBackToDebugMenu();
     this.grid?.update(16);
 
     if (this.grid && this.info) {

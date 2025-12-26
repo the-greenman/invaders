@@ -2,8 +2,9 @@ import Phaser from 'phaser';
 import { Player } from '../../entities/Player';
 import { Bullet } from '../../entities/Bullet';
 import { GAME_HEIGHT, GAME_WIDTH } from '../../constants';
+import { DebugBaseScene } from './DebugBaseScene';
 
-export class PlayerTestScene extends Phaser.Scene {
+export class PlayerTestScene extends DebugBaseScene {
   private player: Player | null = null;
   private bullets!: Phaser.Physics.Arcade.Group;
 
@@ -13,6 +14,8 @@ export class PlayerTestScene extends Phaser.Scene {
 
   create(): void {
     const { width } = this.cameras.main;
+
+    this.initDebugBase();
 
     this.add.text(width / 2, 40, 'PLAYER TEST', {
       fontSize: '28px', fontFamily: 'Courier New', color: '#00ff00'
@@ -36,7 +39,7 @@ export class PlayerTestScene extends Phaser.Scene {
     this.events.on('fireBullet', (x: number, y: number) => this.fireBullet(x, y));
 
     // ESC back
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('DebugMenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => this.startExclusive('DebugMenuScene'));
   }
 
   private fireBullet(x: number, y: number) {
@@ -45,6 +48,7 @@ export class PlayerTestScene extends Phaser.Scene {
   }
 
   update(): void {
+    this.pollBackToDebugMenu();
     this.player?.update(16);
     (this.bullets.getChildren() as any[]).forEach((child) => {
       if (child && child.active && child.y < -20) {

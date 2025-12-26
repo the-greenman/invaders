@@ -10,6 +10,7 @@ import {
   BOMB_DROP_LEVEL_INCREASE,
   BOMB_DROP_ENABLED
 } from '../../constants';
+import { DebugBaseScene } from './DebugBaseScene';
 
 /**
  * Bomb Test Scene
@@ -19,7 +20,7 @@ import {
  * - Adjust level to see bomb drop rate changes
  * - Visualize bomb drop rate per level
  */
-export class BombTestScene extends Phaser.Scene {
+export class BombTestScene extends DebugBaseScene {
   private player?: Phaser.GameObjects.Rectangle;
   private bombs?: Phaser.Physics.Arcade.Group;
   private aliens?: Phaser.Physics.Arcade.Group;
@@ -48,6 +49,8 @@ export class BombTestScene extends Phaser.Scene {
   create(): void {
     this.startTime = Date.now();
     this.bombsDropped = 0;
+
+    this.initDebugBase();
 
     // Title
     this.add.text(GAME_WIDTH / 2, 30, 'BOMB DROP TEST', {
@@ -127,6 +130,8 @@ export class BombTestScene extends Phaser.Scene {
 
   update(): void {
     if (!this.player || !this.cursors) return;
+
+    this.pollBackToDebugMenu();
 
     // Player movement
     const body = this.player.body as Phaser.Physics.Arcade.Body;

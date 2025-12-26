@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { FaceManager } from '../../managers/FaceManager';
 import { ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_CORE_RADIUS } from '../../constants';
+import { DebugBaseScene } from './DebugBaseScene';
 
 /**
  * Sprite Debug Scene
@@ -8,7 +9,7 @@ import { ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, PLAYER_WIDTH, PLAYER_HEIG
  * Displays all game sprites for debugging purposes.
  * Shows face composition with configurable positioning and cropping.
  */
-export class SpriteDebugScene extends Phaser.Scene {
+export class SpriteDebugScene extends DebugBaseScene {
   private sprites: Phaser.GameObjects.GameObject[] = [];
   private labels: Phaser.GameObjects.Text[] = [];
   private controlsText: Phaser.GameObjects.Text | null = null;
@@ -35,6 +36,8 @@ export class SpriteDebugScene extends Phaser.Scene {
     if (data?.viewport) {
       this.cameras.main.setViewport(data.viewport.x, data.viewport.y, data.viewport.width, data.viewport.height);
     }
+
+    this.initDebugBase();
 
     this.cameras.main.setBackgroundColor(0x222222);
 
@@ -78,6 +81,13 @@ export class SpriteDebugScene extends Phaser.Scene {
 
     // Display current settings
     this.updateControlsDisplay();
+
+  }
+
+  update(): void {
+    const data = this.scene.settings.data as { disableBackToDebugMenu?: boolean } | undefined;
+    if (data?.disableBackToDebugMenu) return;
+    this.pollBackToDebugMenu();
   }
 
   private async displaySprites(): Promise<void> {

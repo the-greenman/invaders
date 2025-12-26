@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, PLAYER_CORE_RADIUS, PLAYER_HEIGHT, PLAYER_WIDTH } from '../../constants';
 import { FaceManager } from '../../managers/FaceManager';
+import { DebugBaseScene } from './DebugBaseScene';
 
-export class CameraTestScene extends Phaser.Scene {
+export class CameraTestScene extends DebugBaseScene {
   private videoEl: HTMLVideoElement | null = null;
   private snapshotKey = 'camera-snapshot';
   private liveKey = 'camera-live';
@@ -20,6 +21,8 @@ export class CameraTestScene extends Phaser.Scene {
 
   create(): void {
     const { width } = this.cameras.main;
+
+    this.initDebugBase();
     this.add.text(width / 2, 40, 'CAMERA CAPTURE TEST', {
       fontSize: '28px', fontFamily: 'Courier New', color: '#00ff00'
     }).setOrigin(0.5);
@@ -52,6 +55,7 @@ export class CameraTestScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ESC', () => this.exit());
 
     this.events.on('shutdown', () => this.cleanup());
+
   }
 
   private async initCamera() {
@@ -164,7 +168,7 @@ export class CameraTestScene extends Phaser.Scene {
   }
 
   private exit() {
-    this.scene.start('DebugMenuScene');
+    this.startExclusive('DebugMenuScene');
   }
 
   private cleanup() {
@@ -187,6 +191,7 @@ export class CameraTestScene extends Phaser.Scene {
   }
 
   update(): void {
+    this.pollBackToDebugMenu();
     if (!this.videoEl || !this.videoReady) return;
     const tex = this.textures.get(this.liveKey) as Phaser.Textures.CanvasTexture;
     const ctx = tex.getContext();

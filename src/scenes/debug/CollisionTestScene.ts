@@ -4,8 +4,9 @@ import { Bullet } from '../../entities/Bullet';
 import { Alien } from '../../entities/Alien';
 import { SpaceInvadersGrid } from '../../entities/SpaceInvadersGrid';
 import { GAME_WIDTH, GAME_HEIGHT, ALIEN_ROWS, ALIEN_COLS } from '../../constants';
+import { DebugBaseScene } from './DebugBaseScene';
 
-export class CollisionTestScene extends Phaser.Scene {
+export class CollisionTestScene extends DebugBaseScene {
   private player!: Player;
   private bullets!: Phaser.Physics.Arcade.Group;
   private aliens!: Phaser.Physics.Arcade.Group;
@@ -18,6 +19,8 @@ export class CollisionTestScene extends Phaser.Scene {
 
   create(): void {
     const { width } = this.cameras.main;
+
+    this.initDebugBase();
     this.add.text(width / 2, 40, 'BULLET COLLISION TEST', {
       fontSize: '28px', fontFamily: 'Courier New', color: '#00ff00'
     }).setOrigin(0.5);
@@ -50,7 +53,7 @@ export class CollisionTestScene extends Phaser.Scene {
     this.spawnSingleTarget();
     this.setupOverlap();
 
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('DebugMenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => this.startExclusive('DebugMenuScene'));
     this.input.keyboard?.on('keydown-A', () => this.toggleMode());
     this.input.keyboard?.on('keydown-B', () => this.toggleBounds());
   }
@@ -113,6 +116,7 @@ export class CollisionTestScene extends Phaser.Scene {
   }
 
   update(): void {
+    this.pollBackToDebugMenu();
     this.player?.update(16);
     (this.bullets.getChildren() as any[]).forEach((child) => {
       if (child && child.active && child.y < -20) {
