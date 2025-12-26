@@ -77,6 +77,9 @@ export class GameScene extends Phaser.Scene {
 
   private disableBackToMenu: boolean = false;
 
+  // Background elements (mode-specific)
+  private backgroundElements: Phaser.GameObjects.GameObject[] = [];
+
   constructor() {
     super({ key: 'GameScene' });
   }
@@ -393,15 +396,72 @@ export class GameScene extends Phaser.Scene {
     .setInteractive({ useHandCursor: true })
     .on('pointerdown', () => this.handleMuteToggle());
 
-    // Abduction threshold line
-    const thresholdY = ABDUCTION_THRESHOLD_Y;
-    const line = this.add.line(0, 0, 0, thresholdY, GAME_WIDTH, thresholdY, 0x00ff00, 0.3);
-    line.setOrigin(0, 0);
-    this.add.text(GAME_WIDTH - 150, thresholdY - 20, '', {
-      fontSize: '14px',
-      fontFamily: 'Courier New',
-      color: '#00ff00'
-    });
+    // Setup mode-specific background
+    this.setupBackground();
+  }
+
+  /**
+   * Setup mode-specific background elements
+   */
+  private setupBackground(): void {
+    // Clear any existing background elements
+    this.backgroundElements.forEach(el => el.destroy());
+    this.backgroundElements = [];
+
+    if (this.currentGameMode === GameMode.SPACE_INVADERS) {
+      // Space Invaders: Abduction threshold line
+      const thresholdY = ABDUCTION_THRESHOLD_Y;
+      const line = this.add.line(0, 0, 0, thresholdY, GAME_WIDTH, thresholdY, 0x00ff00, 0.3);
+      line.setOrigin(0, 0);
+      line.setDepth(-1); // Behind everything else
+      this.backgroundElements.push(line);
+    } else if (this.currentGameMode === GameMode.GALAGA) {
+      // Galaga: Simple clouds
+      this.createClouds();
+    }
+  }
+
+  /**
+   * Create simple scrolling clouds for Galaga mode
+   */
+  private createClouds(): void {
+    const cloudCount = 5;
+    const cloudColor = 0x4a5568; // Gray clouds
+    const cloudAlpha = 0.4;
+
+    for (let i = 0; i < cloudCount; i++) {
+      const x = Math.random() * GAME_WIDTH;
+      const y = Math.random() * GAME_HEIGHT * 0.7; // Upper 70% of screen
+      const cloud = this.add.graphics();
+      cloud.setDepth(-1); // Behind everything else
+
+      // Draw simple cloud shape using circles
+      cloud.fillStyle(cloudColor, cloudAlpha);
+      const cloudWidth = 40 + Math.random() * 30;
+      const cloudHeight = 20 + Math.random() * 15;
+
+      // Multiple circles to form cloud shape
+      cloud.fillCircle(0, 0, cloudHeight);
+      cloud.fillCircle(cloudWidth * 0.3, -cloudHeight * 0.3, cloudHeight * 0.8);
+      cloud.fillCircle(cloudWidth * 0.7, cloudHeight * 0.2, cloudHeight * 0.9);
+      cloud.fillCircle(cloudWidth, 0, cloudHeight * 0.7);
+
+      cloud.setPosition(x, y);
+
+      // Slow horizontal drift
+      const driftSpeed = 5 + Math.random() * 10;
+      this.tweens.add({
+        targets: cloud,
+        x: x + GAME_WIDTH,
+        duration: (GAME_WIDTH + cloudWidth) / driftSpeed * 1000,
+        repeat: -1,
+        onRepeat: () => {
+          cloud.x = -cloudWidth;
+        }
+      });
+
+      this.backgroundElements.push(cloud);
+    }
   }
 
   private setupManagers(): void {
