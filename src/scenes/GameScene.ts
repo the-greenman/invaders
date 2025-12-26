@@ -3,7 +3,9 @@ import { Player } from '../entities/Player';
 import { Bullet } from '../entities/Bullet';
 import { Bomb } from '../entities/Bomb';
 import { Alien } from '../entities/Alien';
-import { AlienGrid } from '../entities/AlienGrid';
+import { SpaceInvadersGrid } from '../entities/SpaceInvadersGrid';
+import { GalagaGrid } from '../entities/GalagaGrid';
+import { BaseAlienGrid } from '../entities/BaseAlienGrid';
 import { Shield } from '../entities/Shield';
 import { ScoreManager } from '../managers/ScoreManager';
 import { LevelManager } from '../managers/LevelManager';
@@ -11,7 +13,8 @@ import { AudioManager } from '../managers/AudioManager';
 import { FaceManager } from '../managers/FaceManager';
 import { TouchControlManager } from '../managers/TouchControlManager';
 import { LocalStorage } from '../utils/localStorage';
-import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT, PLAYER_CORE_RADIUS, PLAYER_HEIGHT, PLAYER_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, ABDUCTION_THRESHOLD_Y } from '../constants';
+import { GameMode, getGameModeName } from '../types/GameMode';
+import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT, PLAYER_CORE_RADIUS, PLAYER_HEIGHT, PLAYER_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, ABDUCTION_THRESHOLD_Y, AUTO_SWITCH_INTERVAL, ENABLE_MANUAL_MODE_SWITCH } from '../constants';
 
 /**
  * Game Scene
@@ -24,9 +27,9 @@ import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT, PLAYER_CORE_RADIUS, PLAYER_HEIGH
 export class GameScene extends Phaser.Scene {
   // Game entities
   private player: Player | null = null;
-  private alienGrid: AlienGrid | null = null;
+  private alienGrid: BaseAlienGrid | null = null; // Polymorphic: can be SpaceInvadersGrid or GalagaGrid
   private shields: Shield[] = [];
-  
+
   // Physics groups
   private bullets: Phaser.Physics.Arcade.Group | null = null;
   private bombs: Phaser.Physics.Arcade.Group | null = null;
@@ -36,7 +39,7 @@ export class GameScene extends Phaser.Scene {
   private bulletAlienCollider: Phaser.Physics.Arcade.Collider | null = null;
   private bombPlayerCollider: Phaser.Physics.Arcade.Collider | null = null;
   private alienPlayerCollider: Phaser.Physics.Arcade.Collider | null = null;
-  
+
   // Game state
   private score: number = 0;
   private level: number = 1;
@@ -44,11 +47,19 @@ export class GameScene extends Phaser.Scene {
   private useWebcam: boolean = false;
   private gameActive: boolean = true;
   private playerTextureKey: string = 'player';
-  
+
+  // Game Mode (Galaga Mode Integration)
+  // TODO FOR CODING AGENT:
+  // Track current mode and level count for auto-switching
+  private currentGameMode: GameMode = GameMode.SPACE_INVADERS;
+  private levelsSinceLastSwitch: number = 0;
+
   // UI elements
   private scoreText: Phaser.GameObjects.Text | null = null;
   private levelText: Phaser.GameObjects.Text | null = null;
   private livesText: Phaser.GameObjects.Text | null = null;
+  private gameModeText: Phaser.GameObjects.Text | null = null; // Display current mode
+  private waveCountText: Phaser.GameObjects.Text | null = null; // For Galaga mode
   
   // Managers
   private scoreManager: ScoreManager | null = null;
@@ -196,15 +207,44 @@ export class GameScene extends Phaser.Scene {
   private setupGameObjects(): void {
     // Create player
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 50, this.playerTextureKey);
-    
-    // Create alien grid
+
+    // Create alien grid using factory pattern
+    // TODO FOR CODING AGENT:
+    // Factory pattern for polymorphic grid creation based on currentGameMode
     this.levelManager = new LevelManager(this.level);
     const levelConfig = this.levelManager.getLevelConfig();
-    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures, this.level);
-    
+
+    // EXAMPLE FACTORY PATTERN (currently only Space Invaders implemented):
+    if (this.currentGameMode === GameMode.GALAGA) {
+      // TODO: Create Galaga grid
+      // this.alienGrid = new GalagaGrid(
+      //   this,
+      //   100,
+      //   100,
+      //   3, // Galaga uses 3 rows
+      //   levelConfig.alienCols,
+      //   levelConfig.galagaFormationSpeed || 60,
+      //   this.alienFaceTextures,
+      //   this.level
+      // );
+      throw new Error('TODO: Galaga grid creation not yet implemented');
+    } else {
+      // Space Invaders grid (Game 1)
+      this.alienGrid = new SpaceInvadersGrid(
+        this,
+        100,
+        100,
+        levelConfig.alienRows,
+        levelConfig.alienCols,
+        levelConfig.alienSpeed,
+        this.alienFaceTextures,
+        this.level
+      );
+    }
+
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
-    
+
   }
 
   private addAliensToPhysicsGroup(): void {
@@ -302,6 +342,39 @@ export class GameScene extends Phaser.Scene {
       color: '#00ff00'
     });
 
+    // Game Mode display (top-right, below mute button)
+    // TODO FOR CODING AGENT:
+    // Display current game mode for player awareness
+    this.gameModeText = this.add.text(GAME_WIDTH - 20, 50, getGameModeName(this.currentGameMode), {
+      fontSize: '16px',
+      fontFamily: 'Courier New',
+      color: '#ffff00' // Yellow for visibility
+    })
+    .setOrigin(1, 0); // Top-right anchor
+
+    // Wave count display (only visible in Galaga mode)
+    // TODO FOR CODING AGENT:
+    // Show active wave count when in Galaga mode
+    // Update this in update() loop by calling alienGrid.getActiveWaveCount() if it's GalagaGrid
+    this.waveCountText = this.add.text(GAME_WIDTH - 20, 75, '', {
+      fontSize: '14px',
+      fontFamily: 'Courier New',
+      color: '#00ffff' // Cyan
+    })
+    .setOrigin(1, 0)
+    .setVisible(this.currentGameMode === GameMode.GALAGA);
+
+    // Debug hint for manual mode switching
+    // TODO FOR CODING AGENT:
+    // Only show if ENABLE_MANUAL_MODE_SWITCH is true
+    if (ENABLE_MANUAL_MODE_SWITCH) {
+      this.add.text(10, GAME_HEIGHT - 30, 'Press 1 or 2 to switch modes', {
+        fontSize: '14px',
+        fontFamily: 'Courier New',
+        color: '#666666'
+      });
+    }
+
     // Mute button
     const isMuted = this.audioManager?.isMuted() ?? false;
     this.muteButton = this.add.text(GAME_WIDTH - 20, 20, isMuted ? 'MUSIC: OFF' : 'MUSIC: ON', {
@@ -372,6 +445,19 @@ export class GameScene extends Phaser.Scene {
       this.debugCollisions = !this.debugCollisions;
       console.log('[GameScene] collision debug', this.debugCollisions ? 'ON' : 'OFF');
     });
+
+    // Manual mode switching (if enabled)
+    // TODO FOR CODING AGENT:
+    // Number keys to force game mode for testing
+    if (ENABLE_MANUAL_MODE_SWITCH) {
+      this.input.keyboard?.on('keydown-ONE', () => {
+        this.forceGameMode(GameMode.SPACE_INVADERS);
+      });
+
+      this.input.keyboard?.on('keydown-TWO', () => {
+        this.forceGameMode(GameMode.GALAGA);
+      });
+    }
 
     this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
       this.gamepad = pad;
@@ -606,7 +692,7 @@ export class GameScene extends Phaser.Scene {
     this.levelManager = new LevelManager(this.level);
     const levelConfig = this.levelManager.getLevelConfig();
     await this.prepareAlienFaceTextures();
-    this.alienGrid = new AlienGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures, this.level);
+    this.alienGrid = new SpaceInvadersGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures, this.level);
     
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
@@ -669,7 +755,7 @@ export class GameScene extends Phaser.Scene {
   private togglePause(): void {
     // Simple pause implementation
     this.scene.pause();
-    
+
     // Show pause message
     const pauseText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'PAUSED\nPress P to resume', {
       fontSize: '24px',
@@ -677,7 +763,7 @@ export class GameScene extends Phaser.Scene {
       color: '#ffff00',
       align: 'center'
     }).setOrigin(0.5);
-    
+
     // Resume on P key
     this.input.keyboard?.once('keydown-P', () => {
       pauseText.destroy();
@@ -685,6 +771,133 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // ============================================================================
+  // Game Mode Switching (Galaga Mode Integration)
+  // ============================================================================
+
+  /**
+   * Force a specific game mode (manual switch)
+   * @param mode - The mode to switch to
+   *
+   * TODO FOR CODING AGENT:
+   * Called by number key handlers (1 and 2)
+   * Shows notification then restarts level with new mode
+   *
+   * ALGORITHM:
+   * 1. Check if mode is already current - if so, ignore
+   * 2. Update currentGameMode
+   * 3. Reset levelsSinceLastSwitch to 0
+   * 4. Show notification for 1.5 seconds
+   * 5. Restart current level with new mode
+   */
+  private forceGameMode(mode: GameMode): void {
+    if (this.currentGameMode === mode) {
+      return; // Already in this mode
+    }
+
+    console.log(`[GameScene] Manual mode switch to ${getGameModeName(mode)}`);
+
+    // TODO: Implement manual mode switch
+    // this.currentGameMode = mode;
+    // this.levelsSinceLastSwitch = 0;
+
+    // // Show notification
+    // const notification = this.add.text(
+    //   GAME_WIDTH / 2,
+    //   GAME_HEIGHT / 2,
+    //   `Switching to ${getGameModeName(mode)}...`,
+    //   {
+    //     fontSize: '24px',
+    //     fontFamily: 'Courier New',
+    //     color: '#ffff00',
+    //     align: 'center'
+    //   }
+    // ).setOrigin(0.5);
+
+    // // Restart level after delay
+    // this.time.delayedCall(1500, () => {
+    //   notification.destroy();
+    //   this.scene.restart({ level: this.level, score: this.score, useWebcam: this.useWebcam });
+    // });
+
+    throw new Error('TODO: Implement forceGameMode()');
+  }
+
+  /**
+   * Switch game mode (internal method)
+   * @param newMode - The mode to switch to
+   *
+   * TODO FOR CODING AGENT:
+   * Called by checkAutoSwitch() when AUTO_SWITCH_INTERVAL is reached
+   * Shows notification then advances to next level with new mode
+   *
+   * ALGORITHM:
+   * 1. Update currentGameMode
+   * 2. Reset levelsSinceLastSwitch
+   * 3. Show notification for 2 seconds
+   * 4. Advance to next level with new mode
+   */
+  private switchGameMode(newMode: GameMode): void {
+    console.log(`[GameScene] Auto mode switch to ${getGameModeName(newMode)}`);
+
+    // TODO: Implement auto mode switch
+    // this.currentGameMode = newMode;
+    // this.levelsSinceLastSwitch = 0;
+
+    // // Show notification
+    // const notification = this.add.text(
+    //   GAME_WIDTH / 2,
+    //   GAME_HEIGHT / 2,
+    //   `NEW MODE UNLOCKED!\n${getGameModeName(newMode)}`,
+    //   {
+    //     fontSize: '28px',
+    //     fontFamily: 'Courier New',
+    //     color: '#00ff00',
+    //     align: 'center'
+    //   }
+    // ).setOrigin(0.5);
+
+    // // Advance to next level with new mode
+    // this.time.delayedCall(2000, () => {
+    //   notification.destroy();
+    //   this.nextLevel();
+    // });
+
+    throw new Error('TODO: Implement switchGameMode()');
+  }
+
+  /**
+   * Check if auto mode switch should occur
+   *
+   * TODO FOR CODING AGENT:
+   * Call this in nextLevel() or when level is completed
+   * Checks if levelsSinceLastSwitch >= AUTO_SWITCH_INTERVAL
+   * If so, toggles between SPACE_INVADERS and GALAGA
+   *
+   * ALGORITHM:
+   * 1. Increment levelsSinceLastSwitch
+   * 2. If levelsSinceLastSwitch >= AUTO_SWITCH_INTERVAL:
+   *    - Toggle mode (SPACE_INVADERS ↔ GALAGA)
+   *    - Call switchGameMode(newMode)
+   *    - Return true (mode switched)
+   * 3. Else return false (no switch)
+   */
+  private checkAutoSwitch(): boolean {
+    // TODO: Implement auto-switch check
+    // this.levelsSinceLastSwitch++;
+
+    // if (this.levelsSinceLastSwitch >= AUTO_SWITCH_INTERVAL) {
+    //   const newMode = this.currentGameMode === GameMode.SPACE_INVADERS
+    //     ? GameMode.GALAGA
+    //     : GameMode.SPACE_INVADERS;
+    //   this.switchGameMode(newMode);
+    //   return true;
+    // }
+
+    // return false;
+
+    return false; // Placeholder
+  }
 
   /**
    * Build the player texture with the current face (if any) using shared FaceManager logic.

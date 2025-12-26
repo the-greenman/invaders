@@ -106,7 +106,7 @@ export class BombTestScene extends Phaser.Scene {
     });
 
     // Create alien grid
-    this.createAlienGrid();
+    this.createSpaceInvadersGrid();
 
     // Setup event listener for alien bomb drops
     this.events.on('dropBomb', (x: number, y: number) => {
@@ -153,7 +153,7 @@ export class BombTestScene extends Phaser.Scene {
     });
   }
 
-  private createAlienGrid(): void {
+  private createSpaceInvadersGrid(): void {
     this.alienGrid = [];
 
     for (let row = 0; row < this.GRID_ROWS; row++) {

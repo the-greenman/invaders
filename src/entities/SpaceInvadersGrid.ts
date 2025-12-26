@@ -14,15 +14,18 @@ import {
 } from '../constants';
 
 /**
- * Alien Grid Entity
+ * Space Invaders Grid Entity (Game 1)
  *
- * Manages the formation of all aliens.
- * Handles grid movement, direction changes, and bomb dropping.
+ * Manages the formation of all aliens in classic Space Invaders mode.
+ * Handles step-based grid movement, direction changes, and bomb dropping.
+ *
+ * This is the original AlienGrid renamed for Game Mode system.
+ * NO LOGIC CHANGES - Game 1 behavior preserved exactly.
  *
  * Extends Phaser.GameObjects.Container to group all aliens.
  */
 
-export class AlienGrid extends Phaser.GameObjects.Container {
+export class SpaceInvadersGrid extends Phaser.GameObjects.Container {
   private aliens: (Alien | null)[][] = [];
   private direction: number = 1; // 1 for right, -1 for left
   private speed: number;

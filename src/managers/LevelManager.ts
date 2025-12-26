@@ -1,5 +1,5 @@
 import { LevelConfig } from '../types';
-import { ALIEN_ROWS, ALIEN_COLS, ALIEN_START_SPEED } from '../constants';
+import { ALIEN_ROWS, ALIEN_COLS, ALIEN_START_SPEED, GALAGA_FORMATION_SPEED } from '../constants';
 
 /**
  * Level Manager
@@ -67,13 +67,24 @@ export class LevelManager {
   getLevelConfig(): LevelConfig {
     const level = this.currentLevel;
 
+    // TODO FOR CODING AGENT:
+    // Galaga-specific difficulty scaling:
+    // - galagaFormationSpeed: Start at 60px/s, increase 10px/s per level (max 150px/s)
+    //   Formula: Math.min(60 + (level - 1) * 10, 150)
+    // - galagaWaveFrequency: Start at 0.3, increase 0.05 per level (max 0.8)
+    //   Formula: Math.min(0.3 + (level - 1) * 0.05, 0.8)
+
     return {
       level,
       alienRows: Math.min(ALIEN_ROWS + Math.floor((level - 1) / 3), 8),
       alienCols: ALIEN_COLS,
       alienSpeed: Math.max(ALIEN_START_SPEED - (level - 1) * 50, 300),
       bombFrequency: 0.3 + (level - 1) * 0.1,
-      alienPointsMultiplier: 1 + (level - 1) * 0.5
+      alienPointsMultiplier: 1 + (level - 1) * 0.5,
+
+      // Galaga Mode (Game 2) parameters
+      galagaFormationSpeed: Math.min(GALAGA_FORMATION_SPEED + (level - 1) * 10, 150),
+      galagaWaveFrequency: Math.min(0.3 + (level - 1) * 0.05, 0.8)
     };
   }
 

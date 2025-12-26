@@ -25,6 +25,12 @@ export interface LevelConfig {
   alienSpeed: number;
   bombFrequency: number;
   alienPointsMultiplier: number;
+
+  // Galaga Mode (Game 2) - Optional parameters
+  // TODO FOR CODING AGENT:
+  // These parameters control Galaga-specific difficulty scaling
+  galagaFormationSpeed?: number;  // Smooth side-to-side movement speed (pixels/sec)
+  galagaWaveFrequency?: number;   // How often to launch waves (0-1, higher = more frequent)
 }
 
 export interface FaceDetectionResult {

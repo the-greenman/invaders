@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Player } from '../../entities/Player';
 import { Bullet } from '../../entities/Bullet';
 import { Alien } from '../../entities/Alien';
-import { AlienGrid } from '../../entities/AlienGrid';
+import { AlienGrid } from '../../entities/SpaceInvadersGrid';
 import { GAME_WIDTH, GAME_HEIGHT, ALIEN_ROWS, ALIEN_COLS } from '../../constants';
 
 export class CollisionTestScene extends Phaser.Scene {
@@ -10,7 +10,7 @@ export class CollisionTestScene extends Phaser.Scene {
   private bullets!: Phaser.Physics.Arcade.Group;
   private aliens!: Phaser.Physics.Arcade.Group;
   private target!: Alien;
-  private grid: AlienGrid | null = null;
+  private grid: SpaceInvadersGrid | null = null;
   private mode: 'single' | 'armada' = 'single';
   private modeText!: Phaser.GameObjects.Text;
 
@@ -84,7 +84,7 @@ export class CollisionTestScene extends Phaser.Scene {
   private spawnArmada() {
     this.aliens.clear(true, true);
     this.grid?.destroy();
-    this.grid = new AlienGrid(this, 100, 120, ALIEN_ROWS, ALIEN_COLS, 800);
+    this.grid = new SpaceInvadersGrid(this, 100, 120, ALIEN_ROWS, ALIEN_COLS, 800);
     const alive = this.grid.getAliveAliens();
     alive.forEach(alien => this.aliens.add(alien));
     this.mode = 'armada';
