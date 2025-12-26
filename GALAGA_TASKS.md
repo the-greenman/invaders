@@ -19,10 +19,10 @@
 ---
 
 ## Phase 2: Implement Attack Path Classes
-- **Status:** 🆓 AVAILABLE
-- **Agent:** _unclaimed_
-- **Branch:** _not started_
-- **File:** `src/systems/AttackPath.ts`
+- **Status:** 🚧 IN PROGRESS
+- **Agent:** Cascade
+- **Branch:** feature/galaga-phase2-attack-paths
+- **Started:** 2025-12-26 12:25
 - **Dependencies:** None ✅
 - **Estimated Effort:** 1-2 hours
 - **Sub-tasks:**
