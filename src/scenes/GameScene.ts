@@ -193,6 +193,17 @@ export class GameScene extends Phaser.Scene {
     // Update alien grid
     this.alienGrid?.update(16);
 
+    // Update wave count UI (Galaga mode only)
+    if (this.waveCountText) {
+      if (this.currentGameMode === GameMode.GALAGA && this.alienGrid instanceof GalagaGrid) {
+        const waveCount = (this.alienGrid as GalagaGrid).getActiveWaveCount?.() ?? 0;
+        this.waveCountText.setVisible(true);
+        this.waveCountText.setText(`WAVES: ${waveCount}`);
+      } else {
+        this.waveCountText.setVisible(false);
+      }
+    }
+
     // Check win/lose conditions
     this.checkGameConditions();
 
@@ -214,13 +225,11 @@ export class GameScene extends Phaser.Scene {
     // Create player
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 50, this.playerTextureKey);
 
-    // Create alien grid using factory pattern
-    // TODO FOR CODING AGENT:
-    // Factory pattern for polymorphic grid creation based on currentGameMode
+    // Create alien grid using factory pattern based on currentGameMode
     this.levelManager = new LevelManager(this.level);
     const levelConfig = this.levelManager.getLevelConfig();
 
-    // EXAMPLE FACTORY PATTERN (currently only Space Invaders implemented):
+    // Mode-specific creation
     if (this.currentGameMode === GameMode.GALAGA) {
       // Galaga grid (Game 2)
       this.alienGrid = new GalagaGrid(
@@ -445,8 +454,6 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Manual mode switching (if enabled)
-    // TODO FOR CODING AGENT:
-    // Number keys to force game mode for testing
     if (ENABLE_MANUAL_MODE_SWITCH) {
       this.input.keyboard?.on('keydown-ONE', () => {
         this.forceGameMode(GameMode.SPACE_INVADERS);
@@ -692,7 +699,29 @@ export class GameScene extends Phaser.Scene {
     this.levelManager = new LevelManager(this.level);
     const levelConfig = this.levelManager.getLevelConfig();
     await this.prepareAlienFaceTextures();
-    this.alienGrid = new SpaceInvadersGrid(this, 100, 100, levelConfig.alienRows, levelConfig.alienCols, levelConfig.alienSpeed, this.alienFaceTextures, this.level);
+    if (this.currentGameMode === GameMode.GALAGA) {
+      this.alienGrid = new GalagaGrid(
+        this,
+        100,
+        100,
+        3,
+        levelConfig.alienCols,
+        levelConfig.galagaFormationSpeed || 60,
+        this.alienFaceTextures,
+        this.level
+      );
+    } else {
+      this.alienGrid = new SpaceInvadersGrid(
+        this,
+        100,
+        100,
+        levelConfig.alienRows,
+        levelConfig.alienCols,
+        levelConfig.alienSpeed,
+        this.alienFaceTextures,
+        this.level
+      );
+    }
     
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
@@ -779,16 +808,8 @@ export class GameScene extends Phaser.Scene {
    * Force a specific game mode (manual switch)
    * @param mode - The mode to switch to
    *
-   * TODO FOR CODING AGENT:
-   * Called by number key handlers (1 and 2)
-   * Shows notification then restarts level with new mode
-   *
-   * ALGORITHM:
-   * 1. Check if mode is already current - if so, ignore
-   * 2. Update currentGameMode
-   * 3. Reset levelsSinceLastSwitch to 0
-   * 4. Show notification for 1.5 seconds
-   * 5. Restart current level with new mode
+   * Called by number key handlers (1 and 2). Shows transition scene
+   * then restarts current level with new mode.
    */
   private forceGameMode(mode: GameMode): void {
     if (this.currentGameMode === mode) {
@@ -813,15 +834,8 @@ export class GameScene extends Phaser.Scene {
    * Switch game mode (internal method)
    * @param newMode - The mode to switch to
    *
-   * TODO FOR CODING AGENT:
-   * Called by checkAutoSwitch() when AUTO_SWITCH_INTERVAL is reached
-   * Shows notification then advances to next level with new mode
-   *
-   * ALGORITHM:
-   * 1. Update currentGameMode
-   * 2. Reset levelsSinceLastSwitch
-   * 3. Show notification for 2 seconds
-   * 4. Advance to next level with new mode
+   * Called by checkAutoSwitch() when AUTO_SWITCH_INTERVAL is reached.
+   * Shows transition scene then advances to next level with new mode.
    */
   private switchGameMode(newMode: GameMode): void {
     console.log(`[GameScene] Auto mode switch to ${getGameModeName(newMode)}`);
@@ -841,18 +855,10 @@ export class GameScene extends Phaser.Scene {
   /**
    * Check if auto mode switch should occur
    *
-   * TODO FOR CODING AGENT:
-   * Call this in nextLevel() or when level is completed
-   * Checks if levelsSinceLastSwitch >= AUTO_SWITCH_INTERVAL
-   * If so, toggles between SPACE_INVADERS and GALAGA
+   * Called when level is completed. Checks if levelsSinceLastSwitch
+   * has reached AUTO_SWITCH_INTERVAL and switches modes if so.
    *
-   * ALGORITHM:
-   * 1. Increment levelsSinceLastSwitch
-   * 2. If levelsSinceLastSwitch >= AUTO_SWITCH_INTERVAL:
-   *    - Toggle mode (SPACE_INVADERS ↔ GALAGA)
-   *    - Call switchGameMode(newMode)
-   *    - Return true (mode switched)
-   * 3. Else return false (no switch)
+   * @returns true if mode switched, false otherwise
    */
   private checkAutoSwitch(): boolean {
     this.levelsSinceLastSwitch++;
