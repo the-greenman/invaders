@@ -1,6 +1,6 @@
 import { BaseAlienGrid } from './BaseAlienGrid';
 import { WaveManager } from '../systems/WaveManager';
-import { Alien } from './Alien';
+import { Alien, AlienState } from './Alien';
 import { GAME_WIDTH, GALAGA_FORMATION_SPEED } from '../constants';
 
 /**
@@ -45,13 +45,11 @@ export class GalagaGrid extends BaseAlienGrid {
 
     this.formationSpeed = formationSpeed;
 
-    // TODO: Create WaveManager instance
-    // this.waveManager = new WaveManager(this, scene);
+    // Create WaveManager instance
+    this.waveManager = new WaveManager(this, scene);
 
-    // TODO: Create alien grid using base class method
-    // this.createAlienGrid(rows, cols);
-
-    throw new Error('TODO: Implement GalagaGrid constructor');
+    // Create alien grid using base class method
+    this.createAlienGrid(rows, cols);
   }
 
   /**
@@ -68,30 +66,35 @@ export class GalagaGrid extends BaseAlienGrid {
    * IMPORTANT: Use delta for frame-independent movement!
    */
   update(delta: number): void {
-    // TODO: Implement smooth movement
-    // const movement = this.formationSpeed * this.direction * (delta / 1000);
+    // Smooth movement using pixels-per-second
+    const movement = this.formationSpeed * this.direction * (delta / 1000);
 
-    // if (this.checkEdgeCollision()) {
-    //   this.direction *= -1;
-    // }
+    if (this.checkEdgeCollision()) {
+      this.direction *= -1;
+    }
 
-    // for (const alien of this.getAliensInFormation()) {
-    //   alien.move(movement, 0);
-    // }
+    for (const alien of this.getAliensInFormation()) {
+      alien.move(movement, 0);
+    }
 
-    // this.waveManager.update(delta);
-    // this.dropBombs();
-
-    throw new Error('TODO: Implement GalagaGrid.update()');
+    this.waveManager.update(delta);
+    this.dropBombs();
   }
 
   /**
    * Get aliens currently in formation (not attacking or returning)
    */
   private getAliensInFormation(): Alien[] {
-    // TODO: Filter aliens by state === AlienState.IN_FORMATION
-    // Return array of aliens in formation
-    return [];
+    const inFormation: Alien[] = [];
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        const alien = this.aliens[row][col];
+        if (alien && alien.isAlive() && alien.getState() === AlienState.IN_FORMATION) {
+          inFormation.push(alien);
+        }
+      }
+    }
+    return inFormation;
   }
 
   /**
