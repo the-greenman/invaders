@@ -706,7 +706,10 @@ export class GameScene extends Phaser.Scene {
     } else {
       // Respawn player after delay
       this.time.delayedCall(2000, () => {
-        this.player?.reset(GAME_WIDTH / 2, this.getPlayerStartY());
+        const respawnX = this.currentGameMode === GameMode.GALAGA
+          ? (this.player?.x ?? (GAME_WIDTH / 2))
+          : (GAME_WIDTH / 2);
+        this.player?.reset(respawnX, this.getPlayerStartY());
       });
     }
   }
