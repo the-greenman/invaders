@@ -682,8 +682,18 @@ export class GameScene extends Phaser.Scene {
     
     if (!alien.isAlive() || !player.active) return;
     
-    // Game over immediately
-    this.gameOver();
+    if (this.currentGameMode === GameMode.GALAGA) {
+      // In Galaga mode, alien crashes cause alien to explode and player loses a life
+      // Destroy alien without awarding points for a crash
+      alien.destroy();
+      this.alienGrid?.removeAlien(alien);
+      // Damage player (lose a life and possibly respawn)
+      this.handlePlayerDeath();
+      this.audioManager?.play('player-hit');
+    } else {
+      // Classic SI behavior: collision is immediate game over
+      this.gameOver();
+    }
   }
 
   private handlePlayerDeath(): void {
