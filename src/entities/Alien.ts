@@ -40,7 +40,7 @@ export class Alien extends Phaser.GameObjects.Sprite {
   private alive: boolean = true;
 
   // Galaga Mode (Game 2) State Machine
-  private state: AlienState = AlienState.IN_FORMATION;
+  private alienState: AlienState = AlienState.IN_FORMATION;
   private formationPosition: { x: number; y: number } = { x: 0, y: 0 };
   private attackPath: AttackPath | null = null;
 
@@ -193,7 +193,7 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * This is used by GalagaGrid and WaveManager to determine behavior
    */
   getState(): AlienState {
-    return this.state;
+    return this.alienState;
   }
 
   /**
@@ -207,8 +207,8 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * - RETURNING → IN_FORMATION (when arrived at formation)
    * - Any → DESTROYED (when killed)
    */
-  setState(newState: AlienState): void {
-    this.state = newState;
+  setAlienState(newState: AlienState): void {
+    this.alienState = newState;
     if (newState === AlienState.DESTROYED) {
       this.alive = false;
     }
@@ -274,7 +274,7 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * 3. Update physics body with body.reset(x, y)
    */
   followPath(delta: number): void {
-    if (!this.attackPath || this.state !== AlienState.ATTACKING) {
+    if (!this.attackPath || this.alienState !== AlienState.ATTACKING) {
       return;
     }
 

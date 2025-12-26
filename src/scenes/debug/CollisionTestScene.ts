@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Player } from '../../entities/Player';
 import { Bullet } from '../../entities/Bullet';
 import { Alien } from '../../entities/Alien';
-import { AlienGrid } from '../../entities/SpaceInvadersGrid';
+import { SpaceInvadersGrid } from '../../entities/SpaceInvadersGrid';
 import { GAME_WIDTH, GAME_HEIGHT, ALIEN_ROWS, ALIEN_COLS } from '../../constants';
 
 export class CollisionTestScene extends Phaser.Scene {

@@ -1,16 +1,9 @@
 import Phaser from 'phaser';
-import { Alien } from './Alien';
-import { Bomb } from './Bomb';
+import { BaseAlienGrid } from './BaseAlienGrid';
 import {
-  ALIEN_SPACING_X,
-  ALIEN_SPACING_Y,
-  GAME_WIDTH,
   ALIEN_WIDTH,
-  ALIEN_HEIGHT,
-  ABDUCTION_THRESHOLD_Y,
-  BOMB_DROP_ENABLED,
-  BOMB_DROP_BASE_CHANCE,
-  BOMB_DROP_LEVEL_INCREASE
+  GAME_WIDTH,
+  BOMB_DROP_ENABLED
 } from '../constants';
 
 /**
@@ -22,21 +15,13 @@ import {
  * This is the original AlienGrid renamed for Game Mode system.
  * NO LOGIC CHANGES - Game 1 behavior preserved exactly.
  *
- * Extends Phaser.GameObjects.Container to group all aliens.
+ * Extends BaseAlienGrid to share common logic with GalagaGrid.
  */
 
-export class SpaceInvadersGrid extends Phaser.GameObjects.Container {
-  private aliens: (Alien | null)[][] = [];
-  private direction: number = 1; // 1 for right, -1 for left
+export class SpaceInvadersGrid extends BaseAlienGrid {
   private speed: number;
-  private level: number = 1; // Current game level for bomb drop scaling
   private moveTimer: Phaser.Time.TimerEvent | null = null;
-  private rows: number;
-  private cols: number;
-  private debugging: boolean = false;
   private stepIndex: number = 0;
-  private faceTextures: string[];
-  private faceTextureIndex: number = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -48,14 +33,9 @@ export class SpaceInvadersGrid extends Phaser.GameObjects.Container {
     faceTextures: string[] = [],
     level: number = 1
   ) {
-    super(scene, x, y);
-    scene.add.existing(this);
+    super(scene, x, y, rows, cols, faceTextures, level);
 
     this.speed = speed;
-    this.rows = rows;
-    this.cols = cols;
-    this.faceTextures = faceTextures;
-    this.level = level;
 
     this.createAlienGrid(rows, cols);
     this.startMovement();
@@ -74,15 +54,6 @@ export class SpaceInvadersGrid extends Phaser.GameObjects.Container {
     this.debugLog('bounds', { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom) });
   }
 
-  public setDebug(enabled: boolean): void {
-    this.debugging = enabled;
-    this.debugLog('debugging set to', enabled);
-  }
-
-  private debugLog(...args: any[]): void {
-    if (this.debugging) console.log('[AlienGrid]', ...args);
-  }
-
   public dumpState(label: string = 'dump'): void {
     const leftmost = this.getLeftmostAliveAlien();
     const rightmost = this.getRightmostAliveAlien();
@@ -97,61 +68,9 @@ export class SpaceInvadersGrid extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Create the initial alien formation
-   * @param rows - Number of alien rows
-   * @param cols - Number of alien columns
-   *
-   * TODO:
-   * 1. Initialize aliens array
-   * 2. Create Alien instances in grid pattern
-   * 3. Add aliens to this container
-   * 4. Set up alien types (different rows have different types)
-   */
-  private createAlienGrid(rows: number, cols: number): void {
-    this.aliens = [];
-    
-    for (let row = 0; row < rows; row++) {
-      this.aliens[row] = [];
-      for (let col = 0; col < cols; col++) {
-        const localX = col * ALIEN_SPACING_X;
-        const localY = row * ALIEN_SPACING_Y;
-
-        // Different alien types for different rows
-        let type = 0; // bottom rows
-        if (row < 1) type = 2; // top row
-        else if (row < 3) type = 1; // middle rows
-
-        const texKey = this.faceTextures.length > 0
-          ? this.faceTextures[this.faceTextureIndex++ % this.faceTextures.length]
-          : undefined;
-
-        // Place in world space relative to grid origin
-        const alien = new Alien(this.scene, this.x + localX, this.y + localY, type, { row, col }, texKey);
-        this.aliens[row][col] = alien;
-        // Note: do NOT add as a container child; keep in world space to avoid container physics issues
-      }
-    }
-
-    // Debug: verify world-space placement and edges
-    const leftmost = this.getLeftmostAliveAlien();
-    const rightmost = this.getRightmostAliveAlien();
-    if (leftmost && rightmost) {
-      const leftEdge = leftmost.x - ALIEN_WIDTH * 0.5;
-      const rightEdge = rightmost.x + ALIEN_WIDTH * 0.5;
-      const parentFlag = (leftmost as any).parentContainer ? 'IN_CONTAINER' : 'WORLD_SPACE';
-      this.debugLog('postCreate', {
-        mode: parentFlag,
-        leftmostX: Math.round(leftmost.x), rightmostX: Math.round(rightmost.x),
-        leftEdge: Math.round(leftEdge), rightEdge: Math.round(rightEdge)
-      });
-    }
-  }
-
-  /**
    * Update alien grid movement and bomb dropping
    * @param delta - Time since last frame in ms
    *
-   * TODO:
    * 1. Move all aliens horizontally
    * 2. Check for edge collision and change direction
    * 3. Move down if direction changed
@@ -180,7 +99,6 @@ export class SpaceInvadersGrid extends Phaser.GameObjects.Container {
   /**
    * Move all aliens horizontally
    *
-   * TODO:
    * 1. Calculate movement offset based on direction and speed
    * 2. Move each alive alien
    */
@@ -210,37 +128,8 @@ export class SpaceInvadersGrid extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Check if any alien hit the screen edge
-   * @returns true if edge was hit
-   *
-   * TODO:
-   * 1. Get screen boundaries
-   * 2. Check each alive alien's position
-   * 3. Return true if any alien is at edge
-   */
-  private checkEdgeCollision(): boolean {
-    const margin = 50;
-    const leftmost = this.getLeftmostAliveAlien();
-    const rightmost = this.getRightmostAliveAlien();
-    if (!leftmost || !rightmost) return false;
-
-    // Aliens are in world space now
-    const leftEdge = leftmost.x - ALIEN_WIDTH * 0.5;
-    const rightEdge = rightmost.x + ALIEN_WIDTH * 0.5;
-    const atEdge = (leftEdge <= margin && this.direction === -1) ||
-                   (rightEdge >= GAME_WIDTH - margin && this.direction === 1);
-    this.debugLog('edgeCheck2', {
-      leftmostX: Math.round(leftmost.x), rightmostX: Math.round(rightmost.x),
-      leftEdge: Math.round(leftEdge), rightEdge: Math.round(rightEdge),
-      margin, dir: this.direction, atEdge
-    });
-    return atEdge;
-  }
-
-  /**
    * Move all aliens down and reverse direction
    *
-   * TODO:
    * 1. Reverse direction
    * 2. Move all aliens down by one row height
    */
@@ -278,167 +167,6 @@ export class SpaceInvadersGrid extends Phaser.GameObjects.Container {
     this.debugLog('syncBodiesToWorld', { synced: count });
   }
 
-  private getLeftmostAliveAlien(): Alien | null {
-    for (let col = 0; col < this.cols; col++) {
-      for (let row = 0; row < this.rows; row++) {
-        const alien = this.aliens[row][col];
-        if (alien && alien.isAlive()) {
-          return alien;
-        }
-      }
-    }
-    return null;
-  }
-
-  private getRightmostAliveAlien(): Alien | null {
-    for (let col = this.cols - 1; col >= 0; col--) {
-      for (let row = 0; row < this.rows; row++) {
-        const alien = this.aliens[row][col];
-        if (alien && alien.isAlive()) {
-          return alien;
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Randomly drop bombs from aliens using per-frame probability
-   * This replicates the exact same logic as BombTestScene
-   */
-  private dropBombs(): void {
-    const dropChance = this.calculateBombDropChance();
-
-    // Check each alien for bomb drop (per frame, like BombTestScene)
-    for (let row = 0; row < this.rows; row++) {
-      for (let col = 0; col < this.cols; col++) {
-        const alien = this.aliens[row][col];
-        if (!alien || !alien.isAlive()) continue;
-
-        // Random chance to drop bomb
-        if (Math.random() < dropChance) {
-          // Find bottom-most alien in this column
-          let bottomAlien: Alien | null = null;
-          for (let r = this.rows - 1; r >= 0; r--) {
-            const a = this.aliens[r][col];
-            if (a && a.isAlive()) {
-              bottomAlien = a;
-              break;
-            }
-          }
-
-          if (bottomAlien) {
-            // Emit dropBomb event for GameScene to handle (aliens are world-space)
-            const wx = bottomAlien.x;
-            const wy = bottomAlien.y + 20;
-            this.debugLog('bombDrop', { col, wx: Math.round(wx), wy: Math.round(wy) });
-            this.scene.events.emit('dropBomb', wx, wy);
-            return; // Only one bomb per frame max
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Calculate bomb drop chance for current level
-   * Uses the same formula as BombTestScene
-   */
-  private calculateBombDropChance(): number {
-    return BOMB_DROP_BASE_CHANCE + (BOMB_DROP_LEVEL_INCREASE * (this.level - 1));
-  }
-
-  /**
-   * Get all aliens in the grid (for physics group integration)
-   * @returns 2D array of all aliens (including null positions)
-   */
-  getAliens(): (Alien | null)[][] {
-    return this.aliens;
-  }
-
-  /**
-   * Get all alive aliens in the grid (for physics group integration)
-   * @returns Flat array of alive aliens
-   */
-  getAliveAliens(): Alien[] {
-    const aliveAliens: Alien[] = [];
-    for (let row = 0; row < this.aliens.length; row++) {
-      for (let col = 0; col < this.aliens[row].length; col++) {
-        const alien = this.aliens[row][col];
-        if (alien && alien.isAlive()) {
-          aliveAliens.push(alien);
-        }
-      }
-    }
-    return aliveAliens;
-  }
-
-  /**
-   * Remove an alien from the grid
-   * @param alien - Alien to remove
-   */
-  removeAlien(alien: Alien): void {
-    for (let row = 0; row < this.aliens.length; row++) {
-      for (let col = 0; col < this.aliens[row].length; col++) {
-        if (this.aliens[row][col] === alien) {
-          this.aliens[row][col] = null;
-          return;
-        }
-      }
-    }
-  }
-
-  /**
-   * Check if all aliens are destroyed
-   * @returns true if no alive aliens remain
-   */
-  isAllDestroyed(): boolean {
-    for (let row = 0; row < this.aliens.length; row++) {
-      for (let col = 0; col < this.aliens[row].length; col++) {
-        const alien = this.aliens[row][col];
-        if (alien && alien.isAlive()) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Get number of alive aliens
-   * @returns Count of living aliens
-   */
-  getAliveCount(): number {
-    let count = 0;
-    for (let row = 0; row < this.aliens.length; row++) {
-      for (let col = 0; col < this.aliens[row].length; col++) {
-        const alien = this.aliens[row][col];
-        if (alien && alien.isAlive()) {
-          count++;
-        }
-      }
-    }
-    return count;
-  }
-
-  /**
-   * Check if aliens reached the player level
-   * @returns true if any alien is too low
-   */
-  reachedPlayer(): boolean {
-    for (let row = 0; row < this.aliens.length; row++) {
-      for (let col = 0; col < this.aliens[row].length; col++) {
-        const alien = this.aliens[row][col];
-        if (!alien || !alien.isAlive()) continue;
-        const bottom = alien.y + alien.displayHeight * 0.5;
-        if (bottom >= ABDUCTION_THRESHOLD_Y) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   /**
    * Increase difficulty (speed and level-based bomb frequency)
    * @param newSpeed - New movement speed
@@ -461,10 +189,10 @@ export class SpaceInvadersGrid extends Phaser.GameObjects.Container {
     });
   }
 
-  destroy(): void {
+  destroy(fromScene?: boolean): void {
     if (this.moveTimer) {
       this.moveTimer.remove();
     }
-    super.destroy();
+    super.destroy(fromScene);
   }
 }
