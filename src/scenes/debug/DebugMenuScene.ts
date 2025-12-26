@@ -1,24 +1,38 @@
 import Phaser from 'phaser';
 
+type DebugMenuItem = {
+  label: string;
+  scene: string;
+  shortcut?: {
+    display: string;
+    phaserKeydownEvent: string;
+  };
+};
+
 export class DebugMenuScene extends Phaser.Scene {
-  private menuItems: { text: string; scene: string }[] = [
-    { text: '1 - Player Movement & Shooting', scene: 'PlayerTestScene' },
-    { text: '2 - Armada Movement', scene: 'ArmadaTestScene' },
-    { text: '3 - Bullet Collisions', scene: 'CollisionTestScene' },
-    { text: '4 - Camera Capture to Sprite', scene: 'CameraTestScene' },
-    { text: '5 - Sprite Debug (SVG & Faces)', scene: 'SpriteDebugScene' },
-    { text: '6 - Compare: Game vs Sprite Debug', scene: 'CompareScene' },
-    { text: '7 - Controller Debug', scene: 'ControllerDebugScene' },
-    { text: '8 - Stored Faces', scene: 'StoredFacesScene' },
-    { text: '9 - Abduction Animation', scene: 'AbductionScene' },
-    { text: '0 - Abduction Line', scene: 'AbductionLineScene' },
-    { text: 'B - Bomb Drop Test', scene: 'BombTestScene' },
-    { text: 'M - Mobile Touch Controls', scene: 'MobileDebugScene' },
-    { text: 'ESC - Back to Main Menu', scene: 'MenuScene' }
+  private menuItems: DebugMenuItem[] = [
+    { label: 'Player Movement & Shooting', scene: 'PlayerTestScene', shortcut: { display: '1', phaserKeydownEvent: 'keydown-ONE' } },
+    { label: 'Armada Movement', scene: 'ArmadaTestScene', shortcut: { display: '2', phaserKeydownEvent: 'keydown-TWO' } },
+    { label: 'Bullet Collisions', scene: 'CollisionTestScene', shortcut: { display: '3', phaserKeydownEvent: 'keydown-THREE' } },
+    { label: 'Camera Capture to Sprite', scene: 'CameraTestScene', shortcut: { display: '4', phaserKeydownEvent: 'keydown-FOUR' } },
+    { label: 'Sprite Debug (SVG & Faces)', scene: 'SpriteDebugScene', shortcut: { display: '5', phaserKeydownEvent: 'keydown-FIVE' } },
+    { label: 'Compare: Game vs Sprite Debug', scene: 'CompareScene', shortcut: { display: '6', phaserKeydownEvent: 'keydown-SIX' } },
+    { label: 'Controller Debug', scene: 'ControllerDebugScene', shortcut: { display: '7', phaserKeydownEvent: 'keydown-SEVEN' } },
+    { label: 'Stored Faces', scene: 'StoredFacesScene', shortcut: { display: '8', phaserKeydownEvent: 'keydown-EIGHT' } },
+    { label: 'Abduction Animation', scene: 'AbductionScene', shortcut: { display: '9', phaserKeydownEvent: 'keydown-NINE' } },
+    { label: 'Abduction Line', scene: 'AbductionLineScene', shortcut: { display: '0', phaserKeydownEvent: 'keydown-ZERO' } },
+    { label: 'Bomb Drop Test', scene: 'BombTestScene', shortcut: { display: 'B', phaserKeydownEvent: 'keydown-B' } },
+    { label: 'Mobile Touch Controls', scene: 'MobileDebugScene', shortcut: { display: 'M', phaserKeydownEvent: 'keydown-M' } },
+    { label: 'Back to Main Menu', scene: 'MenuScene', shortcut: { display: 'ESC', phaserKeydownEvent: 'keydown-ESC' } }
   ];
 
   private textObjects: Phaser.GameObjects.Text[] = [];
   private selectedIndex: number = 0;
+
+  private scrollOffset: number = 0;
+  private itemsPerPage: number = 0;
+  private menuStartY: number = 150;
+  private menuItemSpacing: number = 40;
   
   // Input state
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
@@ -27,12 +41,16 @@ export class DebugMenuScene extends Phaser.Scene {
   private prevFire: boolean = false;
   private lastStickMove: number = 0;
 
+  private initialUpdateEvent: Phaser.Time.TimerEvent | null = null;
+
   constructor() {
     super({ key: 'DebugMenuScene' });
   }
 
   create(): void {
-    const { width } = this.cameras.main;
+    this.resetState();
+
+    const { width, height } = this.cameras.main;
 
     this.add.text(width / 2, 60, 'DEBUG MENU', {
       fontSize: '36px',
@@ -40,23 +58,33 @@ export class DebugMenuScene extends Phaser.Scene {
       color: '#00ff00'
     }).setOrigin(0.5);
 
-    // Create menu items
+    this.itemsPerPage = Math.max(1, Math.floor((height - this.menuStartY - 40) / this.menuItemSpacing));
+
     this.menuItems.forEach((item, i) => {
-      const text = this.add.text(width / 2, 150 + i * 40, item.text, {
+      const prefix = item.shortcut ? `${item.shortcut.display} - ` : '';
+      const text = this.add.text(width / 2, this.menuStartY + i * this.menuItemSpacing, `${prefix}${item.label}`, {
         fontSize: '22px',
         fontFamily: 'Courier New',
-        color: i === 0 ? '#ffff00' : '#ffffff'
+        color: '#ffffff'
       }).setOrigin(0.5);
       
       this.textObjects.push(text);
     });
 
     this.setupKeyboard();
+
+    this.input.on('wheel', this.onWheel, this);
     
     // Initial connection check
     if (this.input.gamepad && this.input.gamepad.total > 0) {
       this.gamepad = this.input.gamepad.getPad(0);
     }
+
+    this.initialUpdateEvent = this.time.delayedCall(0, () => {
+      this.updateMenuView();
+    });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown, this);
   }
 
   update(): void {
@@ -64,25 +92,60 @@ export class DebugMenuScene extends Phaser.Scene {
   }
 
   private setupKeyboard(): void {
-    // Number keys shortcuts
-    this.input.keyboard?.on('keydown-ONE', () => this.launchScene(0));
-    this.input.keyboard?.on('keydown-TWO', () => this.launchScene(1));
-    this.input.keyboard?.on('keydown-THREE', () => this.launchScene(2));
-    this.input.keyboard?.on('keydown-FOUR', () => this.launchScene(3));
-    this.input.keyboard?.on('keydown-FIVE', () => this.launchScene(4));
-    this.input.keyboard?.on('keydown-SIX', () => this.launchScene(5));
-    this.input.keyboard?.on('keydown-SEVEN', () => this.launchScene(6));
-    this.input.keyboard?.on('keydown-EIGHT', () => this.launchScene(7));
-    this.input.keyboard?.on('keydown-NINE', () => this.launchScene(8));
-    this.input.keyboard?.on('keydown-ZERO', () => this.launchScene(9));
-    this.input.keyboard?.on('keydown-B', () => this.launchScene(10));
-    this.input.keyboard?.on('keydown-M', () => this.launchScene(11));
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
+    this.menuItems.forEach((item, index) => {
+      if (!item.shortcut) return;
+
+      this.input.keyboard?.on(item.shortcut.phaserKeydownEvent, () => {
+        this.launchScene(index);
+      });
+    });
 
     // Navigation keys
     this.input.keyboard?.on('keydown-UP', () => this.moveSelection(-1));
     this.input.keyboard?.on('keydown-DOWN', () => this.moveSelection(1));
     this.input.keyboard?.on('keydown-ENTER', () => this.launchScene(this.selectedIndex));
+
+    this.input.keyboard?.on('keydown-PAGEUP', () => this.scrollBy(-this.itemsPerPage));
+    this.input.keyboard?.on('keydown-PAGEDOWN', () => this.scrollBy(this.itemsPerPage));
+  }
+
+  private resetState(): void {
+    if (this.initialUpdateEvent) {
+      this.initialUpdateEvent.remove(false);
+      this.initialUpdateEvent = null;
+    }
+
+    this.input.off('wheel', this.onWheel, this);
+    this.input.keyboard?.removeAllListeners();
+
+    this.textObjects.forEach((text) => text.destroy());
+    this.textObjects = [];
+    this.selectedIndex = 0;
+    this.scrollOffset = 0;
+
+    this.gamepad = null;
+    this.prevUp = false;
+    this.prevDown = false;
+    this.prevFire = false;
+    this.lastStickMove = 0;
+  }
+
+  private onShutdown(): void {
+    if (this.initialUpdateEvent) {
+      this.initialUpdateEvent.remove(false);
+      this.initialUpdateEvent = null;
+    }
+
+    this.input.off('wheel', this.onWheel, this);
+    this.input.keyboard?.removeAllListeners();
+
+    this.textObjects.forEach((text) => text.destroy());
+    this.textObjects = [];
+  }
+
+  private onWheel(_pointer: Phaser.Input.Pointer, _over: unknown[], _dx: number, dy: number): void {
+    const direction = dy > 0 ? 1 : -1;
+    this.scrollBy(direction);
   }
 
   private handleGamepadInput(): void {
@@ -137,10 +200,50 @@ export class DebugMenuScene extends Phaser.Scene {
   private moveSelection(delta: number): void {
     // Update index
     this.selectedIndex = (this.selectedIndex + delta + this.menuItems.length) % this.menuItems.length;
-    
-    // Update visuals
+
+    this.ensureSelectedVisible();
+    this.updateMenuView();
+  }
+
+  private scrollBy(delta: number): void {
+    if (this.menuItems.length <= this.itemsPerPage) return;
+
+    const maxOffset = Math.max(0, this.menuItems.length - this.itemsPerPage);
+    this.scrollOffset = Phaser.Math.Clamp(this.scrollOffset + delta, 0, maxOffset);
+    this.updateMenuView();
+  }
+
+  private ensureSelectedVisible(): void {
+    if (this.menuItems.length <= this.itemsPerPage) {
+      this.scrollOffset = 0;
+      return;
+    }
+
+    const maxOffset = Math.max(0, this.menuItems.length - this.itemsPerPage);
+    if (this.selectedIndex < this.scrollOffset) {
+      this.scrollOffset = this.selectedIndex;
+    } else if (this.selectedIndex >= this.scrollOffset + this.itemsPerPage) {
+      this.scrollOffset = this.selectedIndex - this.itemsPerPage + 1;
+    }
+
+    this.scrollOffset = Phaser.Math.Clamp(this.scrollOffset, 0, maxOffset);
+  }
+
+  private updateMenuView(): void {
+    const { width } = this.cameras.main;
+
     this.textObjects.forEach((text, i) => {
-      text.setColor(i === this.selectedIndex ? '#ffff00' : '#ffffff');
+      const row = i - this.scrollOffset;
+      const visible = row >= 0 && row < this.itemsPerPage;
+      text.setVisible(visible);
+      if (visible) {
+        text.setPosition(width / 2, this.menuStartY + row * this.menuItemSpacing);
+        if (i === this.selectedIndex) {
+          text.setTint(0xffff00);
+        } else {
+          text.clearTint();
+        }
+      }
     });
   }
 
