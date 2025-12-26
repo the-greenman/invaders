@@ -278,12 +278,9 @@ export class Alien extends Phaser.GameObjects.Sprite {
       return;
     }
 
-    // TODO: Implement path following
-    // const pos = this.attackPath.getCurrentPosition(delta);
-    // this.setPosition(pos.x, pos.y);
-    // const body = this.body as Phaser.Physics.Arcade.Body;
-    // body.reset(pos.x, pos.y);
-
-    throw new Error('TODO: Implement Alien.followPath()');
+    const pos = this.attackPath.getCurrentPosition(delta);
+    this.setPosition(pos.x, pos.y);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.reset(pos.x, pos.y);
   }
 }
