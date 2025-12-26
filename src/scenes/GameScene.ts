@@ -14,6 +14,7 @@ import { FaceManager } from '../managers/FaceManager';
 import { TouchControlManager } from '../managers/TouchControlManager';
 import { LocalStorage } from '../utils/localStorage';
 import { GameMode, getGameModeName } from '../types/GameMode';
+import { getModeIntroSceneKey, getTransitionSceneKey } from '../modes/modeScenes';
 import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT, PLAYER_CORE_RADIUS, PLAYER_HEIGHT, PLAYER_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, ABDUCTION_THRESHOLD_Y, AUTO_SWITCH_INTERVAL, ENABLE_MANUAL_MODE_SWITCH } from '../constants';
 
 /**
@@ -49,8 +50,6 @@ export class GameScene extends Phaser.Scene {
   private playerTextureKey: string = 'player';
 
   // Game Mode (Galaga Mode Integration)
-  // TODO FOR CODING AGENT:
-  // Track current mode and level count for auto-switching
   private currentGameMode: GameMode = GameMode.SPACE_INVADERS;
   private levelsSinceLastSwitch: number = 0;
 
@@ -84,11 +83,15 @@ export class GameScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     // Get scene data from previous scene
-    const data = this.scene.settings.data as { level?: number; score?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number }; disableBackToMenu?: boolean };
+    const data = this.scene.settings.data as { level?: number; score?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number }, startMode?: GameMode; disableBackToMenu?: boolean };
     this.level = data.level || 1;
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
     this.disableBackToMenu = !!data.disableBackToMenu;
+    if (data.startMode !== undefined) {
+      this.currentGameMode = data.startMode;
+      this.levelsSinceLastSwitch = 0;
+    }
     
     // Reset game state
     this.gameActive = true;
@@ -219,18 +222,17 @@ export class GameScene extends Phaser.Scene {
 
     // EXAMPLE FACTORY PATTERN (currently only Space Invaders implemented):
     if (this.currentGameMode === GameMode.GALAGA) {
-      // TODO: Create Galaga grid
-      // this.alienGrid = new GalagaGrid(
-      //   this,
-      //   100,
-      //   100,
-      //   3, // Galaga uses 3 rows
-      //   levelConfig.alienCols,
-      //   levelConfig.galagaFormationSpeed || 60,
-      //   this.alienFaceTextures,
-      //   this.level
-      // );
-      throw new Error('TODO: Galaga grid creation not yet implemented');
+      // Galaga grid (Game 2)
+      this.alienGrid = new GalagaGrid(
+        this,
+        100,
+        100,
+        3,
+        levelConfig.alienCols,
+        levelConfig.galagaFormationSpeed || 60,
+        this.alienFaceTextures,
+        this.level
+      );
     } else {
       // Space Invaders grid (Game 1)
       this.alienGrid = new SpaceInvadersGrid(
@@ -346,8 +348,6 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Game Mode display (top-right, below mute button)
-    // TODO FOR CODING AGENT:
-    // Display current game mode for player awareness
     this.gameModeText = this.add.text(GAME_WIDTH - 20, 50, getGameModeName(this.currentGameMode), {
       fontSize: '16px',
       fontFamily: 'Courier New',
@@ -356,9 +356,6 @@ export class GameScene extends Phaser.Scene {
     .setOrigin(1, 0); // Top-right anchor
 
     // Wave count display (only visible in Galaga mode)
-    // TODO FOR CODING AGENT:
-    // Show active wave count when in Galaga mode
-    // Update this in update() loop by calling alienGrid.getActiveWaveCount() if it's GalagaGrid
     this.waveCountText = this.add.text(GAME_WIDTH - 20, 75, '', {
       fontSize: '14px',
       fontFamily: 'Courier New',
@@ -368,8 +365,6 @@ export class GameScene extends Phaser.Scene {
     .setVisible(this.currentGameMode === GameMode.GALAGA);
 
     // Debug hint for manual mode switching
-    // TODO FOR CODING AGENT:
-    // Only show if ENABLE_MANUAL_MODE_SWITCH is true
     if (ENABLE_MANUAL_MODE_SWITCH) {
       this.add.text(10, GAME_HEIGHT - 30, 'Press 1 or 2 to switch modes', {
         fontSize: '14px',
@@ -677,10 +672,12 @@ export class GameScene extends Phaser.Scene {
       color: '#00ff00'
     }).setOrigin(0.5);
     
-    // Wait then start next level
+    // Wait then either switch mode (auto) or start next level
     this.time.delayedCall(3000, () => {
       completeText.destroy();
-      this.startNextLevel();
+      if (!this.checkAutoSwitch()) {
+        this.startNextLevel();
+      }
     });
   }
 
@@ -797,33 +794,19 @@ export class GameScene extends Phaser.Scene {
     if (this.currentGameMode === mode) {
       return; // Already in this mode
     }
-
     console.log(`[GameScene] Manual mode switch to ${getGameModeName(mode)}`);
-
-    // TODO: Implement manual mode switch
-    // this.currentGameMode = mode;
-    // this.levelsSinceLastSwitch = 0;
-
-    // // Show notification
-    // const notification = this.add.text(
-    //   GAME_WIDTH / 2,
-    //   GAME_HEIGHT / 2,
-    //   `Switching to ${getGameModeName(mode)}...`,
-    //   {
-    //     fontSize: '24px',
-    //     fontFamily: 'Courier New',
-    //     color: '#ffff00',
-    //     align: 'center'
-    //   }
-    // ).setOrigin(0.5);
-
-    // // Restart level after delay
-    // this.time.delayedCall(1500, () => {
-    //   notification.destroy();
-    //   this.scene.restart({ level: this.level, score: this.score, useWebcam: this.useWebcam });
-    // });
-
-    throw new Error('TODO: Implement forceGameMode()');
+    // Choose dedicated transition scene or target mode intro scene; fallback to default
+    const key = getTransitionSceneKey(this.currentGameMode, mode)
+      || getModeIntroSceneKey(mode)
+      || 'ModeTransitionScene';
+    this.scene.start(key, {
+      fromMode: this.currentGameMode,
+      toMode: mode,
+      level: this.level,
+      score: this.score,
+      useWebcam: this.useWebcam,
+      advanceLevel: false
+    });
   }
 
   /**
@@ -842,31 +825,17 @@ export class GameScene extends Phaser.Scene {
    */
   private switchGameMode(newMode: GameMode): void {
     console.log(`[GameScene] Auto mode switch to ${getGameModeName(newMode)}`);
-
-    // TODO: Implement auto mode switch
-    // this.currentGameMode = newMode;
-    // this.levelsSinceLastSwitch = 0;
-
-    // // Show notification
-    // const notification = this.add.text(
-    //   GAME_WIDTH / 2,
-    //   GAME_HEIGHT / 2,
-    //   `NEW MODE UNLOCKED!\n${getGameModeName(newMode)}`,
-    //   {
-    //     fontSize: '28px',
-    //     fontFamily: 'Courier New',
-    //     color: '#00ff00',
-    //     align: 'center'
-    //   }
-    // ).setOrigin(0.5);
-
-    // // Advance to next level with new mode
-    // this.time.delayedCall(2000, () => {
-    //   notification.destroy();
-    //   this.nextLevel();
-    // });
-
-    throw new Error('TODO: Implement switchGameMode()');
+    const key = getTransitionSceneKey(this.currentGameMode, newMode)
+      || getModeIntroSceneKey(newMode)
+      || 'ModeTransitionScene';
+    this.scene.start(key, {
+      fromMode: this.currentGameMode,
+      toMode: newMode,
+      level: this.level,
+      score: this.score,
+      useWebcam: this.useWebcam,
+      advanceLevel: true
+    });
   }
 
   /**
@@ -886,20 +855,15 @@ export class GameScene extends Phaser.Scene {
    * 3. Else return false (no switch)
    */
   private checkAutoSwitch(): boolean {
-    // TODO: Implement auto-switch check
-    // this.levelsSinceLastSwitch++;
-
-    // if (this.levelsSinceLastSwitch >= AUTO_SWITCH_INTERVAL) {
-    //   const newMode = this.currentGameMode === GameMode.SPACE_INVADERS
-    //     ? GameMode.GALAGA
-    //     : GameMode.SPACE_INVADERS;
-    //   this.switchGameMode(newMode);
-    //   return true;
-    // }
-
-    // return false;
-
-    return false; // Placeholder
+    this.levelsSinceLastSwitch++;
+    if (this.levelsSinceLastSwitch >= AUTO_SWITCH_INTERVAL) {
+      const newMode = this.currentGameMode === GameMode.SPACE_INVADERS
+        ? GameMode.GALAGA
+        : GameMode.SPACE_INVADERS;
+      this.switchGameMode(newMode);
+      return true;
+    }
+    return false;
   }
 
   /**
