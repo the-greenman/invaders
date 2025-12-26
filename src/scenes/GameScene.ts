@@ -229,7 +229,8 @@ export class GameScene extends Phaser.Scene {
 
   private setupGameObjects(): void {
     // Create player
-    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 50, this.playerTextureKey);
+    const playerStartY = this.getPlayerStartY();
+    this.player = new Player(this, GAME_WIDTH / 2, playerStartY, this.playerTextureKey);
 
     // Create alien grid using factory pattern based on currentGameMode
     this.levelManager = new LevelManager(this.level);
@@ -705,9 +706,14 @@ export class GameScene extends Phaser.Scene {
     } else {
       // Respawn player after delay
       this.time.delayedCall(2000, () => {
-        this.player?.reset();
+        this.player?.reset(GAME_WIDTH / 2, this.getPlayerStartY());
       });
     }
+  }
+
+  private getPlayerStartY(): number {
+    // In Galaga mode, position the player higher to allow visibility below the ship.
+    return this.currentGameMode === GameMode.GALAGA ? (GAME_HEIGHT - 120) : (GAME_HEIGHT - 50);
   }
 
   private addScore(points: number): void {
