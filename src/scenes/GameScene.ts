@@ -382,7 +382,7 @@ export class GameScene extends Phaser.Scene {
 
     // Debug hint for manual mode switching
     if (ENABLE_MANUAL_MODE_SWITCH) {
-      this.add.text(10, GAME_HEIGHT - 30, 'Press 1 or 2 to switch modes', {
+      this.add.text(10, GAME_HEIGHT - 30, '', {
         fontSize: '14px',
         fontFamily: 'Courier New',
         color: '#666666'
