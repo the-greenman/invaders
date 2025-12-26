@@ -7,13 +7,13 @@
 ---
 
 ## Phase 1: Complete Alien State Machine
-- **Status:** 🆓 AVAILABLE
-- **Agent:** _unclaimed_
-- **Branch:** _not started_
-- **File:** `src/entities/Alien.ts` (line 276)
+- **Status:** 🚧 IN PROGRESS
+- **Agent:** Cascade
+- **Branch:** galaga/phase1-alien-followpath
+- **Started:** 2025-12-26 12:15
 - **Dependencies:** None ✅
 - **Estimated Effort:** 15 minutes
-- **Notes:** Only need to implement `followPath()` method - structure already exists
+- **Notes:** Implementing followPath() method
 
 ---
 
