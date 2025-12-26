@@ -23,6 +23,7 @@ export class DebugMenuScene extends Phaser.Scene {
     { label: 'Abduction Animation', scene: 'AbductionScene', shortcut: { display: '9', phaserKeydownEvent: 'keydown-NINE' } },
     { label: 'Abduction Line', scene: 'AbductionLineScene', shortcut: { display: '0', phaserKeydownEvent: 'keydown-ZERO' } },
     { label: 'Bomb Drop Test', scene: 'BombTestScene', shortcut: { display: 'B', phaserKeydownEvent: 'keydown-B' } },
+    { label: 'Path Test (Attack Paths)', scene: 'PathTestScene', shortcut: { display: 'P', phaserKeydownEvent: 'keydown-P' } },
     { label: 'Mobile Touch Controls', scene: 'MobileDebugScene', shortcut: { display: 'M', phaserKeydownEvent: 'keydown-M' } },
     { label: 'Back to Main Menu', scene: 'MenuScene', shortcut: { display: 'ESC', phaserKeydownEvent: 'keydown-ESC' } }
   ];
