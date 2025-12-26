@@ -101,20 +101,20 @@
 ---
 
 ## Phase 6: Complete GameScene Mode Switching
-- **Status:** ⏳ BLOCKED
-- **Agent:** _unclaimed_
-- **Branch:** _not started_
+- **Status:** ⚠️ NEEDS REVIEW
+- **Agent:** Cascade
+- **Branch:** feature/galaga-phase6-mode-switching
 - **File:** `src/scenes/GameScene.ts`
-- **Dependencies:** Phase 4 ✅ (BLOCKED until complete)
+- **Dependencies:** Phase 4 ✅
 - **Estimated Effort:** 1-2 hours
 - **Sub-tasks:**
-  - [ ] 6.1: Implement switchGameMode()
-  - [ ] 6.2: Implement checkAutoSwitch()
-  - [ ] 6.3: Implement forceGameMode()
-  - [ ] 6.4: Add keyboard handlers (1/2 keys)
-  - [ ] 6.5: Create showModeChangeNotification()
-  - [ ] 6.6: Update onWaveCleared()
-- **Notes:** Final integration - brings everything together
+  - [x] 6.1: Implement switchGameMode()
+  - [x] 6.2: Implement checkAutoSwitch()
+  - [x] 6.3: Implement forceGameMode()
+  - [x] 6.4: Add keyboard handlers (1/2 keys)
+  - [x] 6.5: Create showModeChangeNotification()
+  - [x] 6.6: Update onWaveCleared()
+- **Notes:** Integrated transition/intro scene registry, factory creation in startNextLevel, and wave count display.
 
 ---
 

@@ -6,7 +6,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../constants';
  *
  * Base class and 5 concrete implementations for different attack patterns.
  *
- * TODO FOR CODING AGENT:
+ *
  * 1. Implement the base AttackPath class with:
  *    - start(startX, startY) method to initialize path
  *    - getCurrentPosition(delta) returns {x, y, t} where t is progress 0-1

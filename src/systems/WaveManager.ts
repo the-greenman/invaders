@@ -14,7 +14,7 @@ import {
 /**
  * Wave Manager - Coordinates alien attack waves
  *
- * TODO FOR CODING AGENT:
+ *
  * 1. Implement wave launching logic:
  *    - Select N aliens from bottom row (random selection)
  *    - Assign attack paths to each alien
