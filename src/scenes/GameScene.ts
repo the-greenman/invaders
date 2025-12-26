@@ -102,7 +102,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     const settings = LocalStorage.getSettings();
-    this.backButtonIndex = settings.controllerBackButton ?? 10;
+    this.backButtonIndex = settings.controllerBackButton ?? 1;
 
     // Prepare textures with faces if available
     await this.preparePlayerTexture();

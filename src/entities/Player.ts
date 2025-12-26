@@ -24,6 +24,8 @@ export class Player extends Phaser.GameObjects.Sprite {
   private fireButtonIndex: number = 0;
   private touchControls: TouchControlManager | null = null;
 
+  private lastSettingsPollTime: number = 0;
+
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string = 'player') {
     super(scene, x, y, textureKey);
     scene.add.existing(this);
@@ -94,6 +96,17 @@ export class Player extends Phaser.GameObjects.Sprite {
   update(delta: number): void {
     if (!this.active) return;
 
+    // Allow controller bindings to take effect without restarting the scene.
+    // (ControllerDebugScene can change localStorage while this Player instance is alive.)
+    if (this.scene.time && this.scene.time.now - this.lastSettingsPollTime > 500) {
+      const settings = LocalStorage.getSettings();
+      const configured = settings.controllerFireButton;
+      if (typeof configured === 'number' && configured !== this.fireButtonIndex) {
+        this.fireButtonIndex = configured;
+      }
+      this.lastSettingsPollTime = this.scene.time.now;
+    }
+
     // Lazy acquisition: if no gamepad yet, check if one is available
     if (!this.gamepad && this.scene.input.gamepad && this.scene.input.gamepad.total > 0) {
       this.gamepad = this.scene.input.gamepad.getPad(0);
@@ -144,7 +157,9 @@ export class Player extends Phaser.GameObjects.Sprite {
     body.setVelocityX(moveX * PLAYER_SPEED);
 
     // Handle shooting
-    const padShoot = this.gamepad ? this.gamepad.buttons[this.fireButtonIndex]?.pressed : false;
+    const padShoot = (this.gamepad && this.fireButtonIndex >= 0)
+      ? this.gamepad.buttons[this.fireButtonIndex]?.pressed
+      : false;
     const touchShoot = this.touchControls ? this.touchControls.consumeShootRequest() : false;
 
     if (this.spaceKey.isDown && this.canShoot) {
