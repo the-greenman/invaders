@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { LocalStorage } from '../../utils/localStorage';
 
 type DebugMenuItem = {
   label: string;
@@ -11,13 +12,13 @@ type DebugMenuItem = {
 
 export class DebugMenuScene extends Phaser.Scene {
   private menuItems: DebugMenuItem[] = [
-    { label: 'Player Movement & Shooting', scene: 'PlayerTestScene', shortcut: { display: '1', phaserKeydownEvent: 'keydown-ONE' } },
-    { label: 'Armada Movement', scene: 'ArmadaTestScene', shortcut: { display: '2', phaserKeydownEvent: 'keydown-TWO' } },
-    { label: 'Bullet Collisions', scene: 'CollisionTestScene', shortcut: { display: '3', phaserKeydownEvent: 'keydown-THREE' } },
-    { label: 'Camera Capture to Sprite', scene: 'CameraTestScene', shortcut: { display: '4', phaserKeydownEvent: 'keydown-FOUR' } },
-    { label: 'Sprite Debug (SVG & Faces)', scene: 'SpriteDebugScene', shortcut: { display: '5', phaserKeydownEvent: 'keydown-FIVE' } },
-    { label: 'Compare: Game vs Sprite Debug', scene: 'CompareScene', shortcut: { display: '6', phaserKeydownEvent: 'keydown-SIX' } },
-    { label: 'Controller Debug', scene: 'ControllerDebugScene', shortcut: { display: '7', phaserKeydownEvent: 'keydown-SEVEN' } },
+    { label: 'Controller Debug', scene: 'ControllerDebugScene', shortcut: { display: '1', phaserKeydownEvent: 'keydown-ONE' } },
+    { label: 'Player Movement & Shooting', scene: 'PlayerTestScene', shortcut: { display: '2', phaserKeydownEvent: 'keydown-TWO' } },
+    { label: 'Armada Movement', scene: 'ArmadaTestScene', shortcut: { display: '3', phaserKeydownEvent: 'keydown-THREE' } },
+    { label: 'Bullet Collisions', scene: 'CollisionTestScene', shortcut: { display: '4', phaserKeydownEvent: 'keydown-FOUR' } },
+    { label: 'Camera Capture to Sprite', scene: 'CameraTestScene', shortcut: { display: '5', phaserKeydownEvent: 'keydown-FIVE' } },
+    { label: 'Sprite Debug (SVG & Faces)', scene: 'SpriteDebugScene', shortcut: { display: '6', phaserKeydownEvent: 'keydown-SIX' } },
+    { label: 'Compare: Game vs Sprite Debug', scene: 'CompareScene', shortcut: { display: '7', phaserKeydownEvent: 'keydown-SEVEN' } },
     { label: 'Stored Faces', scene: 'StoredFacesScene', shortcut: { display: '8', phaserKeydownEvent: 'keydown-EIGHT' } },
     { label: 'Abduction Animation', scene: 'AbductionScene', shortcut: { display: '9', phaserKeydownEvent: 'keydown-NINE' } },
     { label: 'Abduction Line', scene: 'AbductionLineScene', shortcut: { display: '0', phaserKeydownEvent: 'keydown-ZERO' } },
@@ -39,7 +40,10 @@ export class DebugMenuScene extends Phaser.Scene {
   private prevUp: boolean = false;
   private prevDown: boolean = false;
   private prevFire: boolean = false;
+  private prevBack: boolean = false;
   private lastStickMove: number = 0;
+
+  private backButtonIndex: number = 1;
 
   private initialUpdateEvent: Phaser.Time.TimerEvent | null = null;
 
@@ -49,6 +53,9 @@ export class DebugMenuScene extends Phaser.Scene {
 
   create(): void {
     this.resetState();
+
+    const settings = LocalStorage.getSettings();
+    this.backButtonIndex = settings.controllerBackButton ?? 1;
 
     const { width, height } = this.cameras.main;
 
@@ -80,6 +87,11 @@ export class DebugMenuScene extends Phaser.Scene {
       this.gamepad = this.input.gamepad.getPad(0);
     }
 
+    if (this.gamepad && this.gamepad.connected) {
+      this.prevFire = !!(this.gamepad.A || this.gamepad.buttons[0]?.pressed);
+      this.prevBack = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
+    }
+
     this.initialUpdateEvent = this.time.delayedCall(0, () => {
       this.updateMenuView();
     });
@@ -89,6 +101,18 @@ export class DebugMenuScene extends Phaser.Scene {
 
   update(): void {
     this.handleGamepadInput();
+  }
+
+  private startExclusive(targetSceneKey: string): void {
+    const scenes = this.scene.manager.getScenes(true) as Phaser.Scene[];
+    scenes.forEach((s: Phaser.Scene) => {
+      const key = s.scene.key;
+      if (key !== targetSceneKey) {
+        this.scene.stop(key);
+      }
+    });
+
+    this.scene.start(targetSceneKey);
   }
 
   private setupKeyboard(): void {
@@ -127,6 +151,7 @@ export class DebugMenuScene extends Phaser.Scene {
     this.prevUp = false;
     this.prevDown = false;
     this.prevFire = false;
+    this.prevBack = false;
     this.lastStickMove = 0;
   }
 
@@ -190,11 +215,12 @@ export class DebugMenuScene extends Phaser.Scene {
     }
     this.prevFire = isFire;
     
-    // Back (B button or Start) - Optional shortcut to Main Menu
-    if (this.gamepad.B || this.gamepad.buttons[1]?.pressed) {
-        // Debounce handled by scene transition, but good to be careful
-        this.scene.start('MenuScene');
+    // Back (configured button index; default: button 2 / index 1)
+    const isBack = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
+    if (isBack && !this.prevBack) {
+      this.startExclusive('MenuScene');
     }
+    this.prevBack = isBack;
   }
 
   private moveSelection(delta: number): void {
@@ -250,7 +276,7 @@ export class DebugMenuScene extends Phaser.Scene {
   private launchScene(index: number): void {
     const item = this.menuItems[index];
     if (item) {
-      this.scene.start(item.scene);
+      this.startExclusive(item.scene);
     }
   }
 }

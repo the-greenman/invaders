@@ -65,16 +65,19 @@ export class GameScene extends Phaser.Scene {
   private prevMutePressed: boolean = false;
   private muteButton: Phaser.GameObjects.Text | null = null;
 
+  private disableBackToMenu: boolean = false;
+
   constructor() {
     super({ key: 'GameScene' });
   }
 
   async create(): Promise<void> {
     // Get scene data from previous scene
-    const data = this.scene.settings.data as { level?: number; score?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number } };
+    const data = this.scene.settings.data as { level?: number; score?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number }; disableBackToMenu?: boolean };
     this.level = data.level || 1;
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
+    this.disableBackToMenu = !!data.disableBackToMenu;
     
     // Reset game state
     this.gameActive = true;
@@ -428,7 +431,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     const backPressed = this.backButtonIndex >= 0 ? this.gamepad.buttons[this.backButtonIndex]?.pressed : false;
-    if (backPressed && !this.prevBackPressed) {
+    if (!this.disableBackToMenu && backPressed && !this.prevBackPressed) {
       this.scene.start('MenuScene');
       return;
     }

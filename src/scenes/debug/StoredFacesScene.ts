@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { FaceManager } from '../../managers/FaceManager';
 import { LocalStorage } from '../../utils/localStorage';
+import { DebugBaseScene } from './DebugBaseScene';
 
 interface FaceEntry {
   id: string;
@@ -15,7 +16,7 @@ interface FaceEntry {
  * Lists stored faces, allows deletion individually or clear-all.
  * Controller-friendly navigation.
  */
-export class StoredFacesScene extends Phaser.Scene {
+export class StoredFacesScene extends DebugBaseScene {
   private entries: FaceEntry[] = [];
   private selectedIndex: number = 0;
   private thumbnails: Phaser.GameObjects.Image[] = [];
@@ -27,12 +28,15 @@ export class StoredFacesScene extends Phaser.Scene {
   private confirmOverlay?: Phaser.GameObjects.Rectangle;
   private confirmText?: Phaser.GameObjects.Text;
 
+
   constructor() {
     super({ key: 'StoredFacesScene' });
   }
 
   async create(): Promise<void> {
     const { width } = this.cameras.main;
+
+    this.initDebugBase();
     this.add.text(width / 2, 40, 'STORED FACES', {
       fontSize: '28px',
       fontFamily: 'Courier New',
@@ -46,6 +50,7 @@ export class StoredFacesScene extends Phaser.Scene {
 
     this.loadEntries();
     await this.renderEntries();
+
 
     // Delete all button (fixed)
     this.deleteAllButton = this.add.text(width - 40, 90, 'DELETE ALL', {
@@ -63,7 +68,7 @@ export class StoredFacesScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-SPACE', () => this.deleteSelected());
     this.input.keyboard?.on('keydown-Y', () => this.handleDeleteAllPress());
     this.input.keyboard?.on('keydown-X', () => this.handleDeleteAllPress());
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('DebugMenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => this.startExclusive('DebugMenuScene'));
 
     // Mouse wheel scroll
     this.input.on('wheel', (_p: any, _dx: number, dy: number) => {
@@ -195,6 +200,15 @@ export class StoredFacesScene extends Phaser.Scene {
     const down = this.pad.down || axisY > 0.4;
     const fire = this.pad.A || this.pad.buttons[0]?.pressed;
     const altDelete = this.pad.Y || this.pad.buttons[3]?.pressed;
+    const isBack = !!this.pad.buttons[this.backButtonIndex]?.pressed;
+    if (isBack && !this.prevBack) {
+      if (this.confirmActive) {
+        this.hideConfirm();
+      } else {
+        this.startExclusive('DebugMenuScene');
+      }
+    }
+    this.prevBack = isBack;
 
     if (now - this.lastNavTime > 200) {
       if (up) {
