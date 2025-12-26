@@ -39,11 +39,11 @@
 ---
 
 ## Phase 3: Implement WaveManager
-- **Status:** ⏳ BLOCKED
+- **Status:** 🆓 AVAILABLE
 - **Agent:** _unclaimed_
 - **Branch:** _not started_
 - **File:** `src/systems/WaveManager.ts`
-- **Dependencies:** Phase 1 ✅ + Phase 2 ✅ (BLOCKED until complete)
+- **Dependencies:** Phase 1 ✅ + Phase 2 ✅ (Dependencies met)
 - **Estimated Effort:** 2-3 hours
 - **Sub-tasks:**
   - [ ] 3.1: update() main loop
@@ -63,7 +63,7 @@
 - **Agent:** _unclaimed_
 - **Branch:** _not started_
 - **File:** `src/entities/GalagaGrid.ts`
-- **Dependencies:** Phase 3 ✅ + Phase 5 ✅ (BLOCKED until complete)
+- **Dependencies:** Phase 3 ❌ + Phase 5 ❌ (BLOCKED until complete)
 - **Estimated Effort:** 1 hour
 - **Sub-tasks:**
   - [ ] 4.1: Fix constructor
@@ -74,9 +74,10 @@
 ---
 
 ## Phase 5: Extract BaseAlienGrid
-- **Status:** 🆓 AVAILABLE
-- **Agent:** _unclaimed_
-- **Branch:** _not started_
+- **Status:** 🚧 IN PROGRESS
+- **Agent:** Cascade
+- **Branch:** feature/galaga-phase5-base-grid
+- **Started:** 2025-12-26 12:40
 - **Files:**
   - `src/entities/BaseAlienGrid.ts` (implement abstract methods)
   - `src/entities/SpaceInvadersGrid.ts` (refactor to use base)
