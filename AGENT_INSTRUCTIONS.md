@@ -7,3 +7,6 @@
   - Base branch: `galaga`
   - Merge target: `galaga`
   - When finishing a task, merge the feature branch back into `galaga` and delete the feature branch.
+
+## Quality Control
+- **Run `npm run build`** before merging any branch to ensure type safety and build stability.

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { AlienGrid } from '../../entities/SpaceInvadersGrid';
+import { SpaceInvadersGrid } from '../../entities/SpaceInvadersGrid';
 import { GAME_WIDTH } from '../../constants';
 
 export class ArmadaTestScene extends Phaser.Scene {
