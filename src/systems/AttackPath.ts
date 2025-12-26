@@ -100,27 +100,24 @@ export class DiveBombPath extends AttackPath {
   start(startX: number, startY: number): void {
     super.start(startX, startY);
 
-    // TODO: Calculate control point and target
     // Control point: offset from start for curve
-    // this.controlX = startX + Phaser.Math.Between(-100, 100);
-    // this.controlY = startY + 400;
+    this.controlX = startX + Phaser.Math.Between(-100, 100);
+    this.controlY = startY + 400;
 
     // Target: near bottom of screen
-    // this.targetX = startX + Phaser.Math.Between(-100, 100);
-    // this.targetY = GAME_HEIGHT + 50; // Just off screen
+    this.targetX = startX + Phaser.Math.Between(-100, 100);
+    this.targetY = GAME_HEIGHT + 50; // Just off screen
   }
 
   getPointAtTime(t: number): { x: number; y: number; t: number } {
-    // TODO: Implement quadratic bezier math
-    // const x = Math.pow(1-t, 2) * this.startX +
-    //           2 * (1-t) * t * this.controlX +
-    //           Math.pow(t, 2) * this.targetX;
-    // const y = Math.pow(1-t, 2) * this.startY +
-    //           2 * (1-t) * t * this.controlY +
-    //           Math.pow(t, 2) * this.targetY;
-    // return { x, y, t };
-
-    throw new Error('TODO: Implement DiveBombPath.getPointAtTime()');
+    // Quadratic Bezier: P = (1-t)²P₀ + 2(1-t)tP₁ + t²P₂
+    const x = Math.pow(1-t, 2) * this.startX +
+              2 * (1-t) * t * this.controlX +
+              Math.pow(t, 2) * this.targetX;
+    const y = Math.pow(1-t, 2) * this.startY +
+              2 * (1-t) * t * this.controlY +
+              Math.pow(t, 2) * this.targetY;
+    return { x, y, t };
   }
 }
 
@@ -143,19 +140,17 @@ export class LoopPath extends AttackPath {
 
   start(startX: number, startY: number): void {
     super.start(startX, startY);
-    // TODO: Calculate loop center
-    // this.centerX = GAME_WIDTH / 2;
-    // this.centerY = GAME_HEIGHT / 2;
+    // Calculate loop center
+    this.centerX = GAME_WIDTH / 2;
+    this.centerY = GAME_HEIGHT / 2;
   }
 
   getPointAtTime(t: number): { x: number; y: number; t: number } {
-    // TODO: Implement parametric circle
-    // const angle = t * Math.PI * 2;
-    // const x = this.centerX + this.radius * Math.cos(angle);
-    // const y = this.centerY + this.radius * Math.sin(angle);
-    // return { x, y, t };
-
-    throw new Error('TODO: Implement LoopPath.getPointAtTime()');
+    // Parametric circle: x = cx + r*cos(θ), y = cy + r*sin(θ)
+    const angle = t * Math.PI * 2;
+    const x = this.centerX + this.radius * Math.cos(angle);
+    const y = this.centerY + this.radius * Math.sin(angle);
+    return { x, y, t };
   }
 }
 
@@ -173,12 +168,10 @@ export class WeavePath extends AttackPath {
   }
 
   getPointAtTime(t: number): { x: number; y: number; t: number } {
-    // TODO: Implement weaving pattern
-    // const x = this.startX + this.amplitude * Math.sin(t * this.frequency * Math.PI * 2);
-    // const y = this.startY + (GAME_HEIGHT - this.startY) * t;
-    // return { x, y, t };
-
-    throw new Error('TODO: Implement WeavePath.getPointAtTime()');
+    // Sine wave (horizontal) + linear descent (vertical)
+    const x = this.startX + this.amplitude * Math.sin(t * this.frequency * Math.PI * 2);
+    const y = this.startY + (GAME_HEIGHT - this.startY) * t;
+    return { x, y, t };
   }
 }
 
@@ -202,15 +195,28 @@ export class SwoopPath extends AttackPath {
 
   start(startX: number, startY: number): void {
     super.start(startX, startY);
-    // TODO: Calculate cubic bezier control points
-    // Two control points create S-curve
+    // Calculate cubic bezier control points for S-curve
+    const side = startX < GAME_WIDTH / 2 ? 1 : -1;
+    this.control1X = startX + (side * 200);
+    this.control1Y = startY + 200;
+    this.control2X = startX - (side * 200);
+    this.control2Y = startY + 400;
+    this.targetX = startX;
+    this.targetY = GAME_HEIGHT + 50;
   }
 
   getPointAtTime(t: number): { x: number; y: number; t: number } {
-    // TODO: Implement cubic bezier
-    // P = (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
-
-    throw new Error('TODO: Implement SwoopPath.getPointAtTime()');
+    // Cubic Bezier: P = (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
+    const t1 = 1 - t;
+    const x = Math.pow(t1, 3) * this.startX +
+              3 * Math.pow(t1, 2) * t * this.control1X +
+              3 * t1 * Math.pow(t, 2) * this.control2X +
+              Math.pow(t, 3) * this.targetX;
+    const y = Math.pow(t1, 3) * this.startY +
+              3 * Math.pow(t1, 2) * t * this.control1Y +
+              3 * t1 * Math.pow(t, 2) * this.control2Y +
+              Math.pow(t, 3) * this.targetY;
+    return { x, y, t };
   }
 }
 
@@ -230,28 +236,25 @@ export class StrafePath extends AttackPath {
 
   start(startX: number, startY: number): void {
     super.start(startX, startY);
-    // TODO: Calculate midpoint for phase transition
-    // this.midX = startX > GAME_WIDTH/2 ? 100 : GAME_WIDTH - 100;
-    // this.midY = startY;
+    // Calculate midpoint for phase transition
+    this.midX = startX > GAME_WIDTH/2 ? 100 : GAME_WIDTH - 100;
+    this.midY = startY;
   }
 
   getPointAtTime(t: number): { x: number; y: number; t: number } {
-    // TODO: Two-phase movement
-    // if (t < 0.5) {
-    //   // Phase 1: Horizontal strafe
-    //   const phaseT = t * 2; // 0-1 for first half
-    //   const x = this.startX + (this.midX - this.startX) * phaseT;
-    //   const y = this.startY;
-    //   return { x, y, t };
-    // } else {
-    //   // Phase 2: Vertical dive
-    //   const phaseT = (t - 0.5) * 2; // 0-1 for second half
-    //   const x = this.midX;
-    //   const y = this.midY + (GAME_HEIGHT - this.midY) * phaseT;
-    //   return { x, y, t };
-    // }
-
-    throw new Error('TODO: Implement StrafePath.getPointAtTime()');
+    if (t < 0.5) {
+      // Phase 1: Horizontal strafe
+      const phaseT = t * 2; // 0-1 for first half
+      const x = this.startX + (this.midX - this.startX) * phaseT;
+      const y = this.startY;
+      return { x, y, t };
+    } else {
+      // Phase 2: Vertical dive
+      const phaseT = (t - 0.5) * 2; // 0-1 for second half
+      const x = this.midX;
+      const y = this.midY + (GAME_HEIGHT - this.midY) * phaseT;
+      return { x, y, t };
+    }
   }
 }
 
@@ -262,15 +265,15 @@ export function createRandomAttackPath(): AttackPath {
   const patterns = [DiveBombPath, LoopPath, WeavePath, SwoopPath, StrafePath];
   const weights = [0.3, 0.15, 0.25, 0.2, 0.1]; // Probability distribution
 
-  // TODO: Weighted random selection
-  // const random = Math.random();
-  // let cumulative = 0;
-  // for (let i = 0; i < weights.length; i++) {
-  //   cumulative += weights[i];
-  //   if (random < cumulative) {
-  //     return new patterns[i]();
-  //   }
-  // }
+  // Weighted random selection
+  const random = Math.random();
+  let cumulative = 0;
+  for (let i = 0; i < weights.length; i++) {
+    cumulative += weights[i];
+    if (random < cumulative) {
+      return new patterns[i]();
+    }
+  }
 
   return new DiveBombPath(); // Fallback
 }
