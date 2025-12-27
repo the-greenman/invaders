@@ -245,11 +245,13 @@ export class WebcamScene extends Phaser.Scene {
 
   private startGameWithWebcam(): void {
     // Start game with webcam faces and difficulty
-    this.scene.start('GameScene', { 
+    // Default to Space Invaders mode for webcam games
+    this.scene.start('SpaceInvadersScene', { 
       level: 1, 
       score: 0, 
       useWebcam: true,
-      difficulty: this.difficulty 
+      difficulty: this.difficulty,
+      startMode: 'SPACE_INVADERS'
     });
   }
 

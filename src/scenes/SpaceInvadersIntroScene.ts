@@ -53,6 +53,10 @@ export class SpaceInvadersIntroScene extends Phaser.Scene {
   private startNext(): void {
     const { toMode, level, score, useWebcam, lives, advanceLevel } = this.dataIn;
     const nextLevel = advanceLevel ? level + 1 : level;
-    this.scene.start('GameScene', { level: nextLevel, score, useWebcam, lives, startMode: toMode });
+    
+    // Use the correct scene key based on mode
+    const sceneKey = toMode === GameMode.SPACE_INVADERS ? 'SpaceInvadersScene' : 'GalagaScene';
+    
+    this.scene.start(sceneKey, { level: nextLevel, score, useWebcam, lives, startMode: toMode });
   }
 }
