@@ -202,13 +202,13 @@ export abstract class BaseGameScene extends Phaser.Scene {
     
     // Create game systems in order
     this.setupPhysicsGroups();
+    this.initializeManagers();
     this.createPlayer();
     this.createEnemies();
     this.setupCollisions();
     this.createCoreUI();
     this.createModeUI();
     this.createBackground();
-    this.initializeManagers();
     this.setupInput();
 
     // Setup shutdown handler
