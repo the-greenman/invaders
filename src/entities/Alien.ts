@@ -267,13 +267,15 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * 3. Update physics body with body.reset(x, y)
    */
   followPath(delta: number): void {
-    if (!this.attackPath || this.alienState !== AlienState.ATTACKING) {
+    if (!this.alive || !this.attackPath || this.alienState !== AlienState.ATTACKING) {
       return;
     }
 
     const pos = this.attackPath.getCurrentPosition(delta);
     this.setPosition(pos.x, pos.y);
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    body.reset(pos.x, pos.y);
+    const body = this.body as Phaser.Physics.Arcade.Body | undefined;
+    if (body) {
+      body.reset(pos.x, pos.y);
+    }
   }
 }

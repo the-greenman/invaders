@@ -7,6 +7,7 @@ interface ModeTransitionData {
   level: number;
   score: number;
   useWebcam: boolean;
+  lives: number;
   advanceLevel?: boolean; // if true, advance to next level before switching
 }
 
@@ -54,12 +55,13 @@ export class ModeTransitionScene extends Phaser.Scene {
   }
 
   private startNext(): void {
-    const { toMode, level, score, useWebcam, advanceLevel } = this.dataIn;
+    const { toMode, level, score, useWebcam, lives, advanceLevel } = this.dataIn;
     const nextLevel = advanceLevel ? level + 1 : level;
     this.scene.start('GameScene', {
       level: nextLevel,
       score,
       useWebcam,
+      lives,
       startMode: toMode
     });
   }

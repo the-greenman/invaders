@@ -86,11 +86,14 @@ export class GameScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     // Get scene data from previous scene
-    const data = this.scene.settings.data as { level?: number; score?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number }, startMode?: GameMode; disableBackToMenu?: boolean };
+    const data = this.scene.settings.data as { level?: number; score?: number; lives?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number }, startMode?: GameMode; disableBackToMenu?: boolean };
     this.level = data.level || 1;
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
     this.disableBackToMenu = !!data.disableBackToMenu;
+    if (typeof data.lives === 'number') {
+      this.lives = data.lives;
+    }
     if (data.startMode !== undefined) {
       this.currentGameMode = data.startMode;
       this.levelsSinceLastSwitch = 0;
@@ -98,7 +101,7 @@ export class GameScene extends Phaser.Scene {
     
     // Reset game state
     this.gameActive = true;
-    if (this.level === 1 && this.score === 0) {
+    if (this.level === 1 && this.score === 0 && typeof data.lives !== 'number') {
       this.lives = 3;
     }
 
@@ -226,7 +229,8 @@ export class GameScene extends Phaser.Scene {
 
   private setupGameObjects(): void {
     // Create player
-    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 50, this.playerTextureKey);
+    const playerStartY = this.getPlayerStartY();
+    this.player = new Player(this, GAME_WIDTH / 2, playerStartY, this.playerTextureKey);
 
     // Create alien grid using factory pattern based on currentGameMode
     this.levelManager = new LevelManager(this.level);
@@ -378,7 +382,7 @@ export class GameScene extends Phaser.Scene {
 
     // Debug hint for manual mode switching
     if (ENABLE_MANUAL_MODE_SWITCH) {
-      this.add.text(10, GAME_HEIGHT - 30, 'Press 1 or 2 to switch modes', {
+      this.add.text(10, GAME_HEIGHT - 30, '', {
         fontSize: '14px',
         fontFamily: 'Courier New',
         color: '#666666'
@@ -679,8 +683,18 @@ export class GameScene extends Phaser.Scene {
     
     if (!alien.isAlive() || !player.active) return;
     
-    // Game over immediately
-    this.gameOver();
+    if (this.currentGameMode === GameMode.GALAGA) {
+      // In Galaga mode, alien crashes cause alien to explode and player loses a life
+      // Destroy alien without awarding points for a crash
+      alien.destroy();
+      this.alienGrid?.removeAlien(alien);
+      // Damage player (lose a life and possibly respawn)
+      this.handlePlayerDeath();
+      this.audioManager?.play('player-hit');
+    } else {
+      // Classic SI behavior: collision is immediate game over
+      this.gameOver();
+    }
   }
 
   private handlePlayerDeath(): void {
@@ -692,9 +706,17 @@ export class GameScene extends Phaser.Scene {
     } else {
       // Respawn player after delay
       this.time.delayedCall(2000, () => {
-        this.player?.reset();
+        const respawnX = this.currentGameMode === GameMode.GALAGA
+          ? (this.player?.x ?? (GAME_WIDTH / 2))
+          : (GAME_WIDTH / 2);
+        this.player?.reset(respawnX, this.getPlayerStartY());
       });
     }
+  }
+
+  private getPlayerStartY(): number {
+    // In Galaga mode, position the player higher to allow visibility below the ship.
+    return this.currentGameMode === GameMode.GALAGA ? (GAME_HEIGHT - 120) : (GAME_HEIGHT - 50);
   }
 
   private addScore(points: number): void {
@@ -887,6 +909,7 @@ export class GameScene extends Phaser.Scene {
       level: this.level,
       score: this.score,
       useWebcam: this.useWebcam,
+      lives: this.lives,
       advanceLevel: false
     });
   }
@@ -909,6 +932,7 @@ export class GameScene extends Phaser.Scene {
       level: this.level,
       score: this.score,
       useWebcam: this.useWebcam,
+      lives: this.lives,
       advanceLevel: true
     });
   }

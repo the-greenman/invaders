@@ -22,6 +22,7 @@ import { StoredFacesScene } from './scenes/debug/StoredFacesScene';
 import { AbductionLineScene } from './scenes/debug/AbductionLineScene';
 import { BombTestScene } from './scenes/debug/BombTestScene';
 import { MobileDebugScene } from './scenes/debug/MobileDebugScene';
+import { PathTestScene } from './scenes/debug/PathTestScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -46,6 +47,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     SpaceInvadersIntroScene,
     GalagaIntroScene,
     DebugMenuScene,
+    PathTestScene,
     PlayerTestScene,
     ArmadaTestScene,
     CollisionTestScene,
