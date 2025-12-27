@@ -26,7 +26,6 @@ export class GalagaScene extends BaseGameScene {
 
   constructor() {
     super('GalagaScene');
-    console.log('[GalagaScene] Constructor called');
   }
 
   // =========================================================================
@@ -40,12 +39,8 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected createEnemies(): void {
-    console.log('[GalagaScene] createEnemies called');
-    console.log('[GalagaScene] levelManager exists:', !!this.levelManager);
-    
     // Create GalagaGrid with level config
     const levelConfig = this.levelManager!.getLevelConfig();
-    console.log('[GalagaScene] levelConfig:', levelConfig);
     
     this.alienGrid = new GalagaGrid(
       this,
@@ -64,38 +59,19 @@ export class GalagaScene extends BaseGameScene {
       }
     );
 
-    console.log('[GalagaScene] GalagaGrid created');
-
     // Add aliens to physics group
     this.addAliensToPhysicsGroup();
   }
 
   private addAliensToPhysicsGroup(): void {
-    console.log('[GalagaScene] addAliensToPhysicsGroup called');
-    console.log('[GalagaScene] aliens group exists:', !!this.aliens);
-    console.log('[GalagaScene] alienGrid exists:', !!this.alienGrid);
-    
     if (!this.aliens || !this.alienGrid) return;
 
     const aliveAliens = this.alienGrid.getAliveAliens();
-    console.log('[GalagaScene] Found alive aliens:', aliveAliens.length);
-    
     aliveAliens.forEach((alien: any) => {
       if (alien) {
         this.aliens!.add(alien);
-        console.log('[GalagaScene] Added alien to physics group');
       }
     });
-    
-    console.log('[GalagaScene] Total aliens in physics group:', this.aliens.getChildren().length);
-    
-    // Check immediately after adding
-    setTimeout(() => {
-      if (this.aliens) {
-        const count = this.aliens.getChildren().length;
-        console.log('[GalagaScene] Alien count after timeout:', count);
-      }
-    }, 0);
   }
 
   protected setupCollisions(): void {
@@ -105,13 +81,17 @@ export class GalagaScene extends BaseGameScene {
       this.aliens!,
       (bullet: any, alien: any) => {
         // Handle bullet-alien collision
-        if (bullet.active && alien.isAlive()) {
-          alien.destroy();
-          bullet.setActive(false);
-          bullet.setVisible(false);
-          
-          this.addScore(alien.getPoints());
-          this.audioManager?.play('alien-hit');
+        if (bullet && bullet.active && alien && alien.isAlive && typeof alien.isAlive === 'function') {
+          if (alien.isAlive()) {
+            alien.destroy();
+            bullet.setActive(false);
+            bullet.setVisible(false);
+            
+            if (alien.getPoints && typeof alien.getPoints === 'function') {
+              this.addScore(alien.getPoints());
+            }
+            this.audioManager?.play('alien-hit');
+          }
         }
       }
     );
@@ -135,11 +115,13 @@ export class GalagaScene extends BaseGameScene {
       this.aliens!,
       this.player!,
       (alien: any, player: any) => {
-        if (alien.isAlive() && alien.getState() !== AlienState.IN_FORMATION && this.gameActive) {
-          // Alien crashes into player - both destroyed, lose life
-          alien.destroy();
-          this.loseLife();
-          this.audioManager?.play('player-hit');
+        if (alien && alien.isAlive && typeof alien.isAlive === 'function' && alien.getState && this.gameActive) {
+          if (alien.isAlive() && alien.getState() !== AlienState.IN_FORMATION) {
+            // Alien crashes into player - both destroyed, lose life
+            alien.destroy();
+            this.loseLife();
+            this.audioManager?.play('player-hit');
+          }
         }
       }
     );
@@ -201,41 +183,12 @@ export class GalagaScene extends BaseGameScene {
   protected checkGameConditions(): void {
     if (!this.gameActive) return;
 
-    console.log('[GalagaScene] checkGameConditions called');
-    console.log('[GalagaScene] aliens group exists:', !!this.aliens);
-    
-    // Skip the first check to allow aliens to be properly added
-    if (!this._hasCheckedInitialConditions) {
-      console.log('[GalagaScene] Skipping first check to allow initialization');
-      this._hasCheckedInitialConditions = true;
-      return;
-    }
-    
-    if (this.aliens) {
-      const allAliens = this.aliens.getChildren();
-      console.log('[GalagaScene] Total aliens in physics group:', allAliens.length);
-      
-      // Debug each alien
-      allAliens.forEach((alien: any, index: number) => {
-        console.log(`[GalagaScene] Alien ${index}: active=${alien.active}, alive=${alien.isAlive ? alien.isAlive() : 'N/A'}`);
-      });
-      
-      // Check if all aliens destroyed
-      const aliveAliens = allAliens.filter((alien: any) => 
-        alien.active && alien.isAlive()
-      );
-      console.log('[GalagaScene] Alive aliens count:', aliveAliens.length);
-    }
-
     // Check if all aliens destroyed
     const aliveAliens = this.aliens?.getChildren().filter((alien: any) => 
-      alien.active && alien.isAlive()
+      alien.active && alien.isAlive && typeof alien.isAlive === 'function' && alien.isAlive()
     ) || [];
 
-    console.log('[GalagaScene] Final alive aliens count:', aliveAliens.length);
-
     if (aliveAliens.length === 0) {
-      console.log('[GalagaScene] No aliens left - triggering level complete');
       this.onLevelComplete();
       return;
     }
@@ -245,7 +198,6 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected onLevelComplete(): void {
-    console.log('[GalagaScene] onLevelComplete called - gameActive:', this.gameActive);
     this.gameActive = false;
     
     // Show completion text
@@ -257,14 +209,11 @@ export class GalagaScene extends BaseGameScene {
 
     // Check for mode switch
     this.time.delayedCall(2000, () => {
-      console.log('[GalagaScene] Delayed callback - checking mode switch');
       completeText.destroy();
       
       if (this.shouldAutoSwitch()) {
-        console.log('[GalagaScene] Auto-switching to SPACE_INVADERS');
         this.switchToMode(GameMode.SPACE_INVADERS);
       } else {
-        console.log('[GalagaScene] Starting next level');
         // Continue to next level
         this.startNextLevel();
       }
