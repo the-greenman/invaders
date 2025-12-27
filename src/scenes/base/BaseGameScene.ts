@@ -57,6 +57,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
 
   private lastLifeLostAt: number = 0;
   private _loggedFirstUpdate: boolean = false;
+  private _isInitialized: boolean = false;
 
   // UI elements
   protected scoreText: Phaser.GameObjects.Text | null = null;
@@ -227,6 +228,10 @@ export abstract class BaseGameScene extends Phaser.Scene {
     console.log('[BaseGameScene] Setting up input...');
     this.setupInput();
     console.log('[BaseGameScene] Create complete!');
+    
+    // Mark as initialized
+    this._isInitialized = true;
+    console.log('[BaseGameScene] Initialization complete!');
 
     // Setup shutdown handler
     this.events.once('shutdown', this.handleShutdown, this);
@@ -253,8 +258,10 @@ export abstract class BaseGameScene extends Phaser.Scene {
     // Update mode-specific logic
     this.updateMode(delta);
 
-    // Check game conditions
-    this.checkGameConditions();
+    // Check game conditions (only after initialization)
+    if (this._isInitialized) {
+      this.checkGameConditions();
+    }
 
     // Clean up bullets that are out of bounds
     if (this.bullets && this.bullets.children) {
