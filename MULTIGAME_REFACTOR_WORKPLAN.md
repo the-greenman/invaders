@@ -122,7 +122,7 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 1.5: Extract BaseGameScene Abstract Class [TRACK A]
+### Task 1.5: Extract BaseGameScene Abstract Class [COMPLETED]
 **File:** `src/scenes/base/BaseGameScene.ts` (NEW)
 **Dependencies:** Task 1.4
 **Agent Type:** Implementation
@@ -163,12 +163,12 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 - Add difficulty property and preserve it in mode switching
 
 **Acceptance Criteria:**
-- [ ] All shared logic extracted from GameScene
-- [ ] All abstract methods defined with clear documentation
-- [ ] Template method pattern correctly implemented
-- [ ] Difficulty integrated into manager initialization
-- [ ] File compiles with no TypeScript errors
-- [ ] Build may fail (no concrete scenes yet - expected)
+- [x] All shared logic extracted from GameScene
+- [x] All abstract methods defined with clear documentation
+- [x] Template method pattern correctly implemented
+- [x] Difficulty integrated into manager initialization
+- [x] File compiles with no TypeScript errors
+- [x] Build may fail (no concrete scenes yet - expected)
 
 **Code Reference:** See plan lines 71-233
 
