@@ -9,6 +9,7 @@ import { BaseAlienGrid } from '../entities/BaseAlienGrid';
 import { Shield } from '../entities/Shield';
 import { ScoreManager } from '../managers/ScoreManager';
 import { LevelManager } from '../managers/LevelManager';
+import { DifficultyPreset } from '../types/DifficultyPreset';
 import { AudioManager } from '../managers/AudioManager';
 import { FaceManager } from '../managers/FaceManager';
 import { TouchControlManager } from '../managers/TouchControlManager';
@@ -45,14 +46,13 @@ export class GameScene extends Phaser.Scene {
   private score: number = 0;
   private level: number = 1;
   private lives: number = 3;
-  private useWebcam: boolean = false;
-  private gameActive: boolean = true;
-  private playerTextureKey: string = 'player';
-
-  // Game Mode (Galaga Mode Integration)
+  private gameActive: boolean = false;
   private currentGameMode: GameMode = GameMode.SPACE_INVADERS;
   private levelsSinceLastSwitch: number = 0;
-
+  private lastModeSwitchLevel: number = 0;
+  private difficulty: DifficultyPreset = DifficultyPreset.MEDIUM;
+  private useWebcam: boolean = false;
+  private playerTextureKey: string = 'player';
   private lastLifeLostAt: number = 0;
 
   // UI elements
@@ -88,13 +88,33 @@ export class GameScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     // Get scene data from previous scene
-    const data = this.scene.settings.data as { level?: number; score?: number; lives?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number }, startMode?: GameMode; disableBackToMenu?: boolean };
+    const data = this.scene.settings.data as { level?: number; score?: number; lives?: number; useWebcam?: boolean; viewport?: { x: number; y: number; width: number; height: number }, startMode?: GameMode; disableBackToMenu?: boolean; difficulty?: string };
     this.level = data.level || 1;
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
     this.disableBackToMenu = !!data.disableBackToMenu;
     if (typeof data.lives === 'number') {
       this.lives = data.lives;
+    }
+
+    // Store difficulty if provided
+    this.difficulty = DifficultyPreset.MEDIUM;
+    if (data.difficulty) {
+      this.registry.set('difficulty', data.difficulty);
+      // Parse difficulty string to enum
+      switch (data.difficulty) {
+        case 'EASY':
+          this.difficulty = DifficultyPreset.EASY;
+          break;
+        case 'HARD':
+          this.difficulty = DifficultyPreset.HARD;
+          break;
+        case 'EXTREME':
+          this.difficulty = DifficultyPreset.EXTREME;
+          break;
+        default:
+          this.difficulty = DifficultyPreset.MEDIUM;
+      }
     }
 
     // Mode selection: explicit startMode wins; otherwise reset to default on fresh game.
@@ -244,7 +264,7 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, GAME_WIDTH / 2, playerStartY, this.playerTextureKey);
 
     // Create alien grid using factory pattern based on currentGameMode
-    this.levelManager = new LevelManager(this.level);
+    this.levelManager = new LevelManager(this.level, this.difficulty);
     const levelConfig = this.levelManager.getLevelConfig();
 
     // Mode-specific creation
@@ -259,7 +279,12 @@ export class GameScene extends Phaser.Scene {
         levelConfig.galagaFormationSpeed || 60,
         levelConfig.galagaHomingStrength || 0,
         this.alienFaceTextures,
-        this.level
+        this.level,
+        {
+          minSize: levelConfig.galagaWaveMinSize,
+          maxSize: levelConfig.galagaWaveMaxSize,
+          maxWaves: levelConfig.galagaMaxSimultaneousWaves
+        }
       );
     } else {
       // Space Invaders grid (Game 1)
@@ -483,7 +508,7 @@ export class GameScene extends Phaser.Scene {
   private setupManagers(): void {
     // Initialize managers
     this.scoreManager = new ScoreManager();
-    this.levelManager = new LevelManager(this.level);
+    this.levelManager = new LevelManager(this.level, this.difficulty);
     this.audioManager = new AudioManager(this);
     this.touchControlManager = new TouchControlManager(this);
 
@@ -789,7 +814,7 @@ export class GameScene extends Phaser.Scene {
     this.clearForNextLevel();
     
     // Setup new level
-    this.levelManager = new LevelManager(this.level);
+    this.levelManager = new LevelManager(this.level, this.difficulty);
     const levelConfig = this.levelManager.getLevelConfig();
     await this.prepareAlienFaceTextures();
     if (this.currentGameMode === GameMode.GALAGA) {
@@ -802,7 +827,12 @@ export class GameScene extends Phaser.Scene {
         levelConfig.galagaFormationSpeed || 60,
         levelConfig.galagaHomingStrength || 0,
         this.alienFaceTextures,
-        this.level
+        this.level,
+        {
+          minSize: levelConfig.galagaWaveMinSize,
+          maxSize: levelConfig.galagaWaveMaxSize,
+          maxWaves: levelConfig.galagaMaxSimultaneousWaves
+        }
       );
     } else {
       this.alienGrid = new SpaceInvadersGrid(

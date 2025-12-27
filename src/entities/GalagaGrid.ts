@@ -1,5 +1,5 @@
 import { BaseAlienGrid } from './BaseAlienGrid';
-import { WaveManager } from '../systems/WaveManager';
+import { WaveManager, WaveConfig } from '../systems/WaveManager';
 import { Alien, AlienState } from './Alien';
 import { GAME_WIDTH, GALAGA_FORMATION_SPEED } from '../constants';
 
@@ -29,15 +29,16 @@ export class GalagaGrid extends BaseAlienGrid {
     formationSpeed: number,
     homingStrength: number,
     faceTextures: string[] = [],
-    level: number = 1
+    level: number = 1,
+    waveConfig?: WaveConfig
   ) {
     super(scene, x, y, rows, cols, faceTextures, level);
 
     this.formationSpeed = formationSpeed;
     this.homingStrength = homingStrength;
 
-    // Create WaveManager instance
-    this.waveManager = new WaveManager(this, scene, this.homingStrength);
+    // Create WaveManager instance with optional wave config
+    this.waveManager = new WaveManager(this, scene, this.homingStrength, waveConfig);
 
     // Create alien grid using base class method
     this.createAlienGrid(rows, cols);

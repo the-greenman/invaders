@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from './constants';
 import { PreloaderScene } from './scenes/PreloaderScene';
 import { MenuScene } from './scenes/MenuScene';
+import { DifficultySelectScene } from './scenes/DifficultySelectScene';
 import { WebcamScene } from './scenes/WebcamScene';
 import { GameScene } from './scenes/GameScene';
 import { ModeTransitionScene } from './scenes/ModeTransitionScene';
@@ -43,6 +44,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   scene: [
     PreloaderScene,
     MenuScene,
+    DifficultySelectScene,
     ModeTransitionScene,
     SpaceInvadersIntroScene,
     GalagaIntroScene,
