@@ -18,6 +18,7 @@ import { GAME_WIDTH, GALAGA_FORMATION_SPEED } from '../constants';
 export class GalagaGrid extends BaseAlienGrid {
   private formationSpeed: number = GALAGA_FORMATION_SPEED;
   private waveManager: WaveManager;
+  private homingStrength: number = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -26,15 +27,17 @@ export class GalagaGrid extends BaseAlienGrid {
     rows: number,
     cols: number,
     formationSpeed: number,
+    homingStrength: number,
     faceTextures: string[] = [],
     level: number = 1
   ) {
     super(scene, x, y, rows, cols, faceTextures, level);
 
     this.formationSpeed = formationSpeed;
+    this.homingStrength = homingStrength;
 
     // Create WaveManager instance
-    this.waveManager = new WaveManager(this, scene);
+    this.waveManager = new WaveManager(this, scene, this.homingStrength);
 
     // Create alien grid using base class method
     this.createAlienGrid(rows, cols);

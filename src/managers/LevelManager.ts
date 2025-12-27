@@ -83,7 +83,8 @@ export class LevelManager {
 
       // Galaga Mode (Game 2) parameters
       galagaFormationSpeed: Math.min(GALAGA_FORMATION_SPEED + (level - 1) * 10, 150),
-      galagaWaveFrequency: Math.min(0.3 + (level - 1) * 0.05, 0.8)
+      galagaWaveFrequency: Math.min(0.3 + (level - 1) * 0.05, 0.8),
+      galagaHomingStrength: Math.min((level - 1) * 0.05, 0.35)
     };
   }
 

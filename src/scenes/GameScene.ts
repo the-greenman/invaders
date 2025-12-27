@@ -171,8 +171,12 @@ export class GameScene extends Phaser.Scene {
     this.clearGameObjects();
   }
 
-  update(): void {
+  update(time: number, delta: number): void {
     if (!this.gameActive) return;
+
+    if (this.player) {
+      this.registry.set('playerX', this.player.x);
+    }
 
     this.pollGamepadNavigation();
 
@@ -253,6 +257,7 @@ export class GameScene extends Phaser.Scene {
         3,
         levelConfig.alienCols,
         levelConfig.galagaFormationSpeed || 60,
+        levelConfig.galagaHomingStrength || 0,
         this.alienFaceTextures,
         this.level
       );
@@ -795,6 +800,7 @@ export class GameScene extends Phaser.Scene {
         3,
         levelConfig.alienCols,
         levelConfig.galagaFormationSpeed || 60,
+        levelConfig.galagaHomingStrength || 0,
         this.alienFaceTextures,
         this.level
       );
