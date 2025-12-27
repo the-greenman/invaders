@@ -177,7 +177,7 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ## Stage 2: Scene Migration (3-4 hours)
 
-### Task 2.1: Create SpaceInvadersScene [TRACK C]
+### Task 2.1: Create SpaceInvadersScene [COMPLETED]
 **File:** `src/scenes/modes/SpaceInvadersScene.ts` (NEW)
 **Dependencies:** Task 1.5
 **Agent Type:** Implementation
@@ -203,14 +203,14 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 - Support manual mode switching (preserve from GameScene)
 
 **Acceptance Criteria:**
-- [ ] Scene extends BaseGameScene correctly
-- [ ] All abstract methods implemented
-- [ ] Space Invaders-specific collision (alien-player = game over) working
-- [ ] Abduction threshold line visible
-- [ ] Level progression works
-- [ ] Mode switching preserved
-- [ ] File compiles with no TypeScript errors
-- [ ] Build passes
+- [x] Scene extends BaseGameScene correctly
+- [x] All abstract methods implemented
+- [x] Space Invaders-specific collision (alien-player = game over) working
+- [x] Abduction threshold line visible
+- [x] Level progression works
+- [x] Mode switching preserved
+- [x] File compiles with no TypeScript errors
+- [x] Build passes
 
 **Code Reference:** See plan lines 245-327
 
