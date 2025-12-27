@@ -1,7 +1,7 @@
 # Multi-Game Architecture Refactor - Workplan
 
-**Branch:** `feature/multigame-refactor`
-**Base:** `galaga`
+**Branch:** `dev`
+**Base:** `dev`
 **Estimated Total Time:** 11-15 hours
 **Goal:** Refactor single GameScene into multi-mode architecture with difficulty system
 
