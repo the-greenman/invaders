@@ -22,6 +22,7 @@ export class GalagaScene extends BaseGameScene {
   protected bombPlayerCollider: Phaser.Physics.Arcade.Collider | null = null;
   protected alienPlayerCollider: Phaser.Physics.Arcade.Collider | null = null;
   private clouds: Phaser.GameObjects.Graphics[] = [];
+  private _hasCheckedInitialConditions: boolean = false;
 
   constructor() {
     super('GalagaScene');
@@ -202,6 +203,13 @@ export class GalagaScene extends BaseGameScene {
 
     console.log('[GalagaScene] checkGameConditions called');
     console.log('[GalagaScene] aliens group exists:', !!this.aliens);
+    
+    // Skip the first check to allow aliens to be properly added
+    if (!this._hasCheckedInitialConditions) {
+      console.log('[GalagaScene] Skipping first check to allow initialization');
+      this._hasCheckedInitialConditions = true;
+      return;
+    }
     
     if (this.aliens) {
       const allAliens = this.aliens.getChildren();
