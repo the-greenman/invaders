@@ -57,10 +57,16 @@ export class GalagaScene extends BaseGameScene {
     );
 
     // Add aliens to physics group
-    const aliens = this.alienGrid.getAliveAliens();
-    aliens.forEach((alien: any) => {
+    this.addAliensToPhysicsGroup();
+  }
+
+  private addAliensToPhysicsGroup(): void {
+    if (!this.aliens || !this.alienGrid) return;
+
+    const aliveAliens = this.alienGrid.getAliveAliens();
+    aliveAliens.forEach((alien: any) => {
       if (alien) {
-        this.aliens?.add(alien);
+        this.aliens!.add(alien);
       }
     });
   }
@@ -269,12 +275,7 @@ export class GalagaScene extends BaseGameScene {
     );
 
     // Add new aliens to physics group
-    const aliens = this.alienGrid.getAliveAliens();
-    aliens.forEach((alien: any) => {
-      if (alien) {
-        this.aliens?.add(alien);
-      }
-    });
+    this.addAliensToPhysicsGroup();
 
     // Update UI
     if (this.levelText) {
