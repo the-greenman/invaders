@@ -177,12 +177,13 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ## Stage 2: Scene Migration (3-4 hours)
 
-### Task 2.1: Create SpaceInvadersScene [COMPLETED]
-**File:** `src/scenes/modes/SpaceInvadersScene.ts` (NEW)
-**Dependencies:** Task 1.5
+### Task 2.1: Create SpaceInvadersScene [TRACK C] 
+**Branch:** `feature/task-2-1-spaceinvaders-scene` (merged)
+**File:** `src/scenes/modes/SpaceInvadersScene.ts` (CREATED)
+**Dependencies:** Task 1.5 
 **Agent Type:** Implementation
 **Estimated Time:** 1.5-2 hours
-**Parallel with:** Task 2.2
+**Parallel with:** Task 2.2 
 
 **Requirements:**
 - Extend `BaseGameScene`
