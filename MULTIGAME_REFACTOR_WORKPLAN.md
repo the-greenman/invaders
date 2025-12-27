@@ -122,9 +122,10 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 1.5: Extract BaseGameScene Abstract Class [COMPLETED]
-**File:** `src/scenes/base/BaseGameScene.ts` (NEW)
-**Dependencies:** Task 1.4
+### Task 1.5: Extract BaseGameScene Abstract Class [TRACK A] 
+**Branch:** `feature/task-1-5-basegamescene` (merged)
+**File:** `src/scenes/base/BaseGameScene.ts` (CREATED)
+**Dependencies:** Task 1.4 
 **Agent Type:** Implementation
 **Estimated Time:** 2-3 hours
 **Enables:** Tasks 2.1, 2.2, 4.2
