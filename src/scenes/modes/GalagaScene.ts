@@ -17,12 +17,15 @@ import { GAME_WIDTH, GAME_HEIGHT, PLAYER_HEIGHT, PLAYER_WIDTH } from '../../cons
  * - Wave count display
  */
 export class GalagaScene extends BaseGameScene {
-  // Galaga-specific entities
   private alienGrid: GalagaGrid | null = null;
+  protected bulletAlienCollider: Phaser.Physics.Arcade.Collider | null = null;
+  protected bombPlayerCollider: Phaser.Physics.Arcade.Collider | null = null;
+  protected alienPlayerCollider: Phaser.Physics.Arcade.Collider | null = null;
   private clouds: Phaser.GameObjects.Graphics[] = [];
-  
+
   constructor() {
     super('GalagaScene');
+    console.log('[GalagaScene] Constructor called');
   }
 
   // =========================================================================
@@ -36,8 +39,12 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected createEnemies(): void {
+    console.log('[GalagaScene] createEnemies called');
+    console.log('[GalagaScene] levelManager exists:', !!this.levelManager);
+    
     // Create GalagaGrid with level config
     const levelConfig = this.levelManager!.getLevelConfig();
+    console.log('[GalagaScene] levelConfig:', levelConfig);
     
     this.alienGrid = new GalagaGrid(
       this,
@@ -56,19 +63,30 @@ export class GalagaScene extends BaseGameScene {
       }
     );
 
+    console.log('[GalagaScene] GalagaGrid created');
+
     // Add aliens to physics group
     this.addAliensToPhysicsGroup();
   }
 
   private addAliensToPhysicsGroup(): void {
+    console.log('[GalagaScene] addAliensToPhysicsGroup called');
+    console.log('[GalagaScene] aliens group exists:', !!this.aliens);
+    console.log('[GalagaScene] alienGrid exists:', !!this.alienGrid);
+    
     if (!this.aliens || !this.alienGrid) return;
 
     const aliveAliens = this.alienGrid.getAliveAliens();
+    console.log('[GalagaScene] Found alive aliens:', aliveAliens.length);
+    
     aliveAliens.forEach((alien: any) => {
       if (alien) {
         this.aliens!.add(alien);
+        console.log('[GalagaScene] Added alien to physics group');
       }
     });
+    
+    console.log('[GalagaScene] Total aliens in physics group:', this.aliens.getChildren().length);
   }
 
   protected setupCollisions(): void {
@@ -167,19 +185,36 @@ export class GalagaScene extends BaseGameScene {
         }
       });
       
-      this.backgroundElements.push(cloud);
+      this.clouds.push(cloud);
     }
   }
 
   protected checkGameConditions(): void {
     if (!this.gameActive) return;
 
+    console.log('[GalagaScene] checkGameConditions called');
+    console.log('[GalagaScene] aliens group exists:', !!this.aliens);
+    
+    if (this.aliens) {
+      const allAliens = this.aliens.getChildren();
+      console.log('[GalagaScene] Total aliens in physics group:', allAliens.length);
+      
+      // Check if all aliens destroyed
+      const aliveAliens = allAliens.filter((alien: any) => 
+        alien.active && alien.isAlive()
+      );
+      console.log('[GalagaScene] Alive aliens count:', aliveAliens.length);
+    }
+
     // Check if all aliens destroyed
     const aliveAliens = this.aliens?.getChildren().filter((alien: any) => 
       alien.active && alien.isAlive()
     ) || [];
 
+    console.log('[GalagaScene] Final alive aliens count:', aliveAliens.length);
+
     if (aliveAliens.length === 0) {
+      console.log('[GalagaScene] No aliens left - triggering level complete');
       this.onLevelComplete();
       return;
     }

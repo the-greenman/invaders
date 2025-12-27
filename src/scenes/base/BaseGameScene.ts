@@ -227,6 +227,12 @@ export abstract class BaseGameScene extends Phaser.Scene {
     // Update player
     this.player?.update(16);
 
+    // Update mode-specific logic
+    this.updateMode(delta);
+
+    // Check game conditions
+    this.checkGameConditions();
+
     // Clean up bullets that are out of bounds
     if (this.bullets && this.bullets.children) {
       this.bullets.children.entries.forEach((bullet: any) => {
