@@ -53,22 +53,27 @@ export class WaveManager {
   private scene: Phaser.Scene;
   private activeWaves: Wave[] = [];
   private lastWaveTime: number = 0;
+  private homingStrength: number = 0;
 
-  constructor(grid: GalagaGrid, scene: Phaser.Scene) {
+  constructor(grid: GalagaGrid, scene: Phaser.Scene, homingStrength: number = 0) {
     this.grid = grid;
     this.scene = scene;
+    this.homingStrength = homingStrength;
   }
 
   /**
    * Main update loop - called every frame by GalagaGrid
    */
   update(delta: number): void {
+    const playerX = this.scene.registry.get('playerX');
+    const targetX = typeof playerX === 'number' ? playerX : undefined;
+
     // Update all active waves
     for (const wave of this.activeWaves) {
       for (const alien of wave.aliens) {
         const state = alien.getState();
         if (state === AlienState.ATTACKING) {
-          alien.followPath(delta);
+          alien.followPath(delta, targetX, this.homingStrength);
           if (alien.getAttackPath()?.isComplete()) {
             this.startReturnToFormation(alien);
           }

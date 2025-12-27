@@ -53,6 +53,8 @@ export class GameScene extends Phaser.Scene {
   private currentGameMode: GameMode = GameMode.SPACE_INVADERS;
   private levelsSinceLastSwitch: number = 0;
 
+  private lastLifeLostAt: number = 0;
+
   // UI elements
   private scoreText: Phaser.GameObjects.Text | null = null;
   private levelText: Phaser.GameObjects.Text | null = null;
@@ -94,8 +96,13 @@ export class GameScene extends Phaser.Scene {
     if (typeof data.lives === 'number') {
       this.lives = data.lives;
     }
+
+    // Mode selection: explicit startMode wins; otherwise reset to default on fresh game.
     if (data.startMode !== undefined) {
       this.currentGameMode = data.startMode;
+      this.levelsSinceLastSwitch = 0;
+    } else if (this.level === 1 && this.score === 0) {
+      this.currentGameMode = GameMode.SPACE_INVADERS;
       this.levelsSinceLastSwitch = 0;
     }
     
@@ -164,8 +171,12 @@ export class GameScene extends Phaser.Scene {
     this.clearGameObjects();
   }
 
-  update(): void {
+  update(time: number, delta: number): void {
     if (!this.gameActive) return;
+
+    if (this.player) {
+      this.registry.set('playerX', this.player.x);
+    }
 
     this.pollGamepadNavigation();
 
@@ -246,6 +257,7 @@ export class GameScene extends Phaser.Scene {
         3,
         levelConfig.alienCols,
         levelConfig.galagaFormationSpeed || 60,
+        levelConfig.galagaHomingStrength || 0,
         this.alienFaceTextures,
         this.level
       );
@@ -698,19 +710,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handlePlayerDeath(): void {
+    const now = this.time?.now ?? Date.now();
+    if (now - this.lastLifeLostAt < 750) {
+      return;
+    }
+    this.lastLifeLostAt = now;
+
     this.lives--;
     this.updateLivesDisplay();
-    
+
     if (this.lives <= 0) {
       this.gameOver();
-    } else {
-      // Respawn player after delay
-      this.time.delayedCall(2000, () => {
-        const respawnX = this.currentGameMode === GameMode.GALAGA
-          ? (this.player?.x ?? (GAME_WIDTH / 2))
-          : (GAME_WIDTH / 2);
-        this.player?.reset(respawnX, this.getPlayerStartY());
-      });
     }
   }
 
@@ -790,6 +800,7 @@ export class GameScene extends Phaser.Scene {
         3,
         levelConfig.alienCols,
         levelConfig.galagaFormationSpeed || 60,
+        levelConfig.galagaHomingStrength || 0,
         this.alienFaceTextures,
         this.level
       );

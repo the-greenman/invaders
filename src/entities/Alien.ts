@@ -266,16 +266,23 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * 2. Set alien position to path position
    * 3. Update physics body with body.reset(x, y)
    */
-  followPath(delta: number): void {
+  followPath(delta: number, targetX?: number, homingStrength: number = 0): void {
     if (!this.alive || !this.attackPath || this.alienState !== AlienState.ATTACKING) {
       return;
     }
 
     const pos = this.attackPath.getCurrentPosition(delta);
-    this.setPosition(pos.x, pos.y);
+    let x = pos.x;
+    if (typeof targetX === 'number' && homingStrength > 0) {
+      const maxSteer = 120 * (delta / 1000);
+      const steer = Phaser.Math.Clamp((targetX - x) * homingStrength, -maxSteer, maxSteer);
+      x += steer;
+    }
+
+    this.setPosition(x, pos.y);
     const body = this.body as Phaser.Physics.Arcade.Body | undefined;
     if (body) {
-      body.reset(pos.x, pos.y);
+      body.reset(x, pos.y);
     }
   }
 }

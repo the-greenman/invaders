@@ -58,7 +58,7 @@ export const COLORS = {
 };
 
 // Game Mode System
-export const AUTO_SWITCH_INTERVAL = 5; // Switch modes after this many levels
+export const AUTO_SWITCH_INTERVAL = 4; // Switch modes after this many levels
 export const ENABLE_MANUAL_MODE_SWITCH = true; // Allow number keys to switch modes
 
 // Galaga Mode (Game 2) Settings

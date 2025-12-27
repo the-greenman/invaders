@@ -30,6 +30,7 @@ export interface LevelConfig {
   // These parameters control Galaga-specific difficulty scaling
   galagaFormationSpeed?: number;  // Smooth side-to-side movement speed (pixels/sec)
   galagaWaveFrequency?: number;   // How often to launch waves (0-1, higher = more frequent)
+  galagaHomingStrength?: number;  // Horizontal steering strength during attacks (0-1)
 }
 
 export interface FaceDetectionResult {
