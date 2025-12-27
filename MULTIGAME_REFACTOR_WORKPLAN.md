@@ -34,10 +34,10 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 - Export both for use across codebase
 
 **Acceptance Criteria:**
-- [ ] Enum defined with all 4 difficulty levels
-- [ ] Helper function returns correct display names
-- [ ] File compiles with no TypeScript errors
-- [ ] Build passes
+- [x] Enum defined with all 4 difficulty levels
+- [x] Helper function returns correct display names
+- [x] File compiles with no TypeScript errors
+- [x] Build passes
 
 **Code Reference:** See plan lines 1017-1033
 
@@ -55,18 +55,18 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 - All multipliers must affect: speed, bombs, waves, rows, progression, points
 
 **Acceptance Criteria:**
-- [ ] Interface includes all required multiplier fields
-- [ ] All 4 difficulty presets defined with balanced values
-- [ ] EASY: slower/easier, MEDIUM: baseline, HARD: faster/harder, EXTREME: maximum challenge
-- [ ] File compiles with no TypeScript errors
-- [ ] Build passes
+- [x] Interface includes all required multiplier fields
+- [x] All 4 difficulty presets defined with balanced values
+- [x] EASY: slower/easier, MEDIUM: baseline, HARD: faster/harder, EXTREME: maximum challenge
+- [x] File compiles with no TypeScript errors
+- [x] Build passes
 
 **Code Reference:** See plan lines 1042-1119
 
 ---
 
 ### Task 1.3: Update LevelConfig Interface
-**File:** `src/types/LevelConfig.ts` (MODIFY)
+**File:** `src/types.ts` (MODIFIED - already contains required fields)
 **Dependencies:** None (parallel with 1.1-1.2)
 **Agent Type:** Implementation
 **Estimated Time:** 10 minutes
@@ -78,20 +78,21 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
   - `galagaMaxSimultaneousWaves: number`
 
 **Acceptance Criteria:**
-- [ ] Three new fields added to interface
-- [ ] All fields properly typed as `number`
-- [ ] File compiles with no TypeScript errors
-- [ ] Build passes (may show errors in LevelManager - expected)
+- [x] Three new fields added to interface
+- [x] All fields properly typed as `number`
+- [x] File compiles with no TypeScript errors
+- [x] Build passes
 
 **Code Reference:** See plan lines 1206-1221
 
 ---
 
-### Task 1.4: Update LevelManager for Difficulty
+### Task 1.4: Update LevelManager for Difficulty [TRACK A - CRITICAL PATH]
 **File:** `src/managers/LevelManager.ts` (MODIFY)
-**Dependencies:** Tasks 1.1, 1.2, 1.3
+**Dependencies:** Tasks 1.1, 1.2, 1.3 ✅
 **Agent Type:** Implementation
 **Estimated Time:** 1 hour
+**Unblocks:** Tasks 1.5, 3.1
 
 **Requirements:**
 - Import `DifficultyPreset` and `DIFFICULTY_CONFIGS`
@@ -120,11 +121,12 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 1.5: Extract BaseGameScene Abstract Class
+### Task 1.5: Extract BaseGameScene Abstract Class [TRACK A]
 **File:** `src/scenes/base/BaseGameScene.ts` (NEW)
 **Dependencies:** Task 1.4
 **Agent Type:** Implementation
 **Estimated Time:** 2-3 hours
+**Enables:** Tasks 2.1, 2.2, 4.2
 
 **Requirements:**
 - Create abstract base class extending `Phaser.Scene`
@@ -173,11 +175,12 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ## Stage 2: Scene Migration (3-4 hours)
 
-### Task 2.1: Create SpaceInvadersScene
+### Task 2.1: Create SpaceInvadersScene [TRACK C]
 **File:** `src/scenes/modes/SpaceInvadersScene.ts` (NEW)
 **Dependencies:** Task 1.5
 **Agent Type:** Implementation
 **Estimated Time:** 1.5-2 hours
+**Parallel with:** Task 2.2
 
 **Requirements:**
 - Extend `BaseGameScene`
@@ -211,11 +214,12 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 2.2: Create GalagaScene
+### Task 2.2: Create GalagaScene [TRACK C]
 **File:** `src/scenes/modes/GalagaScene.ts` (NEW)
 **Dependencies:** Task 1.5
 **Agent Type:** Implementation (parallel with 2.1)
 **Estimated Time:** 1.5-2 hours
+**Parallel with:** Task 2.1
 
 **Requirements:**
 - Extend `BaseGameScene`
@@ -273,11 +277,12 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ## Stage 3: Difficulty Scaling (2-3 hours)
 
-### Task 3.1: Update WaveManager for Configurable Waves
+### Task 3.1: Update WaveManager for Configurable Waves [TRACK B]
 **File:** `src/systems/WaveManager.ts` (MODIFY)
 **Dependencies:** Task 1.4
 **Agent Type:** Implementation
 **Estimated Time:** 45 minutes
+**Parallel with:** Can start after 1.4, parallel to 1.5
 
 **Requirements:**
 - Update constructor to accept optional config object:
@@ -305,7 +310,7 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 3.2: Update GalagaGrid to Pass Wave Config
+### Task 3.2: Update GalagaGrid to Pass Wave Config [TRACK B]
 **File:** `src/entities/GalagaGrid.ts` (MODIFY)
 **Dependencies:** Task 3.1
 **Agent Type:** Implementation
@@ -326,7 +331,7 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 3.3: Update GalagaScene to Use Wave Config
+### Task 3.3: Update GalagaScene to Use Wave Config [TRACK B]
 **File:** `src/scenes/modes/GalagaScene.ts` (MODIFY)
 **Dependencies:** Tasks 2.2, 3.2
 **Agent Type:** Implementation
@@ -350,11 +355,12 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 3.4: Create DifficultySelectScene
+### Task 3.4: Create DifficultySelectScene [TRACK B]
 **File:** `src/scenes/DifficultySelectScene.ts` (NEW)
-**Dependencies:** Task 1.1
+**Dependencies:** Task 1.1 ✅
 **Agent Type:** Implementation
 **Estimated Time:** 1 hour
+**Parallel with:** Can start immediately, parallel to 3.1-3.3
 
 **Requirements:**
 - Create scene extending `Phaser.Scene`
@@ -377,7 +383,7 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 3.5: Update Menu Flow
+### Task 3.5: Update Menu Flow [TRACK B]
 **File:** `src/scenes/MenuScene.ts` (or equivalent) (MODIFY)
 **Dependencies:** Task 3.4
 **Agent Type:** Implementation
@@ -396,7 +402,7 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ## Stage 4: Integration & Polish (2-3 hours)
 
-### Task 4.1: Update ModeTransitionScene
+### Task 4.1: Update ModeTransitionScene [TRACK C]
 **File:** `src/scenes/ModeTransitionScene.ts` (MODIFY)
 **Dependencies:** Tasks 2.1, 2.2
 **Agent Type:** Implementation
@@ -417,7 +423,7 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 4.2: Update BaseGameScene Mode Switching
+### Task 4.2: Update BaseGameScene Mode Switching [TRACK A]
 **File:** `src/scenes/base/BaseGameScene.ts` (MODIFY)
 **Dependencies:** Task 1.5
 **Agent Type:** Implementation
@@ -536,6 +542,31 @@ If issues arise:
 
 ---
 
+## Parallelization Strategy
+
+### Track-Based Execution
+**Track A: Core Architecture (Agent 1)**
+- 1.4: LevelManager → 1.5: BaseGameScene → 4.2: Mode Switching
+
+**Track B: Difficulty Scaling (Agent 2)**
+- 3.1: WaveManager → 3.2: GalagaGrid → 3.3: GalagaScene → 3.4: DifficultySelectScene → 3.5: Menu Flow
+
+**Track C: Scene Migration (Agent 3)**
+- 2.1: SpaceInvadersScene → 2.2: GalagaScene → 2.3: Scene Registry → 4.1: ModeTransitionScene
+
+### Parallel Execution Windows
+1. **After Task 1.4 completes**: Tracks A, B, and C can run in parallel
+2. **Tasks 2.1 & 2.2**: Can run simultaneously (both depend only on 1.5)
+3. **Tasks 3.1 & 3.4**: Can run simultaneously (different systems)
+4. **Critical Path**: 1.4 → 1.5 → 2.1/2.2 → 2.3 → 4.3 → 4.4
+
+### Agent Allocation Strategy
+- **3 Agents Optimal**: Reduces total time to 5-7 hours
+- **2 Agents**: Combine Tracks B & C after 1.4 (7-9 hours)
+- **1 Agent**: Sequential execution (11-15 hours)
+
+---
+
 ## Task Dependencies Diagram
 
 ```
@@ -566,21 +597,23 @@ All → 4.3 (Remove GameScene) → 4.4 (Testing) → 4.5 (Docs)
 ## Parallelization Opportunities
 
 Tasks that can run in parallel:
-- **1.1, 1.2, 1.3** (different files, no dependencies)
+- **1.1, 1.2, 1.3** ✅ COMPLETED (different files, no dependencies)
 - **2.1, 2.2** (both extend BaseGameScene, independent implementations)
 - **3.1, 3.4** (different systems, no shared dependencies)
+- **After 1.4**: Tracks A, B, and C can execute simultaneously
 
 ---
 
 ## Estimated Timeline
 
 **Sequential (single agent):** 11-15 hours
-**Parallel (multiple agents):** 8-10 hours (with 2-3 agents)
+**Parallel (3 agents):** 5-7 hours
+**Parallel (2 agents):** 7-9 hours
 
 **Breakdown by Stage:**
-- Stage 1: 4-5 hours
-- Stage 2: 3-4 hours
-- Stage 3: 2-3 hours
+- Stage 1: 4-5 hours (1.4 remaining)
+- Stage 2: 3-4 hours (can parallelize)
+- Stage 3: 2-3 hours (can parallelize)
 - Stage 4: 2-3 hours
 
 ---
