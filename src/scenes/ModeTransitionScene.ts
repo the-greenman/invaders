@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GameMode, getGameModeName } from '../types/GameMode';
+import { DifficultyPreset } from '../types/DifficultyPreset';
 
 interface ModeTransitionData {
   fromMode: GameMode;
@@ -8,6 +9,7 @@ interface ModeTransitionData {
   score: number;
   useWebcam: boolean;
   lives: number;
+  difficulty?: DifficultyPreset;
   advanceLevel?: boolean; // if true, advance to next level before switching
 }
 
@@ -55,14 +57,31 @@ export class ModeTransitionScene extends Phaser.Scene {
   }
 
   private startNext(): void {
-    const { toMode, level, score, useWebcam, lives, advanceLevel } = this.dataIn;
+    const { toMode, level, score, useWebcam, lives, difficulty, advanceLevel } = this.dataIn;
     const nextLevel = advanceLevel ? level + 1 : level;
-    this.scene.start('GameScene', {
+    
+    // Get the correct scene key for the target mode
+    const sceneKey = this.getSceneKey(toMode);
+    
+    this.scene.start(sceneKey, {
       level: nextLevel,
       score,
       useWebcam,
       lives,
+      difficulty,
       startMode: toMode
     });
+  }
+
+  private getSceneKey(mode: GameMode): string {
+    switch (mode) {
+      case GameMode.SPACE_INVADERS:
+        return 'SpaceInvadersScene';
+      case GameMode.GALAGA:
+        return 'GalagaScene';
+      default:
+        console.warn(`Unknown game mode: ${mode}, falling back to GameScene`);
+        return 'GameScene';
+    }
   }
 }

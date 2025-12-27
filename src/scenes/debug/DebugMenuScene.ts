@@ -27,12 +27,12 @@ export class DebugMenuScene extends Phaser.Scene {
     { label: 'Bomb Drop Test', scene: 'BombTestScene', shortcut: { display: 'B', phaserKeydownEvent: 'keydown-B' } },
     { label: 'Path Test (Attack Paths)', scene: 'PathTestScene', shortcut: { display: 'P', phaserKeydownEvent: 'keydown-P' } },
     // Balance Testing Quick Starts (7.2)
-    { label: 'Start SI Level 1', scene: 'GameScene', shortcut: { display: 'Q', phaserKeydownEvent: 'keydown-Q' }, data: { level: 1, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },
-    { label: 'Start SI Level 5', scene: 'GameScene', shortcut: { display: 'W', phaserKeydownEvent: 'keydown-W' }, data: { level: 5, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },
-    { label: 'Start SI Level 10', scene: 'GameScene', shortcut: { display: 'E', phaserKeydownEvent: 'keydown-E' }, data: { level: 10, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },
-    { label: 'Start Galaga Level 1', scene: 'GameScene', shortcut: { display: 'A', phaserKeydownEvent: 'keydown-A' }, data: { level: 1, score: 0, useWebcam: false, startMode: GameMode.GALAGA } },
-    { label: 'Start Galaga Level 5', scene: 'GameScene', shortcut: { display: 'S', phaserKeydownEvent: 'keydown-S' }, data: { level: 5, score: 0, useWebcam: false, startMode: GameMode.GALAGA } },
-    { label: 'Start Galaga Level 10', scene: 'GameScene', shortcut: { display: 'D', phaserKeydownEvent: 'keydown-D' }, data: { level: 10, score: 0, useWebcam: false, startMode: GameMode.GALAGA } },
+    { label: 'Start SI Level 1', scene: 'SpaceInvadersScene', shortcut: { display: 'Q', phaserKeydownEvent: 'keydown-Q' }, data: { level: 1, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },
+    { label: 'Start SI Level 5', scene: 'SpaceInvadersScene', shortcut: { display: 'W', phaserKeydownEvent: 'keydown-W' }, data: { level: 5, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },
+    { label: 'Start SI Level 10', scene: 'SpaceInvadersScene', shortcut: { display: 'E', phaserKeydownEvent: 'keydown-E' }, data: { level: 10, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },
+    { label: 'Start Galaga Level 1', scene: 'GalagaScene', shortcut: { display: 'A', phaserKeydownEvent: 'keydown-A' }, data: { level: 1, score: 0, useWebcam: false, startMode: GameMode.GALAGA } },
+    { label: 'Start Galaga Level 5', scene: 'GalagaScene', shortcut: { display: 'S', phaserKeydownEvent: 'keydown-S' }, data: { level: 5, score: 0, useWebcam: false, startMode: GameMode.GALAGA } },
+    { label: 'Start Galaga Level 10', scene: 'GalagaScene', shortcut: { display: 'D', phaserKeydownEvent: 'keydown-D' }, data: { level: 10, score: 0, useWebcam: false, startMode: GameMode.GALAGA } },
     { label: 'Mobile Touch Controls', scene: 'MobileDebugScene', shortcut: { display: 'M', phaserKeydownEvent: 'keydown-M' } },
     { label: 'Back to Main Menu', scene: 'MenuScene', shortcut: { display: 'ESC', phaserKeydownEvent: 'keydown-ESC' } }
   ];
