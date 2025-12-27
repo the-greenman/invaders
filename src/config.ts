@@ -5,6 +5,7 @@ import { MenuScene } from './scenes/MenuScene';
 import { DifficultySelectScene } from './scenes/DifficultySelectScene';
 import { WebcamScene } from './scenes/WebcamScene';
 import { GameScene } from './scenes/GameScene';
+import { GalagaScene } from './scenes/modes/GalagaScene';
 import { ModeTransitionScene } from './scenes/ModeTransitionScene';
 import { SpaceInvadersIntroScene } from './scenes/SpaceInvadersIntroScene';
 import { GalagaIntroScene } from './scenes/GalagaIntroScene';
@@ -48,6 +49,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     ModeTransitionScene,
     SpaceInvadersIntroScene,
     GalagaIntroScene,
+    GalagaScene,
     DebugMenuScene,
     PathTestScene,
     PlayerTestScene,
