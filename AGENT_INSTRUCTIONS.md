@@ -4,7 +4,7 @@
 - **Active Workplan**: @[/home/greenman/dev/classinvaders/MULTIGAME_REFACTOR_WORKPLAN.md]
 - **Goal**: Multi-game architecture refactor with difficulty system
 - **Stage 1 Status**: Tasks 1.1-1.3 complete, Task 1.4 ready to begin
-- **Branch Strategy**: Feature branches merged into `galaga`, will eventually merge to `dev`
+- **Branch Strategy**: Feature branches merged into `dev`
 
 ## Git Workflow
 - **Always create a new branch** for each distinct task or feature.
@@ -29,7 +29,9 @@
 ## Progress Tracking
 - **Always update the workplan** when working on tasks:
   - Mark task as **in progress** when starting: Add `[IN PROGRESS]` to task title
+  - Add your branch name to the task header: `**Branch:** `feature/your-branch-name``
   - Mark acceptance criteria with `[x]` when complete
+  - Mark task as **completed** when done: Add `✅ COMPLETED` to task title
   - Add completion notes if needed
   - Update task status in @[/home/greenman/dev/classinvaders/MULTIGAME_REFACTOR_WORKPLAN.md]
 - This provides visibility to other agents and the master agent
