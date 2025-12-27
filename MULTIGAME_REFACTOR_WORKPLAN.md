@@ -259,9 +259,9 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ---
 
-### Task 2.3: Update Scene Registry
-**File:** `src/main.ts` or game config
-**Dependencies:** Tasks 2.1, 2.2
+### Task 2.3: Update Scene Registry [TRACK C] ✅ COMPLETED
+**File:** `src/config.ts` (MODIFIED)
+**Dependencies:** Tasks 2.1, 2.2 ✅
 **Agent Type:** Implementation
 **Estimated Time:** 15 minutes
 
@@ -272,10 +272,10 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 - Ensure scene keys match expected values
 
 **Acceptance Criteria:**
-- [ ] Both new scenes registered
-- [ ] Scene keys correct ('SpaceInvadersScene', 'GalagaScene')
-- [ ] Build passes
-- [ ] Game can start (even if not fully functional yet)
+- [x] Both new scenes registered
+- [x] Scene keys correct ('SpaceInvadersScene', 'GalagaScene')
+- [x] Build passes
+- [x] Game can start (even if not fully functional yet)
 
 ---
 
