@@ -87,6 +87,14 @@ export class GalagaScene extends BaseGameScene {
     });
     
     console.log('[GalagaScene] Total aliens in physics group:', this.aliens.getChildren().length);
+    
+    // Check immediately after adding
+    setTimeout(() => {
+      if (this.aliens) {
+        const count = this.aliens.getChildren().length;
+        console.log('[GalagaScene] Alien count after timeout:', count);
+      }
+    }, 0);
   }
 
   protected setupCollisions(): void {
@@ -199,6 +207,11 @@ export class GalagaScene extends BaseGameScene {
       const allAliens = this.aliens.getChildren();
       console.log('[GalagaScene] Total aliens in physics group:', allAliens.length);
       
+      // Debug each alien
+      allAliens.forEach((alien: any, index: number) => {
+        console.log(`[GalagaScene] Alien ${index}: active=${alien.active}, alive=${alien.isAlive ? alien.isAlive() : 'N/A'}`);
+      });
+      
       // Check if all aliens destroyed
       const aliveAliens = allAliens.filter((alien: any) => 
         alien.active && alien.isAlive()
@@ -224,6 +237,7 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected onLevelComplete(): void {
+    console.log('[GalagaScene] onLevelComplete called - gameActive:', this.gameActive);
     this.gameActive = false;
     
     // Show completion text
@@ -235,11 +249,14 @@ export class GalagaScene extends BaseGameScene {
 
     // Check for mode switch
     this.time.delayedCall(2000, () => {
+      console.log('[GalagaScene] Delayed callback - checking mode switch');
       completeText.destroy();
       
       if (this.shouldAutoSwitch()) {
+        console.log('[GalagaScene] Auto-switching to SPACE_INVADERS');
         this.switchToMode(GameMode.SPACE_INVADERS);
       } else {
+        console.log('[GalagaScene] Starting next level');
         // Continue to next level
         this.startNextLevel();
       }
