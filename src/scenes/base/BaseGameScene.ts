@@ -56,6 +56,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
   protected difficulty: DifficultyPreset = DifficultyPreset.MEDIUM;
 
   private lastLifeLostAt: number = 0;
+  private _loggedFirstUpdate: boolean = false;
 
   // UI elements
   protected scoreText: Phaser.GameObjects.Text | null = null;
@@ -151,6 +152,8 @@ export abstract class BaseGameScene extends Phaser.Scene {
   // =========================================================================
 
   async create(): Promise<void> {
+    console.log('[BaseGameScene] create() called for', this.constructor.name);
+    
     // Get scene data from previous scene
     const data = this.scene.settings.data as { 
       level?: number; 
@@ -163,11 +166,15 @@ export abstract class BaseGameScene extends Phaser.Scene {
       difficulty?: DifficultyPreset;
     };
     
+    console.log('[BaseGameScene] Scene data:', data);
+    
     this.level = data.level || 1;
     this.score = data.score || 0;
     this.useWebcam = data.useWebcam || false;
     this.disableBackToMenu = !!data.disableBackToMenu;
     this.difficulty = data.difficulty || DifficultyPreset.MEDIUM;
+    
+    console.log('[BaseGameScene] Parsed data - level:', this.level, 'mode:', data.startMode, 'difficulty:', this.difficulty);
     
     if (typeof data.lives === 'number') {
       this.lives = data.lives;
@@ -201,15 +208,25 @@ export abstract class BaseGameScene extends Phaser.Scene {
     await this.prepareAlienFaceTextures();
     
     // Create game systems in order
+    console.log('[BaseGameScene] Setting up physics groups...');
     this.setupPhysicsGroups();
+    console.log('[BaseGameScene] Initializing managers...');
     this.initializeManagers();
+    console.log('[BaseGameScene] Creating player...');
     this.createPlayer();
+    console.log('[BaseGameScene] Creating enemies...');
     this.createEnemies();
+    console.log('[BaseGameScene] Setting up collisions...');
     this.setupCollisions();
+    console.log('[BaseGameScene] Creating core UI...');
     this.createCoreUI();
+    console.log('[BaseGameScene] Creating mode UI...');
     this.createModeUI();
+    console.log('[BaseGameScene] Creating background...');
     this.createBackground();
+    console.log('[BaseGameScene] Setting up input...');
     this.setupInput();
+    console.log('[BaseGameScene] Create complete!');
 
     // Setup shutdown handler
     this.events.once('shutdown', this.handleShutdown, this);
@@ -217,6 +234,12 @@ export abstract class BaseGameScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (!this.gameActive) return;
+
+    // Only log checkGameConditions call once
+    if (!this._loggedFirstUpdate) {
+      console.log('[BaseGameScene] First update() call - gameActive:', this.gameActive);
+      this._loggedFirstUpdate = true;
+    }
 
     if (this.player) {
       this.registry.set('playerX', this.player.x);
