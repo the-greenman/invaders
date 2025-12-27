@@ -332,8 +332,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private openWebcam(): void {
-    // Open webcam scene for face capture
-    this.scene.start('WebcamScene');
+    // First go to difficulty selection, which will then start the game
+    this.scene.start('DifficultySelectScene');
   }
 
   private showCredits(): void {

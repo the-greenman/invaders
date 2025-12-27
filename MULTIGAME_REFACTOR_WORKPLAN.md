@@ -278,7 +278,8 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 
 ## Stage 3: Difficulty Scaling (2-3 hours)
 
-### Task 3.1: Update WaveManager for Configurable Waves [TRACK B]
+### Task 3.1: Update WaveManager for Configurable Waves [TRACK B] ✅ COMPLETED
+**Branch:** `feature/track-b-difficulty-scaling`
 **File:** `src/systems/WaveManager.ts` (MODIFY)
 **Dependencies:** Task 1.4
 **Agent Type:** Implementation
@@ -300,18 +301,19 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 - Use stored values in `shouldLaunchWave()` and `launchWave()`
 
 **Acceptance Criteria:**
-- [ ] Constructor accepts config parameter
-- [ ] All wave parameters configurable
-- [ ] Falls back to constants if not provided
-- [ ] Wave launching uses configured values
-- [ ] File compiles with no TypeScript errors
-- [ ] Build passes
+- [x] Constructor accepts config parameter
+- [x] All wave parameters configurable
+- [x] Falls back to constants if not provided
+- [x] Wave launching uses configured values
+- [x] File compiles with no TypeScript errors
+- [x] Build passes
 
 **Code Reference:** See plan lines 1234-1289
 
 ---
 
-### Task 3.2: Update GalagaGrid to Pass Wave Config [TRACK B]
+### Task 3.2: Update GalagaGrid to Pass Wave Config [TRACK B] ✅ COMPLETED
+**Branch:** `feature/track-b-difficulty-scaling`
 **File:** `src/entities/GalagaGrid.ts` (MODIFY)
 **Dependencies:** Task 3.1
 **Agent Type:** Implementation
@@ -323,16 +325,17 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 - Config should come from LevelConfig in GalagaScene
 
 **Acceptance Criteria:**
-- [ ] Constructor accepts waveConfig parameter
-- [ ] WaveManager receives config
-- [ ] File compiles with no TypeScript errors
-- [ ] Build passes
+- [x] Constructor accepts waveConfig parameter
+- [x] WaveManager receives config
+- [x] File compiles with no TypeScript errors
+- [x] Build passes
 
 **Code Reference:** See plan lines 1303-1333
 
 ---
 
-### Task 3.3: Update GalagaScene to Use Wave Config [TRACK B]
+### Task 3.3: Update GalagaScene to Use Wave Config [TRACK B] ✅ COMPLETED
+**Branch:** `feature/track-b-difficulty-scaling`
 **File:** `src/scenes/modes/GalagaScene.ts` (MODIFY)
 **Dependencies:** Tasks 2.2, 3.2
 **Agent Type:** Implementation
@@ -349,14 +352,15 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
   ```
 
 **Acceptance Criteria:**
-- [ ] Wave config passed from level config
-- [ ] Difficulty-scaled waves working
-- [ ] File compiles with no TypeScript errors
-- [ ] Build passes
+- [x] Wave config passed from level config
+- [x] Difficulty-scaled waves working
+- [x] File compiles with no TypeScript errors
+- [x] Build passes
 
 ---
 
-### Task 3.4: Create DifficultySelectScene [TRACK B]
+### Task 3.4: Create DifficultySelectScene [TRACK B] ✅ COMPLETED
+**Branch:** `feature/track-b-difficulty-scaling`
 **File:** `src/scenes/DifficultySelectScene.ts` (NEW)
 **Dependencies:** Task 1.1 ✅
 **Agent Type:** Implementation
@@ -372,19 +376,20 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 - Integrate with LocalStorage for persistence
 
 **Acceptance Criteria:**
-- [ ] Scene displays all 4 difficulties
-- [ ] Hover effects work
-- [ ] Click starts SpaceInvadersScene with difficulty
-- [ ] Difficulty stored in LocalStorage
-- [ ] Medium highlighted as default
-- [ ] File compiles with no TypeScript errors
-- [ ] Build passes
+- [x] Scene displays all 4 difficulties
+- [x] Hover effects work
+- [x] Click starts SpaceInvadersScene with difficulty
+- [x] Difficulty stored in LocalStorage
+- [x] Medium highlighted as default
+- [x] File compiles with no TypeScript errors
+- [x] Build passes
 
 **Code Reference:** See plan lines 1342-1414
 
 ---
 
-### Task 3.5: Update Menu Flow [TRACK B]
+### Task 3.5: Update Menu Flow [TRACK B] ✅ COMPLETED
+**Branch:** `feature/track-b-difficulty-scaling`
 **File:** `src/scenes/MenuScene.ts` (or equivalent) (MODIFY)
 **Dependencies:** Task 3.4
 **Agent Type:** Implementation
@@ -395,9 +400,9 @@ This workplan breaks down the multi-game architecture refactor into discrete, ag
 - Or start game with default difficulty if menu doesn't exist
 
 **Acceptance Criteria:**
-- [ ] Menu links to difficulty selection
-- [ ] Difficulty flows through to game start
-- [ ] Build passes
+- [x] Menu links to difficulty selection
+- [x] Difficulty flows through to game start
+- [x] Build passes
 
 ---
 

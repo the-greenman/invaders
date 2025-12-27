@@ -48,17 +48,33 @@ export interface Wave {
   active: boolean;
 }
 
+export interface WaveConfig {
+  minInterval?: number;
+  maxInterval?: number;
+  minSize?: number;
+  maxSize?: number;
+  maxWaves?: number;
+}
+
 export class WaveManager {
   private grid: GalagaGrid;
   private scene: Phaser.Scene;
   private activeWaves: Wave[] = [];
   private lastWaveTime: number = 0;
   private homingStrength: number = 0;
+  private config: WaveConfig;
 
-  constructor(grid: GalagaGrid, scene: Phaser.Scene, homingStrength: number = 0) {
+  constructor(grid: GalagaGrid, scene: Phaser.Scene, homingStrength: number = 0, config: WaveConfig = {}) {
     this.grid = grid;
     this.scene = scene;
     this.homingStrength = homingStrength;
+    this.config = {
+      minInterval: config.minInterval ?? GALAGA_WAVE_MIN_INTERVAL,
+      maxInterval: config.maxInterval ?? GALAGA_WAVE_MAX_INTERVAL,
+      minSize: config.minSize ?? GALAGA_WAVE_MIN_SIZE,
+      maxSize: config.maxSize ?? GALAGA_WAVE_MAX_SIZE,
+      maxWaves: config.maxWaves ?? GALAGA_MAX_SIMULTANEOUS_WAVES
+    };
   }
 
   /**
@@ -97,18 +113,18 @@ export class WaveManager {
    */
   private shouldLaunchWave(): boolean {
     // Check conditions:
-    // 1. Not too many active waves (< GALAGA_MAX_SIMULTANEOUS_WAVES)
+    // 1. Not too many active waves (< maxWaves from config)
     // 2. Enough time since last wave
     // 3. Aliens available in bottom row
 
     const now = Date.now();
     const timeSinceLastWave = now - this.lastWaveTime;
     const interval = Phaser.Math.Between(
-      GALAGA_WAVE_MIN_INTERVAL,
-      GALAGA_WAVE_MAX_INTERVAL
+      this.config.minInterval!,
+      this.config.maxInterval!
     );
 
-    return this.activeWaves.length < GALAGA_MAX_SIMULTANEOUS_WAVES &&
+    return this.activeWaves.length < this.config.maxWaves! &&
            timeSinceLastWave > interval &&
            this.getBottomRowAliens().length > 0;
   }
@@ -117,10 +133,10 @@ export class WaveManager {
    * Launch a new attack wave
    */
   private launchWave(): void {
-    // 1. Determine wave size (random between MIN/MAX)
+    // 1. Determine wave size (random between MIN/MAX from config)
     const waveSize = Phaser.Math.Between(
-      GALAGA_WAVE_MIN_SIZE,
-      GALAGA_WAVE_MAX_SIZE
+      this.config.minSize!,
+      this.config.maxSize!
     );
 
     // 2. Select aliens from bottom row

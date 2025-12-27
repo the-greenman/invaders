@@ -30,6 +30,7 @@ export class WebcamScene extends Phaser.Scene {
   private prevStartPressed: boolean = false;
   private fireButtonIndex: number = 0;
   private startButtonIndex: number = 11;
+  private difficulty: string = 'MEDIUM';
 
   constructor() {
     super({ key: 'WebcamScene' });
@@ -243,8 +244,13 @@ export class WebcamScene extends Phaser.Scene {
   }
 
   private startGameWithWebcam(): void {
-    // Start game with webcam faces
-    this.scene.start('GameScene', { level: 1, score: 0, useWebcam: true });
+    // Start game with webcam faces and difficulty
+    this.scene.start('GameScene', { 
+      level: 1, 
+      score: 0, 
+      useWebcam: true,
+      difficulty: this.difficulty 
+    });
   }
 
   /**
