@@ -9,6 +9,7 @@ import { LevelManager } from '../../managers/LevelManager';
 import { AudioManager } from '../../managers/AudioManager';
 import { FaceManager } from '../../managers/FaceManager';
 import { TouchControlManager } from '../../managers/TouchControlManager';
+import { SpriteManager } from '../../managers/SpriteManager';
 import { LocalStorage } from '../../utils/localStorage';
 import { GameMode, getGameModeName } from '../../types/GameMode';
 import { DifficultyPreset } from '../../types/DifficultyPreset';
@@ -71,6 +72,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
   protected levelManager: LevelManager | null = null;
   protected audioManager: AudioManager | null = null;
   protected touchControlManager: TouchControlManager | null = null;
+  protected spriteManager: SpriteManager | null = null;
   protected debugCollisions: boolean = false;
   private lastDebugLog: number = 0;
   protected alienFaceTextures: string[] = [];
@@ -389,6 +391,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.levelManager = new LevelManager(this.level, this.difficulty);
     this.audioManager = new AudioManager(this);
     this.touchControlManager = new TouchControlManager(this);
+    this.spriteManager = SpriteManager.getInstance(this);
 
     // Register all sound effects
     this.audioManager.registerSound('shoot');
@@ -583,6 +586,11 @@ export abstract class BaseGameScene extends Phaser.Scene {
       this.bombs.clear(true, true);
     }
     
+    // Clear sprite manager cache
+    if (this.spriteManager) {
+      this.spriteManager.clearCache();
+    }
+    
     // Clear mode-specific entities (implemented in subclasses)
     this.onClearEntities();
     
@@ -716,146 +724,32 @@ export abstract class BaseGameScene extends Phaser.Scene {
   }
 
   private async preparePlayerTexture(): Promise<void> {
-    const currentFace = FaceManager.getCurrentFace();
-    if (!currentFace) {
-      const meta = this.cache.json.get('player-face-meta');
-      if (this.textures.exists('default-face')) {
-        const targetKey = 'player-face-default';
-        try {
-          FaceManager.composeFaceTexture(this, {
-            baseKey: 'player',
-            faceKey: 'default-face',
-            targetKey,
-            width: PLAYER_WIDTH,
-            height: PLAYER_HEIGHT,
-            coreRadius: meta?.rx ?? PLAYER_CORE_RADIUS,
-            faceCenterX: meta ? meta.relativeX * PLAYER_WIDTH : undefined,
-            faceCenterY: meta ? meta.relativeY * PLAYER_HEIGHT : undefined,
-            faceScale: 1.0,
-            backingAlpha: 1.0
-          });
-          this.playerTextureKey = targetKey;
-          return;
-        } catch (e) {
-          console.warn('Failed to compose default player face', e);
-        }
-      }
+    if (!this.spriteManager) {
       this.playerTextureKey = 'player';
       return;
     }
-
-    const srcKey = 'player-face-src';
-    const targetKey = 'player-face-composite';
+    
     try {
-      await FaceManager.addBase64Texture(this, srcKey, currentFace);
-      const meta = this.cache.json.get('player-face-meta');
-      this.playerTextureKey = FaceManager.composeFaceTexture(this, {
-        baseKey: 'player',
-        faceKey: srcKey,
-        targetKey,
-        width: PLAYER_WIDTH,
-        height: PLAYER_HEIGHT,
-        coreRadius: meta?.rx ?? PLAYER_CORE_RADIUS,
-        faceCenterX: meta ? meta.relativeX * PLAYER_WIDTH : undefined,
-        faceCenterY: meta ? meta.relativeY * PLAYER_HEIGHT : undefined,
-        faceScale: 1.0,
-        backingAlpha: 1.0
-      });
+      this.playerTextureKey = await this.spriteManager.buildPlayerSprite();
+      console.log('[BaseGameScene] Player texture built:', this.playerTextureKey);
     } catch (e) {
-      console.warn('Failed to build player face texture, falling back to default', e);
+      console.warn('Failed to build player sprite, falling back to default', e);
       this.playerTextureKey = 'player';
     }
   }
 
   private async prepareAlienFaceTextures(): Promise<void> {
     const levelConfig = this.levelManager?.getLevelConfig();
-    if (!levelConfig) return;
+    if (!levelConfig || !this.spriteManager) return;
     
     const totalAliens = levelConfig.alienRows * levelConfig.alienCols;
-    const history = LocalStorage.getFaceHistory();
-    const textures: string[] = [];
-    const defaultKey = await this.ensureDefaultAlienFaceTexture();
-
-    const facesToUse = history.slice(0, totalAliens);
-    const meta = this.cache.json.get('alien1-face-meta');
-    const coreRadius = meta?.rx ?? ALIEN_CORE_RADIUS;
-    const centerX = meta ? meta.relativeX * ALIEN_WIDTH : undefined;
-    const centerY = meta ? meta.relativeY * ALIEN_HEIGHT : undefined;
-
-    for (const face of facesToUse) {
-      const srcKey = `alien-face-src-${face.id}`;
-      const targetKey = `alien-face-${face.id}`;
-      try {
-        await FaceManager.addBase64Texture(this, srcKey, face.imageData);
-        const tintedKey = `${srcKey}-green`;
-        try {
-          const tinted = await FaceManager.tintImage(face.imageData, COLORS.GREEN_TINT);
-          await FaceManager.addBase64Texture(this, tintedKey, tinted);
-        } catch {
-          // fallback to original if tint fails
-        }
-        FaceManager.composeFaceTexture(this, {
-          baseKey: 'alien-0',
-          faceKey: (this.textures.exists(tintedKey) ? tintedKey : srcKey),
-          targetKey,
-          width: ALIEN_WIDTH,
-          height: ALIEN_HEIGHT,
-          coreRadius,
-          faceCenterX: centerX,
-          faceCenterY: centerY,
-          faceScale: 1.0,
-          backingAlpha: ALIEN_TINT_ALPHA
-        });
-        textures.push(targetKey);
-      } catch (e) {
-        console.warn('Failed to build alien face texture', e);
-      }
-    }
     
-    while (textures.length < totalAliens && defaultKey) {
-      textures.push(defaultKey);
+    try {
+      this.alienFaceTextures = await this.spriteManager.buildAlienSprites(totalAliens);
+      console.log('[BaseGameScene] Alien textures built:', this.alienFaceTextures.length, '/', totalAliens);
+    } catch (e) {
+      console.error('Failed to build alien sprites', e);
+      this.alienFaceTextures = [];
     }
-
-    this.alienFaceTextures = textures;
-  }
-
-  private async ensureDefaultAlienFaceTexture(): Promise<string | null> {
-    if (!this.textures.exists('default-face')) return null;
-    const meta = this.cache.json.get('alien1-face-meta');
-    const coreRadius = meta?.rx ?? ALIEN_CORE_RADIUS;
-    const centerX = meta ? meta.relativeX * ALIEN_WIDTH : undefined;
-    const centerY = meta ? meta.relativeY * ALIEN_HEIGHT : undefined;
-    const targetKey = 'alien-face-default';
-
-    if (this.textures.exists(targetKey)) {
-      return targetKey;
-    }
-
-    let faceKey: string = 'default-face';
-    const base64 = this.textures.getBase64('default-face');
-    if (base64) {
-      try {
-        const tinted = await FaceManager.tintImage(base64, COLORS.GREEN_TINT);
-        const tintedKey = 'alien-face-default-tinted';
-        await FaceManager.addBase64Texture(this, tintedKey, tinted);
-        faceKey = tintedKey;
-      } catch (e) {
-        console.warn('Failed to tint default face for aliens, using original', e);
-      }
-    }
-
-    FaceManager.composeFaceTexture(this, {
-      baseKey: 'alien-0',
-      faceKey,
-      targetKey,
-      width: ALIEN_WIDTH,
-      height: ALIEN_HEIGHT,
-      coreRadius,
-      faceCenterX: centerX,
-      faceCenterY: centerY,
-      faceScale: 1.0,
-      backingAlpha: ALIEN_TINT_ALPHA
-    });
-    return targetKey;
   }
 }

@@ -23,6 +23,7 @@ export class GalagaScene extends BaseGameScene {
   protected alienPlayerCollider: Phaser.Physics.Arcade.Collider | null = null;
   private clouds: Phaser.GameObjects.Graphics[] = [];
   private _hasCheckedInitialConditions: boolean = false;
+  private _aliensReady: boolean = false;
 
   constructor() {
     super('GalagaScene');
@@ -39,6 +40,8 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected createEnemies(): void {
+    console.log('[GalagaScene] createEnemies called');
+    
     // Create GalagaGrid with level config
     const levelConfig = this.levelManager!.getLevelConfig();
     
@@ -59,6 +62,8 @@ export class GalagaScene extends BaseGameScene {
       }
     );
 
+    console.log('[GalagaScene] GalagaGrid created');
+
     // Add aliens to physics group
     this.addAliensToPhysicsGroup();
   }
@@ -67,11 +72,18 @@ export class GalagaScene extends BaseGameScene {
     if (!this.aliens || !this.alienGrid) return;
 
     const aliveAliens = this.alienGrid.getAliveAliens();
+    console.log(`[GalagaScene] Adding ${aliveAliens.length} aliens to physics group`);
+    
     aliveAliens.forEach((alien: any) => {
       if (alien) {
         this.aliens!.add(alien);
       }
     });
+    
+    console.log(`[GalagaScene] Physics group now has ${this.aliens.getChildren().length} aliens`);
+    
+    // Mark that aliens are ready
+    this._aliensReady = true;
   }
 
   protected setupCollisions(): void {
@@ -183,12 +195,21 @@ export class GalagaScene extends BaseGameScene {
   protected checkGameConditions(): void {
     if (!this.gameActive) return;
 
+    // Don't check until aliens are ready
+    if (!this._aliensReady) {
+      console.log(`[GalagaScene] checkGameConditions called but aliens not ready yet`);
+      return;
+    }
+
+    console.log(`[GalagaScene] checkGameConditions called. Aliens in group: ${this.aliens?.getChildren().length || 0}`);
+
     // Check if all aliens destroyed
     const aliveAliens = this.aliens?.getChildren().filter((alien: any) => 
       alien.active && alien.isAlive && typeof alien.isAlive === 'function' && alien.isAlive()
     ) || [];
 
     if (aliveAliens.length === 0) {
+      console.log(`[GalagaScene] No aliens left - triggering level complete. Total in group: ${this.aliens?.getChildren().length || 0}`);
       this.onLevelComplete();
       return;
     }
@@ -261,6 +282,9 @@ export class GalagaScene extends BaseGameScene {
     // Clear clouds
     this.clouds.forEach(cloud => cloud.destroy());
     this.clouds = [];
+    
+    // Reset aliens ready flag
+    this._aliensReady = false;
   }
 
   // =========================================================================
