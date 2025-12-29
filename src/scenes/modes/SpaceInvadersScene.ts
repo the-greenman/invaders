@@ -56,7 +56,7 @@ export class SpaceInvadersScene extends BaseGameScene {
   protected setupCollisions(): void {
     if (!this.bullets || !this.bombs || !this.aliens || !this.player) return;
 
-    // Bullet vs Alien (shared logic - points awarded)
+    // Bullet vs Alien (use shared handler from BaseGameScene)
     this.bulletAlienCollider = this.physics.add.overlap(
       this.bullets,
       this.aliens,
@@ -65,7 +65,7 @@ export class SpaceInvadersScene extends BaseGameScene {
       this
     );
 
-    // Bomb vs Player (shared logic - lose life)
+    // Bomb vs Player (use shared handler from BaseGameScene)
     this.bombPlayerCollider = this.physics.add.overlap(
       this.bombs,
       this.player,
@@ -234,60 +234,17 @@ export class SpaceInvadersScene extends BaseGameScene {
   }
 
   // ========================================================================
-  // COLLISION HANDLERS
+  // SPACE INVADERS-SPECIFIC COLLISION HANDLER
   // ========================================================================
 
-  private handleBulletAlienCollision(object1: any, object2: any): void {
-    // Determine which object is which
-    const bullet = object1 instanceof Alien ? object2 : object1;
-    const alien = object1 instanceof Alien ? object1 : object2;
-    if (!bullet || !alien) return;
-
-    if (!bullet.isActive() || !alien.isAlive()) return;
-
-    // Destroy bullet
-    bullet.hit();
-
-    // Destroy alien and get points
-    const points = alien.destroy();
-    this.addScore(points);
-
-    // Remove alien from grid
-    this.alienGrid?.removeAlien(alien);
-
-    // Play sound
-    this.audioManager?.play('alien-hit');
-  }
-
-  private handleBombPlayerCollision(object1: any, object2: any): void {
-    // Determine which object is which
-    const bomb = object1 instanceof Player ? object2 : object1;
-    const player = object1 instanceof Player ? object1 : object2;
-    if (!bomb || !player) return;
-
-    if (!bomb.isActive() || !player.active) return;
-
-    // Destroy bomb
-    bomb.hit();
-
-    // Damage player
-    player.takeDamage();
-    this.loseLife();
-
-    // Play sound
-    this.audioManager?.play('player-hit');
-  }
-
   private handleAlienPlayerCollision(object1: any, object2: any): void {
-    const objA = object1 as any;
-    const objB = object2 as any;
-    const alien = objA instanceof Alien ? objA : (objB instanceof Alien ? objB : null);
-    const player = objA instanceof Player ? objA : (objB instanceof Player ? objB : null);
+    const alien = object1 instanceof Alien ? object1 : (object2 instanceof Alien ? object2 : null);
+    const player = object1 instanceof Player ? object1 : (object2 instanceof Player ? object2 : null);
     if (!alien || !player) return;
-    
+
     if (!alien.isAlive() || !player.active) return;
-    
-    // Space Invaders specific: collision is immediate game over
+
+    // Space Invaders specific: collision is immediate game over (abduction)
     this.onGameOver();
   }
 }

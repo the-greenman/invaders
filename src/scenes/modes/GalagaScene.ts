@@ -1,10 +1,9 @@
 import { BaseGameScene } from '../base/BaseGameScene';
 import { Player } from '../../entities/Player';
 import { GalagaGrid } from '../../entities/GalagaGrid';
-import { GAME_WIDTH, GAME_HEIGHT, PLAYER_HEIGHT, PLAYER_WIDTH, AUTO_SWITCH_INTERVAL } from '../../constants';
+import { Alien, AlienState } from '../../entities/Alien';
+import { GAME_WIDTH, GAME_HEIGHT, PLAYER_HEIGHT, AUTO_SWITCH_INTERVAL } from '../../constants';
 import { GameMode } from '../../types/GameMode';
-import { LevelManager } from '../../managers/LevelManager';
-import { AlienState } from '../../entities/Alien';
 
 /**
  * Galaga Scene
@@ -87,56 +86,53 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected setupCollisions(): void {
-    // Bullet vs Alien (shared logic)
-    this.bulletAlienCollider = this.physics.add.collider(
-      this.bullets!,
-      this.aliens!,
-      (bullet: any, alien: any) => {
-        // Handle bullet-alien collision
-        if (bullet && bullet.active && alien && alien.isAlive && typeof alien.isAlive === 'function') {
-          if (alien.isAlive()) {
-            alien.destroy();
-            bullet.setActive(false);
-            bullet.setVisible(false);
-            
-            if (alien.getPoints && typeof alien.getPoints === 'function') {
-              this.addScore(alien.getPoints());
-            }
-            this.audioManager?.play('alien-hit');
-          }
-        }
-      }
+    if (!this.bullets || !this.bombs || !this.aliens || !this.player) return;
+
+    // Bullet vs Alien (use shared handler from BaseGameScene)
+    this.bulletAlienCollider = this.physics.add.overlap(
+      this.bullets,
+      this.aliens,
+      this.handleBulletAlienCollision,
+      undefined,
+      this
     );
 
-    // Bomb vs Player (shared logic)
-    this.bombPlayerCollider = this.physics.add.collider(
-      this.bombs!,
-      this.player!,
-      (bomb: any, player: any) => {
-        if (bomb.active && this.gameActive) {
-          bomb.setActive(false);
-          bomb.setVisible(false);
-          this.loseLife();
-          this.audioManager?.play('player-hit');
-        }
-      }
+    // Bomb vs Player (use shared handler from BaseGameScene)
+    this.bombPlayerCollider = this.physics.add.overlap(
+      this.bombs,
+      this.player,
+      this.handleBombPlayerCollision,
+      undefined,
+      this
     );
 
     // Alien vs Player - Galaga specific (crash, lose life)
     this.alienPlayerCollider = this.physics.add.overlap(
-      this.aliens!,
-      this.player!,
-      (alien: any, player: any) => {
-        if (alien && alien.isAlive && typeof alien.isAlive === 'function' && alien.getState && this.gameActive) {
-          if (alien.isAlive() && alien.getState() !== AlienState.IN_FORMATION) {
-            // Alien crashes into player - both destroyed, lose life
-            alien.destroy();
-            this.loseLife();
-            this.audioManager?.play('player-hit');
-          }
-        }
-      }
+      this.aliens,
+      this.player,
+      this.handleAlienPlayerCollision,
+      undefined,
+      this
     );
+  }
+
+  // ========================================================================
+  // GALAGA-SPECIFIC COLLISION HANDLER
+  // ========================================================================
+
+  private handleAlienPlayerCollision(object1: any, object2: any): void {
+    const alien = object1 instanceof Alien ? object1 : (object2 instanceof Alien ? object2 : null);
+    const player = object1 instanceof Player ? object1 : (object2 instanceof Player ? object2 : null);
+    if (!alien || !player) return;
+
+    // Only collide with diving aliens (not formation aliens)
+    if (!alien.isAlive() || !player.active || !this.gameActive) return;
+    if (alien.getState() === AlienState.IN_FORMATION) return;
+
+    // Alien crashes into player - both destroyed, lose life
+    alien.destroy();
+    this.loseLife();
+    this.audioManager?.play('player-hit');
   }
 
   protected createModeUI(): void {
@@ -196,20 +192,12 @@ export class GalagaScene extends BaseGameScene {
     if (!this.gameActive) return;
 
     // Don't check until aliens are ready
-    if (!this._aliensReady) {
-      console.log(`[GalagaScene] checkGameConditions called but aliens not ready yet`);
+    if (!this._aliensReady || !this.alienGrid) {
       return;
     }
 
-    console.log(`[GalagaScene] checkGameConditions called. Aliens in group: ${this.aliens?.getChildren().length || 0}`);
-
-    // Check if all aliens destroyed
-    const aliveAliens = this.aliens?.getChildren().filter((alien: any) => 
-      alien.active && alien.isAlive && typeof alien.isAlive === 'function' && alien.isAlive()
-    ) || [];
-
-    if (aliveAliens.length === 0) {
-      console.log(`[GalagaScene] No aliens left - triggering level complete. Total in group: ${this.aliens?.getChildren().length || 0}`);
+    // Check if all aliens destroyed (use grid's method like Space Invaders does)
+    if (this.alienGrid.isAllDestroyed()) {
       this.onLevelComplete();
       return;
     }
@@ -261,10 +249,10 @@ export class GalagaScene extends BaseGameScene {
     // Update alien grid
     if (this.alienGrid) {
       this.alienGrid.update(delta);
-      
-      // Update wave count display
-      this.updateWaveCountDisplay();
     }
+
+    // Update wave count display (only if UI is initialized)
+    this.updateWaveCountDisplay();
   }
 
   protected onClearEntities(): void {
@@ -292,27 +280,26 @@ export class GalagaScene extends BaseGameScene {
   // =========================================================================
 
   private updateWaveCountDisplay(): void {
-    if (this.waveCountText && this.alienGrid) {
+    if (this.waveCountText && this.waveCountText.active && this.alienGrid) {
       const waveCount = this.alienGrid.getActiveWaveCount();
       this.waveCountText.setText(`WAVES: ${waveCount}`);
     }
   }
 
   protected async startNextLevel(): Promise<void> {
-    console.log(`[GalagaScene] Starting next level. Current level: ${this.level}, New level: ${this.level + 1}`);
-    this.level++;
+    // Use shared advanceLevel method for consistency with SpaceInvadersScene
+    this.advanceLevel();
     this.gameActive = true;
-    
+
     // Clear existing entities
     this.clearForNextLevel();
-    
-    // Setup new level
-    this.levelManager = new LevelManager(this.level, this.difficulty);
+
+    // Get level config (levelManager was already advanced by advanceLevel())
     const levelConfig = this.levelManager!.getLevelConfig();
-    
+
     // Call parent's prepareAlienFaceTextures through reflection
     await (this as any).prepareAlienFaceTextures();
-    
+
     // Recreate enemies
     this.alienGrid = new GalagaGrid(
       this,
@@ -333,13 +320,6 @@ export class GalagaScene extends BaseGameScene {
 
     // Add new aliens to physics group
     this.addAliensToPhysicsGroup();
-
-    // Update UI
-    if (this.levelText) {
-      this.levelText.setText(`LEVEL: ${this.level}`);
-    }
-    
-    console.log(`[GalagaScene] Level ${this.level} setup complete`);
   }
 
   private clearForNextLevel(): void {

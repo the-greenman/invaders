@@ -289,12 +289,6 @@ export abstract class BaseGameScene extends Phaser.Scene {
       });
     }
 
-    // Mode-specific update
-    this.updateMode(delta);
-
-    // Check win/lose conditions
-    this.checkGameConditions();
-
     // Periodic collision debug
     if (this.debugCollisions) {
       const now = this.time.now;
@@ -453,6 +447,58 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
       this.gamepad = pad;
     });
+  }
+
+  // =========================================================================
+  // SHARED COLLISION HANDLERS
+  // =========================================================================
+
+  /**
+   * Handle bullet-alien collision (shared logic for both modes)
+   */
+  protected handleBulletAlienCollision(object1: any, object2: any): void {
+    // Determine which object is which
+    const bullet = object1 instanceof Alien ? object2 : object1;
+    const alien = object1 instanceof Alien ? object1 : object2;
+    if (!bullet || !alien) return;
+
+    // Check if both are active/alive
+    if (!bullet.isActive || !bullet.isActive()) return;
+    if (!alien.isAlive || !alien.isAlive()) return;
+
+    // Destroy bullet
+    bullet.hit();
+
+    // Destroy alien and get points
+    const points = alien.destroy();
+    this.addScore(points);
+
+    // Play sound
+    this.audioManager?.play('alien-hit');
+  }
+
+  /**
+   * Handle bomb-player collision (shared logic for both modes)
+   */
+  protected handleBombPlayerCollision(object1: any, object2: any): void {
+    // Determine which object is which
+    const bomb = object1 instanceof Player ? object2 : object1;
+    const player = object1 instanceof Player ? object1 : object2;
+    if (!bomb || !player) return;
+
+    // Check if both are active
+    if (!bomb.isActive || !bomb.isActive()) return;
+    if (!player.active) return;
+
+    // Destroy bomb
+    bomb.hit();
+
+    // Damage player
+    player.takeDamage();
+    this.loseLife();
+
+    // Play sound
+    this.audioManager?.play('player-hit');
   }
 
   // =========================================================================
