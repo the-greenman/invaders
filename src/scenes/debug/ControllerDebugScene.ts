@@ -32,6 +32,18 @@ export class ControllerDebugScene extends Phaser.Scene {
   private prevSelect: boolean = false;
   private prevBack: boolean = false;
 
+  // Keyboard helpers
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private wasdKeys!: {
+    up: Phaser.Input.Keyboard.Key;
+    down: Phaser.Input.Keyboard.Key;
+    left: Phaser.Input.Keyboard.Key;
+    right: Phaser.Input.Keyboard.Key;
+  };
+  private enterKey!: Phaser.Input.Keyboard.Key;
+  private escKey!: Phaser.Input.Keyboard.Key;
+  private aKey!: Phaser.Input.Keyboard.Key;
+
   constructor() {
     super({ key: 'ControllerDebugScene' });
   }
@@ -66,7 +78,19 @@ export class ControllerDebugScene extends Phaser.Scene {
     // Create visual indicators
     this.createVisuals();
 
-    // Setup listener
+    // Keyboard setup
+    this.cursors = this.input.keyboard!.createCursorKeys();
+    this.wasdKeys = {
+      up: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+      down: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+      left: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+      right: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D)
+    };
+    this.enterKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    this.escKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.aKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+
+    // Setup gamepad listener
     if (this.input.gamepad) {
       this.pad = this.input.gamepad.gamepads.find(p => p && p.connected) || null;
       
@@ -176,12 +200,16 @@ export class ControllerDebugScene extends Phaser.Scene {
   }
 
   update(): void {
+    // Keyboard navigation is always available
+    this.handleKeyboardUI();
+
     if (!this.pad || !this.pad.connected) {
-      // Clear visuals
+      // Clear visuals when no pad, but still allow menu navigation / exit via keyboard
       this.buttonIndicators.forEach(b => b.setFillStyle(0x333333));
       this.axisIndicators.forEach(a => a.x = 200);
       this.axisTexts.forEach(t => t.setText('0.00'));
       this.prevButtons = [];
+      this.infoText.setText('No controller connected');
       return;
     }
 
@@ -225,6 +253,50 @@ export class ControllerDebugScene extends Phaser.Scene {
     this.infoText.setText(`Connected: ${this.pad.id} | FIRE:B${this.fireButtonIndex}${this.awaitingFireBind ? ' (bind...)' : ''} | BACK:B${this.backButtonIndex}${this.awaitingBackBind ? ' (bind...)' : ''} | START:B${this.startButtonIndex}${this.awaitingStartBind ? ' (bind...)' : ''}`);
   }
 
+  private handleKeyboardUI(): void {
+    const now = this.time.now;
+
+    const upPressed = this.cursors.up.isDown || this.wasdKeys.up.isDown;
+    const downPressed = this.cursors.down.isDown || this.wasdKeys.down.isDown;
+    const selectPressed = Phaser.Input.Keyboard.JustDown(this.enterKey) || Phaser.Input.Keyboard.JustDown(this.aKey);
+    const backPressed = Phaser.Input.Keyboard.JustDown(this.escKey);
+
+    // Back: cancel binding or exit
+    if (backPressed) {
+      if (this.awaitingFireBind || this.awaitingBackBind || this.awaitingStartBind) {
+        this.awaitingFireBind = false;
+        this.awaitingBackBind = false;
+        this.awaitingStartBind = false;
+      } else {
+        this.startExclusive('DebugMenuScene');
+        return;
+      }
+    }
+
+    // Navigation (disabled while binding)
+    if (!this.awaitingFireBind && !this.awaitingBackBind && !this.awaitingStartBind) {
+      if (now - this.lastNavTime > 200) {
+        if (upPressed && !this.prevUp) {
+          this.selectedActionIndex = (this.selectedActionIndex - 1 + this.actionTexts.length) % this.actionTexts.length;
+          this.updateActionHighlight();
+          this.lastNavTime = now;
+        } else if (downPressed && !this.prevDown) {
+          this.selectedActionIndex = (this.selectedActionIndex + 1) % this.actionTexts.length;
+          this.updateActionHighlight();
+          this.lastNavTime = now;
+        }
+      }
+
+      if (selectPressed) {
+        console.log('[ControllerDebug] Keyboard select on action index', this.selectedActionIndex);
+        this.activateSelectedAction();
+      }
+    }
+
+    this.prevUp = upPressed;
+    this.prevDown = downPressed;
+  }
+
   private handleControllerUI(): void {
     if (!this.pad) return;
 
@@ -234,6 +306,7 @@ export class ControllerDebugScene extends Phaser.Scene {
     const up = this.pad.up || axisY < -0.5;
     const down = this.pad.down || axisY > 0.5;
 
+    // Some pads may not map A to button 0; prefer Phaser's A alias, fall back to button 0 if present
     const select = !!(this.pad.A || this.pad.buttons[0]?.pressed);
     const back = !!this.pad.buttons[this.backButtonIndex]?.pressed;
 
@@ -267,6 +340,8 @@ export class ControllerDebugScene extends Phaser.Scene {
 
       // Select
       if (select && !this.prevSelect) {
+        // Start bind / select using gamepad A or primary button
+        console.log('[ControllerDebug] Select pressed on action index', this.selectedActionIndex);
         this.activateSelectedAction();
       }
     }
@@ -297,49 +372,82 @@ export class ControllerDebugScene extends Phaser.Scene {
 
   private beginFireBind(): void {
     this.awaitingFireBind = true;
+    console.log('[ControllerDebug] Begin FIRE bind');
   }
 
   private beginBackBind(): void {
     this.awaitingBackBind = true;
+    console.log('[ControllerDebug] Begin BACK bind');
   }
 
   private beginStartBind(): void {
     this.awaitingStartBind = true;
+    console.log('[ControllerDebug] Begin START bind');
   }
 
   private detectBinding(): void {
     if (!this.pad) return;
     const current = this.pad.buttons.map(b => b.pressed);
+
     if (this.awaitingFireBind || this.awaitingBackBind || this.awaitingStartBind) {
+      // Find first pressed button; we no longer require a press-edge to make binding
+      let boundIndex = -1;
       for (let i = 0; i < current.length; i++) {
-        const pressed = current[i];
-        const prev = this.prevButtons[i] || false;
-        if (pressed && !prev) {
-          const settings = LocalStorage.getSettings();
-          if (this.awaitingFireBind) {
-            this.fireButtonIndex = i;
-            // clear collisions
-            if (this.backButtonIndex === i) this.backButtonIndex = -1;
-            if (this.startButtonIndex === i) this.startButtonIndex = -1;
-            LocalStorage.saveSettings({ ...settings, controllerFireButton: i, controllerBackButton: this.backButtonIndex, controllerStartButton: this.startButtonIndex });
-            this.awaitingFireBind = false;
-          } else if (this.awaitingBackBind) {
-            this.backButtonIndex = i;
-            if (this.fireButtonIndex === i) this.fireButtonIndex = -1;
-            if (this.startButtonIndex === i) this.startButtonIndex = -1;
-            LocalStorage.saveSettings({ ...settings, controllerFireButton: this.fireButtonIndex, controllerBackButton: i, controllerStartButton: this.startButtonIndex });
-            this.awaitingBackBind = false;
-          } else if (this.awaitingStartBind) {
-            this.startButtonIndex = i;
-            if (this.fireButtonIndex === i) this.fireButtonIndex = -1;
-            if (this.backButtonIndex === i) this.backButtonIndex = -1;
-            LocalStorage.saveSettings({ ...settings, controllerFireButton: this.fireButtonIndex, controllerBackButton: this.backButtonIndex, controllerStartButton: i });
-            this.awaitingStartBind = false;
-          }
+        if (current[i]) {
+          boundIndex = i;
           break;
         }
       }
+
+      if (boundIndex >= 0) {
+        const i = boundIndex;
+        const settings = LocalStorage.getSettings();
+        console.log('[ControllerDebug] Attempting to bind to button index', i, 'state', {
+          awaitingFire: this.awaitingFireBind,
+          awaitingBack: this.awaitingBackBind,
+          awaitingStart: this.awaitingStartBind
+        });
+
+        if (this.awaitingFireBind) {
+          this.fireButtonIndex = i;
+          if (this.backButtonIndex === i) this.backButtonIndex = -1;
+          if (this.startButtonIndex === i) this.startButtonIndex = -1;
+          LocalStorage.saveSettings({
+            ...settings,
+            controllerFireButton: i,
+            controllerBackButton: this.backButtonIndex,
+            controllerStartButton: this.startButtonIndex
+          });
+          console.log('[ControllerDebug] FIRE bound to button index', i);
+          this.awaitingFireBind = false;
+        } else if (this.awaitingBackBind) {
+          this.backButtonIndex = i;
+          if (this.fireButtonIndex === i) this.fireButtonIndex = -1;
+          if (this.startButtonIndex === i) this.startButtonIndex = -1;
+          LocalStorage.saveSettings({
+            ...settings,
+            controllerFireButton: this.fireButtonIndex,
+            controllerBackButton: i,
+            controllerStartButton: this.startButtonIndex
+          });
+          console.log('[ControllerDebug] BACK bound to button index', i);
+          this.awaitingBackBind = false;
+        } else if (this.awaitingStartBind) {
+          this.startButtonIndex = i;
+          if (this.fireButtonIndex === i) this.fireButtonIndex = -1;
+          if (this.backButtonIndex === i) this.backButtonIndex = -1;
+          LocalStorage.saveSettings({
+            ...settings,
+            controllerFireButton: this.fireButtonIndex,
+            controllerBackButton: this.backButtonIndex,
+            controllerStartButton: i
+          });
+          console.log('[ControllerDebug] START bound to button index', i);
+          this.awaitingStartBind = false;
+        }
+      }
     }
+
     this.prevButtons = current;
   }
 }
