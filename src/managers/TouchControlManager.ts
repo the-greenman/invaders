@@ -28,11 +28,19 @@ export class TouchControlManager {
 
     // Auto-enable on touch devices
     this.enabled = this.isTouchDevice();
+    console.log('[TouchControlManager] init', {
+      isTouchDevice: this.enabled,
+      maxTouchPoints: (navigator && typeof navigator.maxTouchPoints === 'number') ? navigator.maxTouchPoints : 'n/a',
+      ontouchstartInWindow: typeof window !== 'undefined' && 'ontouchstart' in window
+    });
 
     if (this.enabled) {
+      console.log('[TouchControlManager] Enabling touch controls for this scene');
       // Allow multiple simultaneous touches (thumbpad + fire)
       this.scene.input.addPointer(4);
       this.createTouchControls();
+    } else {
+      console.log('[TouchControlManager] Touch controls disabled on this device');
     }
   }
 
@@ -40,7 +48,10 @@ export class TouchControlManager {
    * Detect if device supports touch
    */
   private isTouchDevice(): boolean {
-    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const hasOntouch = typeof window !== 'undefined' && 'ontouchstart' in window;
+    const touchPoints = (navigator && typeof navigator.maxTouchPoints === 'number') ? navigator.maxTouchPoints : 0;
+    console.log('[TouchControlManager] isTouchDevice check', { hasOntouch, touchPoints });
+    return hasOntouch || touchPoints > 0;
   }
 
   /**
