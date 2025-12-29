@@ -60,6 +60,8 @@ export class ModeTransitionScene extends Phaser.Scene {
     const { toMode, level, score, useWebcam, lives, difficulty, advanceLevel } = this.dataIn;
     const nextLevel = advanceLevel ? level + 1 : level;
     
+    console.log(`[ModeTransitionScene] Starting next scene. Level: ${level} -> ${nextLevel} (advanceLevel: ${advanceLevel})`);
+    
     // Get the correct scene key for the target mode
     const sceneKey = this.getSceneKey(toMode);
     

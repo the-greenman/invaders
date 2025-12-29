@@ -628,7 +628,8 @@ export abstract class BaseGameScene extends Phaser.Scene {
       score: this.score,
       lives: this.lives,
       useWebcam: this.useWebcam,
-      difficulty: this.difficulty
+      difficulty: this.difficulty,
+      advanceLevel: false
     });
   }
 
