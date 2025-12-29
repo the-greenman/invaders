@@ -200,6 +200,9 @@ export class GalagaScene extends BaseGameScene {
   protected onLevelComplete(): void {
     this.gameActive = false;
     
+    // Increment level counter for auto-switch
+    this.levelsSinceLastSwitch++;
+    
     // Show completion text
     const completeText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'LEVEL COMPLETE!', {
       fontSize: '32px',

@@ -118,6 +118,9 @@ export class SpaceInvadersScene extends BaseGameScene {
   protected onLevelComplete(): void {
     this.gameActive = false;
     
+    // Increment level counter for auto-switch
+    this.levelsSinceLastSwitch++;
+    
     // Show level complete message
     const completeText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'LEVEL COMPLETE!', {
       fontSize: '36px',

@@ -546,11 +546,8 @@ export abstract class BaseGameScene extends Phaser.Scene {
   // =========================================================================
 
   protected shouldAutoSwitch(): boolean {
-    this.levelsSinceLastSwitch++;
-    if (this.levelsSinceLastSwitch >= AUTO_SWITCH_INTERVAL) {
-      return true;
-    }
-    return false;
+    // Don't increment here - it should only increment when level actually completes
+    return this.levelsSinceLastSwitch >= AUTO_SWITCH_INTERVAL;
   }
 
   protected switchToMode(newMode: GameMode): void {
