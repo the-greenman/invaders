@@ -1,10 +1,10 @@
 import { BaseGameScene } from '../base/BaseGameScene';
 import { Player } from '../../entities/Player';
 import { GalagaGrid } from '../../entities/GalagaGrid';
-import { Alien, AlienState } from '../../entities/Alien';
-import { LevelManager } from '../../managers/LevelManager';
+import { GAME_WIDTH, GAME_HEIGHT, PLAYER_HEIGHT, PLAYER_WIDTH, AUTO_SWITCH_INTERVAL } from '../../constants';
 import { GameMode } from '../../types/GameMode';
-import { GAME_WIDTH, GAME_HEIGHT, PLAYER_HEIGHT, PLAYER_WIDTH } from '../../constants';
+import { LevelManager } from '../../managers/LevelManager';
+import { AlienState } from '../../entities/Alien';
 
 /**
  * Galaga Scene
@@ -198,6 +198,7 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected onLevelComplete(): void {
+    console.log(`[GalagaScene] Level ${this.level} complete! levelsSinceLastSwitch: ${this.levelsSinceLastSwitch}`);
     this.gameActive = false;
     
     // Increment level counter for auto-switch
@@ -215,8 +216,10 @@ export class GalagaScene extends BaseGameScene {
       completeText.destroy();
       
       if (this.shouldAutoSwitch()) {
+        console.log(`[GalagaScene] Auto-switching to Space Invaders after ${this.levelsSinceLastSwitch} levels`);
         this.switchToMode(GameMode.SPACE_INVADERS);
       } else {
+        console.log(`[GalagaScene] Continuing to next level. levelsSinceLastSwitch: ${this.levelsSinceLastSwitch}/${AUTO_SWITCH_INTERVAL}`);
         // Continue to next level
         this.startNextLevel();
       }
@@ -243,6 +246,23 @@ export class GalagaScene extends BaseGameScene {
     }
   }
 
+  protected onClearEntities(): void {
+    // Clear alien grid
+    if (this.alienGrid) {
+      this.alienGrid.destroy();
+      this.alienGrid = null;
+    }
+
+    // Clear physics groups
+    this.aliens?.clear(true, true);
+    this.bullets?.clear(true, true);
+    this.bombs?.clear(true, true);
+
+    // Clear clouds
+    this.clouds.forEach(cloud => cloud.destroy());
+    this.clouds = [];
+  }
+
   // =========================================================================
   // GALAGA-SPECIFIC METHODS
   // =========================================================================
@@ -255,6 +275,7 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected async startNextLevel(): Promise<void> {
+    console.log(`[GalagaScene] Starting next level. Current level: ${this.level}, New level: ${this.level + 1}`);
     this.level++;
     this.gameActive = true;
     
@@ -293,6 +314,8 @@ export class GalagaScene extends BaseGameScene {
     if (this.levelText) {
       this.levelText.setText(`LEVEL: ${this.level}`);
     }
+    
+    console.log(`[GalagaScene] Level ${this.level} setup complete`);
   }
 
   private clearForNextLevel(): void {

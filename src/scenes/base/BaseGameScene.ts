@@ -425,6 +425,11 @@ export abstract class BaseGameScene extends Phaser.Scene {
       this.pauseGame();
     });
 
+    // Restart game
+    this.input.keyboard?.on('keydown-R', () => {
+      this.restartGame();
+    });
+
     // Toggle collision debug
     this.input.keyboard?.on('keydown-L', () => {
       this.debugCollisions = !this.debugCollisions;
@@ -542,6 +547,58 @@ export abstract class BaseGameScene extends Phaser.Scene {
   }
 
   // =========================================================================
+  // GAME RESTART
+  // =========================================================================
+
+  protected restartGame(): void {
+    // Reset all game state
+    this.level = 1;
+    this.score = 0;
+    this.lives = 3;
+    this.gameActive = true;
+    this.levelsSinceLastSwitch = 0;
+    
+    // Clear all entities
+    this.clearAllEntities();
+    
+    // Reinitialize everything
+    this.initializeManagers();
+    this.createPlayer();
+    this.createEnemies();
+    this.setupCollisions();
+    this.createCoreUI();
+    this.createModeUI();
+    this.createBackground();
+  }
+
+  protected clearAllEntities(): void {
+    // Clear physics groups
+    if (this.bullets) {
+      this.bullets.clear(true, true);
+    }
+    if (this.aliens) {
+      this.aliens.clear(true, true);
+    }
+    if (this.bombs) {
+      this.bombs.clear(true, true);
+    }
+    
+    // Clear mode-specific entities (implemented in subclasses)
+    this.onClearEntities();
+    
+    // Clear UI elements
+    this.children.getAll().forEach(child => {
+      if (child instanceof Phaser.GameObjects.Text) {
+        child.destroy();
+      }
+    });
+  }
+
+  protected onClearEntities(): void {
+    // Override in subclasses to clear mode-specific entities
+  }
+
+  // =========================================================================
   // MODE SWITCHING
   // =========================================================================
 
@@ -552,15 +609,18 @@ export abstract class BaseGameScene extends Phaser.Scene {
 
   protected switchToMode(newMode: GameMode): void {
     console.log(`[${this.constructor.name}] Switching to ${getGameModeName(newMode)}`);
+    
+    // Reset level counter when switching modes
+    this.levelsSinceLastSwitch = 0;
+    
     this.scene.start('ModeTransitionScene', {
       fromMode: this.currentGameMode,
       toMode: newMode,
       level: this.level,
       score: this.score,
-      useWebcam: this.useWebcam,
       lives: this.lives,
-      difficulty: this.difficulty,
-      advanceLevel: true
+      useWebcam: this.useWebcam,
+      difficulty: this.difficulty
     });
   }
 
@@ -636,6 +696,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.events.off('fireBullet');
     this.events.off('dropBomb');
     this.input.keyboard?.off('keydown-P');
+    this.input.keyboard?.off('keydown-R');
     this.input.keyboard?.off('keydown-L');
 
     this.audioManager?.cleanup();
