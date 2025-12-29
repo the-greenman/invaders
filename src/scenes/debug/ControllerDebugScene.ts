@@ -32,6 +32,16 @@ export class ControllerDebugScene extends Phaser.Scene {
   private prevSelect: boolean = false;
   private prevBack: boolean = false;
 
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private wasdKeys!: {
+    up: Phaser.Input.Keyboard.Key;
+    down: Phaser.Input.Keyboard.Key;
+    left: Phaser.Input.Keyboard.Key;
+    right: Phaser.Input.Keyboard.Key;
+  };
+  private enterKey!: Phaser.Input.Keyboard.Key;
+  private escKey!: Phaser.Input.Keyboard.Key;
+
   constructor() {
     super({ key: 'ControllerDebugScene' });
   }
@@ -66,7 +76,18 @@ export class ControllerDebugScene extends Phaser.Scene {
     // Create visual indicators
     this.createVisuals();
 
-    // Setup listener
+    // Keyboard setup
+    this.cursors = this.input.keyboard!.createCursorKeys();
+    this.wasdKeys = {
+      up: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+      down: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+      left: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+      right: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D)
+    };
+    this.enterKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    this.escKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+
+    // Setup gamepad listener
     if (this.input.gamepad) {
       this.pad = this.input.gamepad.gamepads.find(p => p && p.connected) || null;
       
@@ -176,12 +197,16 @@ export class ControllerDebugScene extends Phaser.Scene {
   }
 
   update(): void {
+    // Keyboard navigation is always available
+    this.handleKeyboardUI();
+
     if (!this.pad || !this.pad.connected) {
-      // Clear visuals
+      // Clear visuals when no pad, but still allow menu navigation / exit via keyboard
       this.buttonIndicators.forEach(b => b.setFillStyle(0x333333));
       this.axisIndicators.forEach(a => a.x = 200);
       this.axisTexts.forEach(t => t.setText('0.00'));
       this.prevButtons = [];
+      this.infoText.setText('No controller connected');
       return;
     }
 
@@ -191,15 +216,27 @@ export class ControllerDebugScene extends Phaser.Scene {
     this.pad.buttons.forEach((button, index) => {
       if (index < this.buttonIndicators.length) {
         const rect = this.buttonIndicators[index];
+
+        const isFire = index === this.fireButtonIndex;
+        const isBack = index === this.backButtonIndex;
+        const isStart = index === this.startButtonIndex;
+
+        // Base color by binding type
+        let baseColor = 0x333333;
+        if (isFire) baseColor = 0x00ff00; // green for FIRE
+        else if (isBack) baseColor = 0xff0000; // red for BACK
+        else if (isStart) baseColor = 0x0000ff; // blue for START
+
         if (button.pressed) {
-          rect.setFillStyle(0x00ff00);
+          // Brighten when pressed
+          rect.setFillStyle(baseColor, 1);
         } else {
-          // Show analog value for triggers if non-zero
           const val = button.value;
           if (val > 0) {
-            rect.setFillStyle(0x00ff00, val * 0.5);
+            // Analog triggers get partial intensity
+            rect.setFillStyle(baseColor, 0.5 + val * 0.5);
           } else {
-            rect.setFillStyle(0x333333);
+            rect.setFillStyle(baseColor, 1);
           }
         }
       }
@@ -223,6 +260,49 @@ export class ControllerDebugScene extends Phaser.Scene {
 
     // Info text
     this.infoText.setText(`Connected: ${this.pad.id} | FIRE:B${this.fireButtonIndex}${this.awaitingFireBind ? ' (bind...)' : ''} | BACK:B${this.backButtonIndex}${this.awaitingBackBind ? ' (bind...)' : ''} | START:B${this.startButtonIndex}${this.awaitingStartBind ? ' (bind...)' : ''}`);
+  }
+
+  private handleKeyboardUI(): void {
+    const now = this.time.now;
+
+    const upPressed = this.cursors.up.isDown || this.wasdKeys.up.isDown;
+    const downPressed = this.cursors.down.isDown || this.wasdKeys.down.isDown;
+    const selectPressed = Phaser.Input.Keyboard.JustDown(this.enterKey);
+    const backPressed = Phaser.Input.Keyboard.JustDown(this.escKey);
+
+    // Back: cancel binding or exit
+    if (backPressed) {
+      if (this.awaitingFireBind || this.awaitingBackBind || this.awaitingStartBind) {
+        this.awaitingFireBind = false;
+        this.awaitingBackBind = false;
+        this.awaitingStartBind = false;
+      } else {
+        this.startExclusive('DebugMenuScene');
+        return;
+      }
+    }
+
+    // Navigation (disabled while binding)
+    if (!this.awaitingFireBind && !this.awaitingBackBind && !this.awaitingStartBind) {
+      if (now - this.lastNavTime > 200) {
+        if (upPressed && !this.prevUp) {
+          this.selectedActionIndex = (this.selectedActionIndex - 1 + this.actionTexts.length) % this.actionTexts.length;
+          this.updateActionHighlight();
+          this.lastNavTime = now;
+        } else if (downPressed && !this.prevDown) {
+          this.selectedActionIndex = (this.selectedActionIndex + 1) % this.actionTexts.length;
+          this.updateActionHighlight();
+          this.lastNavTime = now;
+        }
+      }
+
+      if (selectPressed) {
+        this.activateSelectedAction();
+      }
+    }
+
+    this.prevUp = upPressed;
+    this.prevDown = downPressed;
   }
 
   private handleControllerUI(): void {
