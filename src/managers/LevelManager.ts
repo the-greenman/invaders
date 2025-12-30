@@ -77,7 +77,12 @@ export class LevelManager {
     const adjustedSpeed = baseSpeed / multipliers.speedMultiplier;
     const adjustedBombFreq = baseBombFreq * multipliers.bombFrequencyMultiplier;
     const adjustedPoints = basePointsMultiplier * multipliers.pointsMultiplier;
-    const adjustedRows = Math.floor(baseRows * multipliers.rowCountMultiplier);
+    let adjustedRows = Math.floor(baseRows * multipliers.rowCountMultiplier);
+    
+    // Ensure HARD mode has at least 4 rows at level 1
+    if (this.difficulty === DifficultyPreset.HARD && level === 1 && adjustedRows < 4) {
+      adjustedRows = 4;
+    }
     
     // Galaga-specific calculations with difficulty
     const baseFormationSpeed = Math.min(GALAGA_FORMATION_SPEED + (level - 1) * 10, 150);

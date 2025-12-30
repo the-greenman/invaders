@@ -33,13 +33,13 @@ export const DIFFICULTY_CONFIGS: Record<DifficultyPreset, DifficultyMultipliers>
     maxSimultaneousWaves: 2,
   },
   [DifficultyPreset.HARD]: {
-    speedMultiplier: 1.15,
-    bombFrequencyMultiplier: 1.2,
-    waveIntervalMultiplier: 0.9,
-    waveSizeMultiplier: 1.1,
-    rowCountMultiplier: 1.05,
-    levelScalingMultiplier: 1.15,
-    pointsMultiplier: 1.2,
+    speedMultiplier: 1.3,        // Increased from 1.15
+    bombFrequencyMultiplier: 1.4, // Increased from 1.2
+    waveIntervalMultiplier: 0.85, // Slightly shorter gaps
+    waveSizeMultiplier: 1.15,     // Slightly larger waves
+    rowCountMultiplier: 1.2,     // Increased from 1.05
+    levelScalingMultiplier: 1.2, // Increased from 1.15
+    pointsMultiplier: 1.3,       // Increased from 1.2
     maxSimultaneousWaves: 3,
   },
   [DifficultyPreset.EXTREME]: {
