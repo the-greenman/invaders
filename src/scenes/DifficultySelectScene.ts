@@ -123,6 +123,20 @@ export class DifficultySelectScene extends Phaser.Scene {
 
     // Setup controls
     this.setupControls();
+    
+    // Setup shutdown handler
+    this.events.once('shutdown', () => {
+      // Remove keyboard listeners
+      const upKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+      const downKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+      const enterKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+      const escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+      
+      upKey?.removeAllListeners();
+      downKey?.removeAllListeners();
+      enterKey?.removeAllListeners();
+      escKey?.removeAllListeners();
+    });
   }
 
   private selectAndStartGame(difficulty: DifficultyPreset, index: number): void {
@@ -147,20 +161,32 @@ export class DifficultySelectScene extends Phaser.Scene {
   }
 
   private setupControls(): void {
+    console.log('Setting up keyboard controls...');
+    
+    // Create key objects
+    const upKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+    const downKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+    const enterKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    const escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    
     // Keyboard controls
-    this.input.keyboard?.on('keydown-UP', () => {
+    upKey?.on('down', () => {
+      console.log('UP key pressed');
       this.navigateDifficulty(-1);
     });
     
-    this.input.keyboard?.on('keydown-DOWN', () => {
+    downKey?.on('down', () => {
+      console.log('DOWN key pressed');
       this.navigateDifficulty(1);
     });
     
-    this.input.keyboard?.on('keydown-ENTER', () => {
+    enterKey?.on('down', () => {
+      console.log('ENTER key pressed, starting game with difficulty:', this.selectedDifficulty);
       this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
     });
     
-    this.input.keyboard?.on('keydown-ESC', () => {
+    escKey?.on('down', () => {
+      console.log('ESC key pressed, going back to menu');
       this.scene.start('MenuScene');
     });
     
