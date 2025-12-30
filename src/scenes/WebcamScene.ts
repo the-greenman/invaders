@@ -36,6 +36,14 @@ export class WebcamScene extends Phaser.Scene {
     super({ key: 'WebcamScene' });
   }
 
+  init(data: { difficulty?: string }): void {
+    // Receive difficulty from DifficultySelectScene
+    if (data.difficulty) {
+      this.difficulty = data.difficulty;
+      console.log('[WebcamScene] Received difficulty:', this.difficulty);
+    }
+  }
+
   preload(): void {
     // Webcam scene assets are already loaded in PreloaderScene
   }

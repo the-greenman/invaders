@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { ScoreManager } from '../managers/ScoreManager';
 import { LocalStorage } from '../utils/localStorage';
+import { GameMode } from '../types/GameMode';
+import { DifficultyPreset } from '../types/DifficultyPreset';
 
 /**
  * Game Over Scene
@@ -13,6 +15,8 @@ import { LocalStorage } from '../utils/localStorage';
 export class GameOverScene extends Phaser.Scene {
   private score: number = 0;
   private level: number = 1;
+  private gameMode?: GameMode;
+  private difficulty?: DifficultyPreset;
   private isHighScore: boolean = false;
   private scoreManager: ScoreManager | null = null;
   
@@ -45,10 +49,17 @@ export class GameOverScene extends Phaser.Scene {
     this.startButtonIndex = settings.controllerStartButton ?? 11;
     this.backButtonIndex = settings.controllerBackButton ?? 10;
 
-    // Get scene data from GameScene
-    const data = this.scene.settings.data as { score?: number; level?: number };
+    // Get scene data from game scene (standardized format)
+    const data = this.scene.settings.data as {
+      score?: number;
+      level?: number;
+      gameMode?: GameMode;
+      difficulty?: DifficultyPreset;
+    };
     this.score = data.score || 0;
     this.level = data.level || 1;
+    this.gameMode = data.gameMode;
+    this.difficulty = data.difficulty;
     
     this.createBackground();
     this.createUI();

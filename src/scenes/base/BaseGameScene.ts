@@ -48,7 +48,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
   protected level: number = 1;
   protected lives: number = 3;
   protected useWebcam: boolean = false;
-  protected gameActive: boolean = true;
+  protected gameActive: boolean = false; // Default to false, enabled after init
   protected playerTextureKey: string = 'player';
 
   // Game Mode
@@ -140,9 +140,12 @@ export abstract class BaseGameScene extends Phaser.Scene {
 
   /**
    * Handle game over
-   * Mode-specific game over behavior
+   * Override this to customize game over behavior for specific modes
+   * By default, calls endGame() with no custom scene
    */
-  protected abstract onGameOver(): void;
+  protected onGameOver(): void {
+    this.endGame();
+  }
 
   /**
    * Update mode-specific game logic
@@ -256,7 +259,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
     }
     
     // Reset game state
-    this.gameActive = true;
+    this.gameActive = false; // Wait for initialization
     if (this.level === 1 && this.score === 0 && typeof data.lives !== 'number') {
       this.lives = 3;
     }
@@ -270,16 +273,21 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.backButtonIndex = settings.controllerBackButton ?? 1;
 
     // Initialize all game entities in correct order
+    console.log('[BaseGameScene] About to call initializeGameEntities()...');
     await this.initializeGameEntities();
+    console.log('[BaseGameScene] initializeGameEntities() returned');
 
     // Setup input (last step)
     console.log('[BaseGameScene] Setting up input...');
     this.setupInput();
-    console.log('[BaseGameScene] Create complete!');
-    
-    // Mark as initialized
+    console.log('[BaseGameScene] Input setup complete');
+
+    // Mark as initialized and activate game
     this._isInitialized = true;
-    console.log('[BaseGameScene] Initialization complete!');
+    console.log('[BaseGameScene] Marked as initialized');
+
+    this.gameActive = true;
+    console.log('[BaseGameScene] Game activated! Initialization complete!');
 
     // Setup shutdown handler
     this.events.once('shutdown', this.handleShutdown, this);
@@ -645,15 +653,17 @@ export abstract class BaseGameScene extends Phaser.Scene {
   // GAME RESTART
   // =========================================================================
 
+  /**
+   * Standardized game restart handler
+   * Resets all state and reinitializes the game
+   *
+   * Override resetGameState() in subclasses to reset mode-specific variables
+   */
   protected async restartGame(): Promise<void> {
     console.log('[BaseGameScene] restartGame() called - resetting to level 1');
 
-    // Reset all game state
-    this.level = 1;
-    this.score = 0;
-    this.lives = 3;
-    this.gameActive = true;
-    this.levelsSinceLastSwitch = 0;
+    // Reset all state using template method
+    this.resetGameState();
 
     console.log('[BaseGameScene] State reset - level:', this.level, 'score:', this.score, 'lives:', this.lives);
 
@@ -663,7 +673,49 @@ export abstract class BaseGameScene extends Phaser.Scene {
     // Reinitialize everything using centralized method
     await this.initializeGameEntities();
 
+    // Mark as initialized and activate game
+    this._isInitialized = true;
+    this.gameActive = true;
+
     console.log('[BaseGameScene] restartGame() complete - final level:', this.level);
+  }
+
+  /**
+   * Reset all game state variables
+   * Template method - override onResetState() in subclasses to reset mode-specific variables
+   */
+  protected resetGameState(): void {
+    console.log('[BaseGameScene] resetGameState() - resetting base variables');
+
+    // Reset game state variables
+    this.level = 1;
+    this.score = 0;
+    this.lives = 3;
+    this.gameActive = false; // Will be set to true after initialization
+    this.levelsSinceLastSwitch = 0;
+
+    // Reset initialization flags
+    this._isInitialized = false;
+    this._loggedFirstUpdate = false;
+
+    // Reset score manager
+    if (this.scoreManager) {
+      this.scoreManager = new ScoreManager();
+    }
+
+    // Call subclass hook for mode-specific reset
+    this.onResetState();
+
+    console.log('[BaseGameScene] Base state reset complete');
+  }
+
+  /**
+   * Hook for subclasses to reset mode-specific state variables
+   * Override this to reset your mode's private/protected variables
+   */
+  protected onResetState(): void {
+    // Override in subclasses to reset mode-specific variables
+    console.log('[BaseGameScene] onResetState() - no mode-specific reset (override in subclass)');
   }
 
   protected clearAllEntities(): void {
@@ -696,6 +748,43 @@ export abstract class BaseGameScene extends Phaser.Scene {
 
   protected onClearEntities(): void {
     // Override in subclasses to clear mode-specific entities
+  }
+
+  // =========================================================================
+  // GAME OVER
+  // =========================================================================
+
+  /**
+   * Standardized game over handler
+   * Saves high score and transitions to game over scene
+   *
+   * @param options - Customization options for game over
+   *   - gameOverScene: Custom scene to transition to (default: 'GameOverScene')
+   *   - additionalData: Extra data to pass to the game over scene
+   */
+  protected endGame(options?: {
+    gameOverScene?: string;
+    additionalData?: Record<string, any>;
+  }): void {
+    this.gameActive = false;
+
+    // Save high score if applicable
+    if (this.scoreManager?.isHighScore()) {
+      this.scoreManager.saveHighScore('Player', this.level);
+    }
+
+    // Prepare data to pass to game over scene
+    const gameOverData = {
+      score: this.score,
+      level: this.level,
+      gameMode: this.currentGameMode,
+      difficulty: this.difficulty,
+      ...options?.additionalData
+    };
+
+    // Transition to game over scene (default or custom)
+    const targetScene = options?.gameOverScene || 'GameOverScene';
+    this.scene.start(targetScene, gameOverData);
   }
 
   // =========================================================================
@@ -804,7 +893,17 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.touchControlManager?.destroy();
     this.touchControlManager = null;
 
+    // Allow subclasses to cleanup
+    this.onShutdown();
+
     this.clearGameObjects();
+  }
+
+  /**
+   * Hook for subclasses to cleanup mode-specific resources on shutdown
+   */
+  protected onShutdown(): void {
+    // Override in subclasses
   }
 
   private clearGameObjects(): void {

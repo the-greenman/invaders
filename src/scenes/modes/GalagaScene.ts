@@ -242,13 +242,8 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected onGameOver(): void {
-    this.gameActive = false;
-    
-    // Transition to GameOverScene
-    this.scene.start('GameOverScene', { 
-      score: this.score, 
-      level: this.level 
-    });
+    // Use default GameOverScene for Galaga
+    this.endGame();
   }
 
   protected updateMode(delta: number): void {
@@ -259,6 +254,15 @@ export class GalagaScene extends BaseGameScene {
 
     // Update wave count display (only if UI is initialized)
     this.updateWaveCountDisplay();
+  }
+
+  protected onResetState(): void {
+    console.log('[GalagaScene] onResetState() - resetting mode-specific variables');
+    // Reset Galaga specific state
+    this.alienGrid = null;
+    this._hasCheckedInitialConditions = false;
+    this._aliensReady = false;
+    // clouds will be cleared in onClearEntities
   }
 
   protected onClearEntities(): void {

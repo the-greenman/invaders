@@ -101,16 +101,29 @@ export class SpaceInvadersScene extends BaseGameScene {
   }
 
   protected checkGameConditions(): void {
-    if (!this.alienGrid) return;
+    if (!this.alienGrid) {
+      console.log('[SpaceInvadersScene] checkGameConditions - alienGrid is null, returning');
+      return;
+    }
+
+    const aliveCount = this.alienGrid.getAliveAliens().length;
+    const isDestroyed = this.alienGrid.isAllDestroyed();
+
+    // Only log when something interesting happens
+    if (isDestroyed || aliveCount === 0) {
+      console.log('[SpaceInvadersScene] checkGameConditions - aliveCount:', aliveCount, 'isDestroyed:', isDestroyed);
+    }
 
     // Check if all aliens destroyed
-    if (this.alienGrid.isAllDestroyed()) {
+    if (isDestroyed) {
+      console.log('[SpaceInvadersScene] All aliens destroyed! Calling onLevelComplete()');
       this.onLevelComplete();
       return;
     }
 
     // Check if aliens reached player (Space Invaders specific game over)
     if (this.alienGrid.reachedPlayer()) {
+      console.log('[SpaceInvadersScene] Aliens reached player! Game over');
       this.onGameOver();
     }
   }
@@ -141,24 +154,39 @@ export class SpaceInvadersScene extends BaseGameScene {
   }
 
   protected onGameOver(): void {
-    this.gameActive = false;
-    
-    // Save high score
-    if (this.scoreManager?.isHighScore()) {
-      this.scoreManager.saveHighScore('Player', this.level);
-    }
-    
-    // Transition to game over scene
-    this.scene.start('AbductionScene', {
-      score: this.score,
-      level: this.level,
-      playerTextureKey: this.playerTextureKey
+    // Use AbductionScene for Space Invaders game over (custom animation)
+    this.endGame({
+      gameOverScene: 'AbductionScene',
+      additionalData: {
+        playerTextureKey: this.playerTextureKey
+      }
     });
   }
 
   protected updateMode(delta: number): void {
     // Update alien grid
     this.alienGrid?.update(delta);
+  }
+
+  protected onResetState(): void {
+    console.log('[SpaceInvadersScene] onResetState() - resetting mode-specific variables');
+    // Reset Space Invaders specific state
+    // alienGrid will be recreated during initialization, so just null it out
+    this.alienGrid = null;
+  }
+
+  protected onClearEntities(): void {
+    console.log('[SpaceInvadersScene] onClearEntities()');
+    this.alienGrid?.destroy();
+    this.alienGrid = null;
+
+    this.shields.forEach(shield => shield.destroy());
+    this.shields = [];
+  }
+
+  protected onShutdown(): void {
+    console.log('[SpaceInvadersScene] onShutdown()');
+    this.onClearEntities();
   }
 
   // ========================================================================

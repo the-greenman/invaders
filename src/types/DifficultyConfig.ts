@@ -6,6 +6,7 @@ export interface DifficultyMultipliers {
   waveIntervalMultiplier: number; // >1 = longer gap between waves, <1 = shorter gap
   waveSizeMultiplier: number;     // >1 = larger waves, <1 = smaller waves
   rowCountMultiplier: number;     // scales number of alien rows
+  minRows: number;                // minimum number of alien rows
   levelScalingMultiplier: number; // accelerates or slows level-over-level scaling
   pointsMultiplier: number;       // scales score points awarded
   maxSimultaneousWaves: number;   // cap for concurrent waves in Galaga
@@ -18,6 +19,7 @@ export const DIFFICULTY_CONFIGS: Record<DifficultyPreset, DifficultyMultipliers>
     waveIntervalMultiplier: 1.25,
     waveSizeMultiplier: 0.85,
     rowCountMultiplier: 0.9,
+    minRows: 2,
     levelScalingMultiplier: 0.9,
     pointsMultiplier: 0.8,
     maxSimultaneousWaves: 1,
@@ -28,6 +30,7 @@ export const DIFFICULTY_CONFIGS: Record<DifficultyPreset, DifficultyMultipliers>
     waveIntervalMultiplier: 1.0,
     waveSizeMultiplier: 1.0,
     rowCountMultiplier: 1.0,
+    minRows: 3,
     levelScalingMultiplier: 1.0,
     pointsMultiplier: 1.0,
     maxSimultaneousWaves: 2,
@@ -38,16 +41,18 @@ export const DIFFICULTY_CONFIGS: Record<DifficultyPreset, DifficultyMultipliers>
     waveIntervalMultiplier: 0.85, // Slightly shorter gaps
     waveSizeMultiplier: 1.15,     // Slightly larger waves
     rowCountMultiplier: 1.2,     // Increased from 1.05
+    minRows: 4,
     levelScalingMultiplier: 1.2, // Increased from 1.15
     pointsMultiplier: 1.3,       // Increased from 1.2
     maxSimultaneousWaves: 3,
   },
   [DifficultyPreset.EXTREME]: {
-    speedMultiplier: 1.35,
-    bombFrequencyMultiplier: 1.5,
+    speedMultiplier: 1.4,
+    bombFrequencyMultiplier: 1.6,
     waveIntervalMultiplier: 0.75,
     waveSizeMultiplier: 1.25,
     rowCountMultiplier: 1.15,
+    minRows: 4,
     levelScalingMultiplier: 1.35,
     pointsMultiplier: 1.5,
     maxSimultaneousWaves: 4,
