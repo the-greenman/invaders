@@ -185,13 +185,17 @@ export class SpaceInvadersScene extends BaseGameScene {
     });
   }
 
-  private startNextLevel(): void {
+  private async startNextLevel(): Promise<void> {
+    // Advance to next level
     this.advanceLevel();
     this.gameActive = true;
-    
+
     // Clear existing entities but keep physics groups and colliders
     this.clearForNextLevel();
-    
+
+    // Prepare alien textures for new level (in case alien count changed)
+    await this.prepareAlienFaceTextures();
+
     // Setup new level
     const levelConfig = this.levelManager!.getLevelConfig();
     this.alienGrid = new SpaceInvadersGrid(
@@ -204,7 +208,7 @@ export class SpaceInvadersScene extends BaseGameScene {
       this.alienFaceTextures,
       this.level
     );
-    
+
     // Add aliens to physics group for collision detection
     this.addAliensToPhysicsGroup();
   }

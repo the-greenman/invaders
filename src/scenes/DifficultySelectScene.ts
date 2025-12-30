@@ -1,14 +1,17 @@
 import Phaser from 'phaser';
 import { DifficultyPreset, getDifficultyName } from '../types/DifficultyPreset';
+import { GameMode } from '../types/GameMode';
 
 /**
  * Difficulty Selection Scene
  * 
  * Allows players to select difficulty before starting the game.
- * Stores selection in LocalStorage for persistence.
+ * Directly starts the game with the selected difficulty.
+ * Supports both keyboard and controller navigation.
  */
 export class DifficultySelectScene extends Phaser.Scene {
   private selectedDifficulty: DifficultyPreset = DifficultyPreset.MEDIUM;
+  private selectedIndex: number = 1; // Default to MEDIUM (index 1)
   private difficultyTexts: Phaser.GameObjects.Text[] = [];
   private descriptions: { [key in DifficultyPreset]: string } = {
     [DifficultyPreset.EASY]: 'Slower enemies, fewer bombs, more points',
@@ -16,6 +19,14 @@ export class DifficultySelectScene extends Phaser.Scene {
     [DifficultyPreset.HARD]: 'Fast enemies, many bombs, expert players',
     [DifficultyPreset.EXTREME]: 'Maximum challenge, are you ready?'
   };
+  
+  // Controller support
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevUpPressed: boolean = false;
+  private prevDownPressed: boolean = false;
+  private prevAPressed: boolean = false;
+  private prevBPressed: boolean = false;
+  private backButtonIndex: number = 1; // B button by default
 
   constructor() {
     super({ key: 'DifficultySelectScene' });
@@ -36,10 +47,19 @@ export class DifficultySelectScene extends Phaser.Scene {
       align: 'center'
     }).setOrigin(0.5);
 
+    // Instructions
+    this.add.text(width / 2, height * 0.25, 'Choose your challenge', {
+      fontSize: '20px',
+      fontFamily: 'Courier New',
+      color: '#ffffff',
+      align: 'center'
+    }).setOrigin(0.5);
+
     // Get saved difficulty or default to MEDIUM
     const saved = localStorage.getItem('gameDifficulty');
     if (saved && Object.values(DifficultyPreset).includes(saved as DifficultyPreset)) {
       this.selectedDifficulty = saved as DifficultyPreset;
+      this.selectedIndex = Object.values(DifficultyPreset).indexOf(this.selectedDifficulty);
     }
 
     // Create difficulty options
@@ -77,9 +97,9 @@ export class DifficultySelectScene extends Phaser.Scene {
         }
       });
       
-      // Click to select
+      // Click to select and start game
       text.on('pointerdown', () => {
-        this.selectDifficulty(difficulty);
+        this.selectAndStartGame(difficulty, index);
       });
       
       this.difficultyTexts.push(text);
@@ -93,29 +113,40 @@ export class DifficultySelectScene extends Phaser.Scene {
       }).setOrigin(0.5);
     });
 
-    // Start button
-    const startButton = this.add.text(width / 2, height * 0.85, 'START GAME', {
-      fontSize: '32px',
+    // Controller instructions
+    this.add.text(width / 2, height * 0.85, '↑↓ Navigate  •  A/Enter Select  •  B/ESC Back', {
+      fontSize: '18px',
       fontFamily: 'Courier New',
-      color: '#00ff00',
-      backgroundColor: '#000000',
-      padding: { x: 20, y: 10 }
+      color: '#666666',
+      align: 'center'
     }).setOrigin(0.5);
-    
-    startButton.setInteractive({ useHandCursor: true });
-    
-    startButton.on('pointerover', () => {
-      startButton.setStyle({ color: '#ffffff', backgroundColor: '#00ff00' });
-    });
-    
-    startButton.on('pointerout', () => {
-      startButton.setStyle({ color: '#00ff00', backgroundColor: '#000000' });
-    });
-    
-    startButton.on('pointerdown', () => {
-      this.startGame();
-    });
 
+    // Setup controls
+    this.setupControls();
+  }
+
+  private selectAndStartGame(difficulty: DifficultyPreset, index: number): void {
+    this.selectedDifficulty = difficulty;
+    this.selectedIndex = index;
+    
+    // Save difficulty to localStorage
+    localStorage.setItem('gameDifficulty', this.selectedDifficulty);
+    
+    // Update visual selection
+    this.updateVisualSelection();
+    
+    // Start game directly with Space Invaders mode
+    this.scene.start('SpaceInvadersScene', {
+      level: 1,
+      score: 0,
+      useWebcam: false,
+      lives: 3,
+      difficulty: this.selectedDifficulty,
+      startMode: GameMode.SPACE_INVADERS
+    });
+  }
+
+  private setupControls(): void {
     // Keyboard controls
     this.input.keyboard?.on('keydown-UP', () => {
       this.navigateDifficulty(-1);
@@ -126,14 +157,65 @@ export class DifficultySelectScene extends Phaser.Scene {
     });
     
     this.input.keyboard?.on('keydown-ENTER', () => {
-      this.startGame();
+      this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
     });
+    
+    this.input.keyboard?.on('keydown-ESC', () => {
+      this.scene.start('MenuScene');
+    });
+    
+    // Initial gamepad check
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      this.gamepad = this.input.gamepad.getPad(0);
+    }
   }
 
-  private selectDifficulty(difficulty: DifficultyPreset): void {
-    this.selectedDifficulty = difficulty;
-    
-    // Update text styles
+  update(): void {
+    // Handle controller input
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      if (!this.gamepad || !this.gamepad.connected) {
+        this.gamepad = this.input.gamepad.getPad(0);
+      }
+      
+      if (this.gamepad) {
+        // D-pad or analog stick
+        const dpadUp = this.gamepad.up;
+        const dpadDown = this.gamepad.down;
+        const analogY = this.gamepad.leftStick.y;
+        
+        const isUp = dpadUp || analogY < -0.5;
+        const isDown = dpadDown || analogY > 0.5;
+        
+        // Navigate up
+        if (isUp && !this.prevUpPressed) {
+          this.navigateDifficulty(-1);
+        }
+        this.prevUpPressed = isUp;
+        
+        // Navigate down
+        if (isDown && !this.prevDownPressed) {
+          this.navigateDifficulty(1);
+        }
+        this.prevDownPressed = isDown;
+        
+        // A button to select
+        const isAPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed;
+        if (isAPressed && !this.prevAPressed) {
+          this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
+        }
+        this.prevAPressed = isAPressed;
+        
+        // B button to go back
+        const isBPressed = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
+        if (isBPressed && !this.prevBPressed) {
+          this.scene.start('MenuScene');
+        }
+        this.prevBPressed = isBPressed;
+      }
+    }
+  }
+
+  private updateVisualSelection(): void {
     const difficulties = [
       DifficultyPreset.EASY,
       DifficultyPreset.MEDIUM,
@@ -143,12 +225,18 @@ export class DifficultySelectScene extends Phaser.Scene {
     
     difficulties.forEach((diff, index) => {
       const text = this.difficultyTexts[index];
-      if (diff === difficulty) {
+      if (diff === this.selectedDifficulty) {
         text.setStyle({ color: '#ffff00', fontSize: '36px' });
       } else {
         text.setStyle({ color: '#ffffff', fontSize: '32px' });
       }
     });
+  }
+
+  private selectDifficulty(difficulty: DifficultyPreset): void {
+    this.selectedDifficulty = difficulty;
+    this.selectedIndex = Object.values(DifficultyPreset).indexOf(difficulty);
+    this.updateVisualSelection();
   }
 
   private navigateDifficulty(direction: number): void {
@@ -159,21 +247,12 @@ export class DifficultySelectScene extends Phaser.Scene {
       DifficultyPreset.EXTREME
     ];
     
-    const currentIndex = difficulties.indexOf(this.selectedDifficulty);
-    let newIndex = currentIndex + direction;
+    let newIndex = this.selectedIndex + direction;
     
     // Wrap around
     if (newIndex < 0) newIndex = difficulties.length - 1;
     if (newIndex >= difficulties.length) newIndex = 0;
     
     this.selectDifficulty(difficulties[newIndex]);
-  }
-
-  private startGame(): void {
-    // Save difficulty to localStorage
-    localStorage.setItem('gameDifficulty', this.selectedDifficulty);
-    
-    // Go to webcam scene for face capture, then start game
-    this.scene.start('WebcamScene', { difficulty: this.selectedDifficulty });
   }
 }

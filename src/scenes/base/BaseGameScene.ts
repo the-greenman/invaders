@@ -151,6 +151,69 @@ export abstract class BaseGameScene extends Phaser.Scene {
   protected abstract updateMode(delta: number): void;
 
   // =========================================================================
+  // CENTRALIZED INITIALIZATION
+  // =========================================================================
+
+  /**
+   * Initialize game entities in the correct order
+   * Used by: create(), restartGame(), and scene transitions
+   *
+   * CRITICAL ORDER:
+   * 1. Setup physics groups
+   * 2. Initialize managers (levelManager, spriteManager, etc.)
+   * 3. Prepare textures (needs managers from step 2)
+   * 4. Create player (needs textures from step 3)
+   * 5. Create enemies (needs textures from step 3)
+   * 6. Setup collisions
+   * 7. Create UI
+   * 8. Create background
+   */
+  protected async initializeGameEntities(): Promise<void> {
+    console.log('[BaseGameScene] initializeGameEntities() - Starting...');
+
+    // 1. Setup physics groups
+    console.log('[BaseGameScene] Setting up physics groups...');
+    this.setupPhysicsGroups();
+
+    // 2. Initialize managers (creates levelManager, spriteManager, etc.)
+    console.log('[BaseGameScene] Initializing managers...');
+    this.initializeManagers();
+
+    // 3. Prepare textures (requires managers from step 2)
+    console.log('[BaseGameScene] Preparing player texture...');
+    await this.preparePlayerTexture();
+    console.log('[BaseGameScene] Player texture prepared:', this.playerTextureKey);
+
+    console.log('[BaseGameScene] Preparing alien textures...');
+    await this.prepareAlienFaceTextures();
+    console.log('[BaseGameScene] Alien textures prepared:', this.alienFaceTextures.length);
+
+    // 4. Create player (uses textures from step 3)
+    console.log('[BaseGameScene] Creating player...');
+    this.createPlayer();
+
+    // 5. Create enemies (uses textures from step 3)
+    console.log('[BaseGameScene] Creating enemies...');
+    this.createEnemies();
+
+    // 6. Setup collisions
+    console.log('[BaseGameScene] Setting up collisions...');
+    this.setupCollisions();
+
+    // 7. Create UI
+    console.log('[BaseGameScene] Creating core UI...');
+    this.createCoreUI();
+    console.log('[BaseGameScene] Creating mode UI...');
+    this.createModeUI();
+
+    // 8. Create background
+    console.log('[BaseGameScene] Creating background...');
+    this.createBackground();
+
+    console.log('[BaseGameScene] initializeGameEntities() - Complete!');
+  }
+
+  // =========================================================================
   // SHARED IMPLEMENTATION - Common to all game modes
   // =========================================================================
 
@@ -206,27 +269,10 @@ export abstract class BaseGameScene extends Phaser.Scene {
     const settings = LocalStorage.getSettings();
     this.backButtonIndex = settings.controllerBackButton ?? 1;
 
-    // Prepare textures with faces if available
-    await this.preparePlayerTexture();
-    await this.prepareAlienFaceTextures();
-    
-    // Create game systems in order
-    console.log('[BaseGameScene] Setting up physics groups...');
-    this.setupPhysicsGroups();
-    console.log('[BaseGameScene] Initializing managers...');
-    this.initializeManagers();
-    console.log('[BaseGameScene] Creating player...');
-    this.createPlayer();
-    console.log('[BaseGameScene] Creating enemies...');
-    this.createEnemies();
-    console.log('[BaseGameScene] Setting up collisions...');
-    this.setupCollisions();
-    console.log('[BaseGameScene] Creating core UI...');
-    this.createCoreUI();
-    console.log('[BaseGameScene] Creating mode UI...');
-    this.createModeUI();
-    console.log('[BaseGameScene] Creating background...');
-    this.createBackground();
+    // Initialize all game entities in correct order
+    await this.initializeGameEntities();
+
+    // Setup input (last step)
     console.log('[BaseGameScene] Setting up input...');
     this.setupInput();
     console.log('[BaseGameScene] Create complete!');
@@ -599,25 +645,25 @@ export abstract class BaseGameScene extends Phaser.Scene {
   // GAME RESTART
   // =========================================================================
 
-  protected restartGame(): void {
+  protected async restartGame(): Promise<void> {
+    console.log('[BaseGameScene] restartGame() called - resetting to level 1');
+
     // Reset all game state
     this.level = 1;
     this.score = 0;
     this.lives = 3;
     this.gameActive = true;
     this.levelsSinceLastSwitch = 0;
-    
+
+    console.log('[BaseGameScene] State reset - level:', this.level, 'score:', this.score, 'lives:', this.lives);
+
     // Clear all entities
     this.clearAllEntities();
-    
-    // Reinitialize everything
-    this.initializeManagers();
-    this.createPlayer();
-    this.createEnemies();
-    this.setupCollisions();
-    this.createCoreUI();
-    this.createModeUI();
-    this.createBackground();
+
+    // Reinitialize everything using centralized method
+    await this.initializeGameEntities();
+
+    console.log('[BaseGameScene] restartGame() complete - final level:', this.level);
   }
 
   protected clearAllEntities(): void {
@@ -770,32 +816,43 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.aliens = null;
   }
 
-  private async preparePlayerTexture(): Promise<void> {
+  protected async preparePlayerTexture(): Promise<void> {
+    console.log('[BaseGameScene] preparePlayerTexture() - spriteManager exists:', !!this.spriteManager);
+
     if (!this.spriteManager) {
+      console.log('[BaseGameScene] No sprite manager, using default player texture');
       this.playerTextureKey = 'player';
       return;
     }
-    
+
     try {
+      console.log('[BaseGameScene] Calling spriteManager.buildPlayerSprite()...');
       this.playerTextureKey = await this.spriteManager.buildPlayerSprite();
       console.log('[BaseGameScene] Player texture built:', this.playerTextureKey);
     } catch (e) {
-      console.warn('Failed to build player sprite, falling back to default', e);
+      console.error('[BaseGameScene] Failed to build player sprite:', e);
       this.playerTextureKey = 'player';
     }
   }
 
-  private async prepareAlienFaceTextures(): Promise<void> {
+  protected async prepareAlienFaceTextures(): Promise<void> {
+    console.log('[BaseGameScene] prepareAlienFaceTextures() - levelManager exists:', !!this.levelManager, 'spriteManager exists:', !!this.spriteManager);
+
     const levelConfig = this.levelManager?.getLevelConfig();
-    if (!levelConfig || !this.spriteManager) return;
-    
+    if (!levelConfig || !this.spriteManager) {
+      console.log('[BaseGameScene] Missing levelConfig or spriteManager, skipping alien textures');
+      this.alienFaceTextures = [];
+      return;
+    }
+
     const totalAliens = levelConfig.alienRows * levelConfig.alienCols;
-    
+    console.log('[BaseGameScene] Building', totalAliens, 'alien sprites...');
+
     try {
       this.alienFaceTextures = await this.spriteManager.buildAlienSprites(totalAliens);
       console.log('[BaseGameScene] Alien textures built:', this.alienFaceTextures.length, '/', totalAliens);
     } catch (e) {
-      console.error('Failed to build alien sprites', e);
+      console.error('[BaseGameScene] Failed to build alien sprites:', e);
       this.alienFaceTextures = [];
     }
   }

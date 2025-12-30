@@ -196,8 +196,14 @@ export class GalagaScene extends BaseGameScene {
       return;
     }
 
+    // Debug: Check alien grid state
+    const aliveCount = this.alienGrid.getAliveCount();
+    const isDestroyed = this.alienGrid.isAllDestroyed();
+    console.log(`[GalagaScene] checkGameConditions - aliveCount: ${aliveCount}, isAllDestroyed: ${isDestroyed}, aliensReady: ${this._aliensReady}`);
+
     // Check if all aliens destroyed (use grid's method like Space Invaders does)
-    if (this.alienGrid.isAllDestroyed()) {
+    if (isDestroyed) {
+      console.log(`[GalagaScene] Aliens destroyed, calling onLevelComplete()`);
       this.onLevelComplete();
       return;
     }
@@ -256,6 +262,11 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected onClearEntities(): void {
+    console.log('[GalagaScene] onClearEntities - resetting _aliensReady to false');
+
+    // Reset aliens ready flag
+    this._aliensReady = false;
+
     // Clear alien grid
     if (this.alienGrid) {
       this.alienGrid.destroy();
@@ -270,9 +281,6 @@ export class GalagaScene extends BaseGameScene {
     // Clear clouds
     this.clouds.forEach(cloud => cloud.destroy());
     this.clouds = [];
-    
-    // Reset aliens ready flag
-    this._aliensReady = false;
   }
 
   // =========================================================================
@@ -287,18 +295,18 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected async startNextLevel(): Promise<void> {
-    // Use shared advanceLevel method for consistency with SpaceInvadersScene
+    // Advance to next level
     this.advanceLevel();
     this.gameActive = true;
 
     // Clear existing entities
     this.clearForNextLevel();
 
+    // Prepare alien textures for new level (in case alien count changed)
+    await this.prepareAlienFaceTextures();
+
     // Get level config (levelManager was already advanced by advanceLevel())
     const levelConfig = this.levelManager!.getLevelConfig();
-
-    // Call parent's prepareAlienFaceTextures through reflection
-    await (this as any).prepareAlienFaceTextures();
 
     // Recreate enemies
     this.alienGrid = new GalagaGrid(
@@ -323,6 +331,11 @@ export class GalagaScene extends BaseGameScene {
   }
 
   private clearForNextLevel(): void {
+    console.log('[GalagaScene] clearForNextLevel - resetting _aliensReady to false');
+
+    // Reset aliens ready flag
+    this._aliensReady = false;
+
     // Clear alien grid
     if (this.alienGrid) {
       this.alienGrid.destroy();
