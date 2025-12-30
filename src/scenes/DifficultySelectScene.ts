@@ -54,6 +54,13 @@ export class DifficultySelectScene extends Phaser.Scene {
       color: '#ffffff',
       align: 'center'
     }).setOrigin(0.5);
+    
+    this.add.text(width / 2, height * 0.28, 'Then capture your face for the game', {
+      fontSize: '16px',
+      fontFamily: 'Courier New',
+      color: '#888888',
+      align: 'center'
+    }).setOrigin(0.5);
 
     // Get saved difficulty or default to MEDIUM
     const saved = localStorage.getItem('gameDifficulty');
@@ -149,15 +156,8 @@ export class DifficultySelectScene extends Phaser.Scene {
     // Update visual selection
     this.updateVisualSelection();
     
-    // Start game directly with Space Invaders mode
-    this.scene.start('SpaceInvadersScene', {
-      level: 1,
-      score: 0,
-      useWebcam: false,
-      lives: 3,
-      difficulty: this.selectedDifficulty,
-      startMode: GameMode.SPACE_INVADERS
-    });
+    // Go to webcam scene for face capture, then start game
+    this.scene.start('WebcamScene', { difficulty: this.selectedDifficulty });
   }
 
   private setupControls(): void {
