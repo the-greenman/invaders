@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { DifficultyPreset, getDifficultyName } from '../types/DifficultyPreset';
 import { GameMode } from '../types/GameMode';
 import { LocalStorage } from '../utils/localStorage';
+import { KonamiCode, KonamiInput } from '../utils/KonamiCode';
 
 /**
  * Difficulty Selection Scene
@@ -35,6 +36,14 @@ export class DifficultySelectScene extends Phaser.Scene {
   private downKey: Phaser.Input.Keyboard.Key | undefined;
   private enterKey: Phaser.Input.Keyboard.Key | undefined;
   private escKey: Phaser.Input.Keyboard.Key | undefined;
+  private bKey: Phaser.Input.Keyboard.Key | undefined;
+  private aKey: Phaser.Input.Keyboard.Key | undefined;
+
+  // Konami Code easter egg
+  private konamiCode: KonamiCode = new KonamiCode();
+  private konamiText: Phaser.GameObjects.Text | null = null;
+  private prevLeftPressed: boolean = false;
+  private prevRightPressed: boolean = false;
 
   constructor() {
     super({ key: 'DifficultySelectScene' });
@@ -143,6 +152,11 @@ export class DifficultySelectScene extends Phaser.Scene {
       align: 'center'
     }).setOrigin(0.5);
 
+    // Setup Konami code callback
+    this.konamiCode.onComplete(() => {
+      this.activateKonamiCode();
+    });
+
     // Setup controls
     this.setupControls();
 
@@ -152,7 +166,38 @@ export class DifficultySelectScene extends Phaser.Scene {
       this.downKey?.removeAllListeners();
       this.enterKey?.removeAllListeners();
       this.escKey?.removeAllListeners();
+      this.bKey?.removeAllListeners();
+      this.aKey?.removeAllListeners();
     });
+  }
+
+  private activateKonamiCode(): void {
+    // Set 100 lives in the game registry
+    this.registry.set('konamiBonusLives', 100);
+
+    // Show visual feedback
+    const { width, height } = this.cameras.main;
+    this.konamiText = this.add.text(width / 2, height * 0.05, '★ KONAMI CODE ACTIVATED! 100 LIVES! ★', {
+      fontSize: '32px',
+      fontFamily: 'Courier New',
+      color: '#ffff00',
+      align: 'center',
+      stroke: '#ff00ff',
+      strokeThickness: 4
+    }).setOrigin(0.5);
+
+    // Pulse animation
+    this.tweens.add({
+      targets: this.konamiText,
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: 300,
+      yoyo: true,
+      repeat: 3
+    });
+
+    // Flash screen
+    this.cameras.main.flash(1000, 255, 255, 0);
   }
 
   private selectAndStartGame(difficulty: DifficultyPreset, index: number): void {
@@ -177,15 +222,19 @@ export class DifficultySelectScene extends Phaser.Scene {
     this.downKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
     this.enterKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
     this.escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.bKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+    this.aKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.A);
 
     // Keyboard controls
     this.upKey?.on('down', () => {
       console.log('UP key pressed');
+      this.konamiCode.addInput('UP');
       this.navigateDifficulty(-1);
     });
 
     this.downKey?.on('down', () => {
       console.log('DOWN key pressed');
+      this.konamiCode.addInput('DOWN');
       this.navigateDifficulty(1);
     });
 
@@ -197,6 +246,27 @@ export class DifficultySelectScene extends Phaser.Scene {
     this.escKey?.on('down', () => {
       console.log('ESC key pressed, going back to menu');
       this.scene.start('MenuScene');
+    });
+
+    // Konami code: LEFT and RIGHT keys (arrow keys)
+    const leftKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+    const rightKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+
+    leftKey?.on('down', () => {
+      this.konamiCode.addInput('LEFT');
+    });
+
+    rightKey?.on('down', () => {
+      this.konamiCode.addInput('RIGHT');
+    });
+
+    // Konami code: B and A keys
+    this.bKey?.on('down', () => {
+      this.konamiCode.addInput('B');
+    });
+
+    this.aKey?.on('down', () => {
+      this.konamiCode.addInput('A');
     });
 
     // Initial gamepad check
@@ -216,28 +286,47 @@ export class DifficultySelectScene extends Phaser.Scene {
         // D-pad or analog stick
         const dpadUp = this.gamepad.up;
         const dpadDown = this.gamepad.down;
+        const dpadLeft = this.gamepad.left;
+        const dpadRight = this.gamepad.right;
         const analogY = this.gamepad.leftStick.y;
-        
+        const analogX = this.gamepad.leftStick.x;
+
         const isUp = dpadUp || analogY < -0.5;
         const isDown = dpadDown || analogY > 0.5;
-        
+        const isLeft = dpadLeft || analogX < -0.5;
+        const isRight = dpadRight || analogX > 0.5;
+
         // Navigate up
         if (isUp && !this.prevUpPressed) {
+          this.konamiCode.addInput('UP');
           this.navigateDifficulty(-1);
         }
         this.prevUpPressed = isUp;
-        
+
         // Navigate down
         if (isDown && !this.prevDownPressed) {
+          this.konamiCode.addInput('DOWN');
           this.navigateDifficulty(1);
         }
         this.prevDownPressed = isDown;
+
+        // Track left/right for Konami code
+        if (isLeft && !this.prevLeftPressed) {
+          this.konamiCode.addInput('LEFT');
+        }
+        this.prevLeftPressed = isLeft;
+
+        if (isRight && !this.prevRightPressed) {
+          this.konamiCode.addInput('RIGHT');
+        }
+        this.prevRightPressed = isRight;
         
         // Fire button or Start button to select
         const isFirePressed = !!this.gamepad.buttons[this.fireButtonIndex]?.pressed;
         const isStartPressed = !!this.gamepad.buttons[this.startButtonIndex]?.pressed;
-        
+
         if ((isFirePressed || isStartPressed) && !this.prevAPressed) {
+          this.konamiCode.addInput('A'); // Fire button is 'A' in Konami code
           this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
         }
         this.prevAPressed = isFirePressed || isStartPressed;
@@ -245,6 +334,7 @@ export class DifficultySelectScene extends Phaser.Scene {
         // Back button to go back
         const isBackPressed = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
         if (isBackPressed && !this.prevBPressed) {
+          this.konamiCode.addInput('B'); // Back button is 'B' in Konami code
           this.scene.start('MenuScene');
         }
         this.prevBPressed = isBackPressed;

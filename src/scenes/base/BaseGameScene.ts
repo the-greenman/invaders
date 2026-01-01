@@ -261,7 +261,15 @@ export abstract class BaseGameScene extends Phaser.Scene {
     // Reset game state
     this.gameActive = false; // Wait for initialization
     if (this.level === 1 && this.score === 0 && typeof data.lives !== 'number') {
-      this.lives = 3;
+      // Check for Konami code bonus lives
+      const bonusLives = this.registry.get('konamiBonusLives') as number | undefined;
+      if (bonusLives) {
+        this.lives = bonusLives;
+        // Clear the bonus lives from registry after using it
+        this.registry.remove('konamiBonusLives');
+      } else {
+        this.lives = 3;
+      }
     }
 
     // Optional viewport for split-screen debug
