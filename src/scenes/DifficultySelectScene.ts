@@ -27,8 +27,8 @@ export class DifficultySelectScene extends Phaser.Scene {
   private prevDownPressed: boolean = false;
   private prevAPressed: boolean = false;
   private prevBPressed: boolean = false;
-  private fireButtonIndex: number = 0; // Fire/A button by default
-  private backButtonIndex: number = 1; // B button by default
+  private fireButtonIndex!: number;
+  private backButtonIndex!: number;
 
   // Keyboard keys (stored to properly clean up listeners)
   private upKey: Phaser.Input.Keyboard.Key | undefined;
@@ -49,8 +49,8 @@ export class DifficultySelectScene extends Phaser.Scene {
 
     // Load controller settings
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
-    this.backButtonIndex = settings.controllerBackButton ?? 1;
+    this.fireButtonIndex = settings.controllerFireButton!;
+    this.backButtonIndex = settings.controllerBackButton!;
 
     // Title
     this.add.text(width / 2, height * 0.15, 'SELECT DIFFICULTY', {

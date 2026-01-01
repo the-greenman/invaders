@@ -53,7 +53,7 @@ export class DebugMenuScene extends Phaser.Scene {
   private prevBack: boolean = false;
   private lastStickMove: number = 0;
 
-  private backButtonIndex: number = 1;
+  private backButtonIndex!: number;
 
   private initialUpdateEvent: Phaser.Time.TimerEvent | null = null;
 
@@ -65,7 +65,7 @@ export class DebugMenuScene extends Phaser.Scene {
     this.resetState();
 
     const settings = LocalStorage.getSettings();
-    this.backButtonIndex = settings.controllerBackButton ?? 1;
+    this.backButtonIndex = settings.controllerBackButton!;
 
     const { width, height } = this.cameras.main;
 

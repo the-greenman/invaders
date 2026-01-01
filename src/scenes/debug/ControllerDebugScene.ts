@@ -19,9 +19,9 @@ export class ControllerDebugScene extends Phaser.Scene {
   private awaitingFireBind: boolean = false;
   private awaitingBackBind: boolean = false;
   private awaitingStartBind: boolean = false;
-  private fireButtonIndex: number = 0;
-  private backButtonIndex: number = 1;
-  private startButtonIndex: number = 11;
+  private fireButtonIndex!: number;
+  private backButtonIndex!: number;
+  private startButtonIndex!: number;
 
   private actionTexts: Phaser.GameObjects.Text[] = [];
   private selectedActionIndex: number = 0;
@@ -64,9 +64,9 @@ export class ControllerDebugScene extends Phaser.Scene {
     });
 
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
-    this.backButtonIndex = settings.controllerBackButton ?? 10;
-    this.startButtonIndex = settings.controllerStartButton ?? 11;
+    this.fireButtonIndex = settings.controllerFireButton!;
+    this.backButtonIndex = settings.controllerBackButton!;
+    this.startButtonIndex = settings.controllerStartButton!;
 
     this.infoText = this.add.text(20, 130, `Waiting... FIRE:B${this.fireButtonIndex} BACK:B${this.backButtonIndex} START:B${this.startButtonIndex}`, {
       fontSize: '16px',

@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LocalStorage } from '../../../src/utils/localStorage';
-import { MAX_STORED_FACES } from '../../../src/constants';
+import {
+  MAX_STORED_FACES,
+  DEFAULT_CONTROLLER_FIRE_BUTTON,
+  DEFAULT_CONTROLLER_BACK_BUTTON,
+  DEFAULT_CONTROLLER_START_BUTTON
+} from '../../../src/constants';
 
 describe('LocalStorage', () => {
   beforeEach(() => {
@@ -111,10 +116,23 @@ describe('LocalStorage', () => {
       expect(settings).toEqual({
         muted: false,
         difficulty: 'normal',
-        controllerFireButton: 0,
-        controllerBackButton: 1,
-        controllerStartButton: 11
+        controllerFireButton: DEFAULT_CONTROLLER_FIRE_BUTTON,
+        controllerBackButton: DEFAULT_CONTROLLER_BACK_BUTTON,
+        controllerStartButton: DEFAULT_CONTROLLER_START_BUTTON
       });
+    });
+
+    it('should use constants for default button values', () => {
+      const settings = LocalStorage.getSettings();
+      expect(settings.controllerFireButton).toBe(DEFAULT_CONTROLLER_FIRE_BUTTON);
+      expect(settings.controllerBackButton).toBe(DEFAULT_CONTROLLER_BACK_BUTTON);
+      expect(settings.controllerStartButton).toBe(DEFAULT_CONTROLLER_START_BUTTON);
+    });
+
+    it('should ensure default values are correct', () => {
+      expect(DEFAULT_CONTROLLER_FIRE_BUTTON).toBe(0);
+      expect(DEFAULT_CONTROLLER_BACK_BUTTON).toBe(1);
+      expect(DEFAULT_CONTROLLER_START_BUTTON).toBe(11);
     });
 
     it('should save and retrieve settings', () => {
@@ -127,6 +145,24 @@ describe('LocalStorage', () => {
       };
       LocalStorage.saveSettings(newSettings);
       expect(LocalStorage.getSettings()).toEqual(newSettings);
+    });
+
+    it('should merge saved settings with defaults', () => {
+      // Save partial settings (missing button configs)
+      const partialSettings = {
+        muted: true,
+        difficulty: 'easy' as const
+      };
+      localStorage.setItem('classinvaders_settings', JSON.stringify(partialSettings));
+
+      const settings = LocalStorage.getSettings();
+      // Should have saved values
+      expect(settings.muted).toBe(true);
+      expect(settings.difficulty).toBe('easy');
+      // Should have default button values
+      expect(settings.controllerFireButton).toBe(DEFAULT_CONTROLLER_FIRE_BUTTON);
+      expect(settings.controllerBackButton).toBe(DEFAULT_CONTROLLER_BACK_BUTTON);
+      expect(settings.controllerStartButton).toBe(DEFAULT_CONTROLLER_START_BUTTON);
     });
   });
 
