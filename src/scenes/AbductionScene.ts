@@ -2,10 +2,14 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, PLAYER_HEIGHT, PLAYER_WIDTH, PLAYER_CORE_RADIUS } from '../constants';
 import { FaceManager } from '../managers/FaceManager';
 import { LocalStorage } from '../utils/localStorage';
+import { GameMode } from '../types/GameMode';
+import { DifficultyPreset } from '../types/DifficultyPreset';
 
 interface AbductionData {
   score: number;
   level: number;
+  gameMode?: GameMode;
+  difficulty?: DifficultyPreset;
   playerTextureKey?: string;
 }
 
@@ -133,9 +137,14 @@ export class AbductionScene extends Phaser.Scene {
       }).setOrigin(0.5);
     });
 
-    // Transition to GameOverScene
+    // Transition to GameOverScene (pass through all data)
     this.time.delayedCall(5000, () => {
-      this.scene.start('GameOverScene', { score: this.dataIn.score, level: this.dataIn.level });
+      this.scene.start('GameOverScene', {
+        score: this.dataIn.score,
+        level: this.dataIn.level,
+        gameMode: this.dataIn.gameMode,
+        difficulty: this.dataIn.difficulty
+      });
     });
   }
 }

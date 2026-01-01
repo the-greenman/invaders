@@ -1,5 +1,7 @@
 import { LevelConfig } from '../types';
-import { ALIEN_ROWS, ALIEN_COLS, ALIEN_START_SPEED } from '../constants';
+import { ALIEN_ROWS, ALIEN_COLS, ALIEN_START_SPEED, GALAGA_FORMATION_SPEED } from '../constants';
+import { DifficultyPreset } from '../types/DifficultyPreset';
+import { DIFFICULTY_CONFIGS } from '../types/DifficultyConfig';
 
 /**
  * Level Manager
@@ -16,9 +18,12 @@ import { ALIEN_ROWS, ALIEN_COLS, ALIEN_START_SPEED } from '../constants';
 
 export class LevelManager {
   private currentLevel: number = 1;
+  private difficulty: DifficultyPreset;
+  private config = DIFFICULTY_CONFIGS;
 
-  constructor(startLevel: number = 1) {
+  constructor(startLevel: number = 1, difficulty: DifficultyPreset = DifficultyPreset.MEDIUM) {
     this.currentLevel = startLevel;
+    this.difficulty = difficulty;
   }
 
   /**
@@ -51,29 +56,58 @@ export class LevelManager {
    * Get configuration for the current level
    * @returns LevelConfig object with difficulty settings
    *
-   * TODO: Implement level scaling formula:
-   * - alienRows: Start with ALIEN_ROWS, add 1 every 3 levels (max 8)
-   *   Example: Math.min(ALIEN_ROWS + Math.floor((level - 1) / 3), 8)
+   * Level scaling formula with difficulty multipliers applied:
+   * - alienRows: Start with ALIEN_ROWS, add 1 every 3 levels (max 8), apply rowCountMultiplier
    * - alienCols: Always ALIEN_COLS (11)
-   * - alienSpeed: Start with ALIEN_START_SPEED, decrease by 50ms per level (min 300ms)
-   *   Example: Math.max(ALIEN_START_SPEED - (level - 1) * 50, 300)
-   * - bombFrequency: Start at 0.3, increase by 0.1 per level
-   *   Example: 0.3 + (level - 1) * 0.1
-   * - alienPointsMultiplier: Start at 1, increase by 0.5 per level
-   *   Example: 1 + (level - 1) * 0.5
-   *
-   * Return LevelConfig object with these calculated values
+   * - alienSpeed: Start with ALIEN_START_SPEED, decrease by level scaling, apply speedMultiplier
+   * - bombFrequency: Start at 0.3, increase by level scaling, apply bombFrequencyMultiplier
+   * - alienPointsMultiplier: Start at 1, increase by level scaling, apply pointsMultiplier
    */
   getLevelConfig(): LevelConfig {
     const level = this.currentLevel;
+    const multipliers = this.config[this.difficulty];
+    
+    // Base calculations without difficulty
+    const baseRows = Math.min(ALIEN_ROWS + Math.floor((level - 1) / 3), 8);
+    const baseSpeed = Math.max(ALIEN_START_SPEED - (level - 1) * 50, 300);
+    const baseBombFreq = 0.3 + (level - 1) * 0.1;
+    const basePointsMultiplier = 1 + (level - 1) * 0.5;
+    
+    // Apply difficulty multipliers
+    const adjustedSpeed = baseSpeed / multipliers.speedMultiplier;
+    const adjustedBombFreq = baseBombFreq * multipliers.bombFrequencyMultiplier;
+    const adjustedPoints = basePointsMultiplier * multipliers.pointsMultiplier;
+    let adjustedRows = Math.floor(baseRows * multipliers.rowCountMultiplier);
+
+    // Apply minimum row count from difficulty config
+    adjustedRows = Math.max(adjustedRows, multipliers.minRows);
+    
+    // Galaga-specific calculations with difficulty
+    const baseFormationSpeed = Math.min(GALAGA_FORMATION_SPEED + (level - 1) * 10, 150);
+    const baseWaveFreq = Math.min(0.3 + (level - 1) * 0.05, 0.8);
+    const baseWaveMinSize = 3;
+    const baseWaveMaxSize = 8;
+    
+    const adjustedFormationSpeed = baseFormationSpeed / multipliers.speedMultiplier;
+    const adjustedWaveFreq = 1 / ((1 / baseWaveFreq) * multipliers.waveIntervalMultiplier);
+    const adjustedWaveMinSize = Math.floor(baseWaveMinSize * multipliers.waveSizeMultiplier);
+    const adjustedWaveMaxSize = Math.floor(baseWaveMaxSize * multipliers.waveSizeMultiplier);
 
     return {
       level,
-      alienRows: Math.min(ALIEN_ROWS + Math.floor((level - 1) / 3), 8),
+      alienRows: adjustedRows,
       alienCols: ALIEN_COLS,
-      alienSpeed: Math.max(ALIEN_START_SPEED - (level - 1) * 50, 300),
-      bombFrequency: 0.3 + (level - 1) * 0.1,
-      alienPointsMultiplier: 1 + (level - 1) * 0.5
+      alienSpeed: adjustedSpeed,
+      bombFrequency: adjustedBombFreq,
+      alienPointsMultiplier: adjustedPoints,
+
+      // Galaga Mode parameters with difficulty scaling
+      galagaFormationSpeed: adjustedFormationSpeed,
+      galagaWaveFrequency: adjustedWaveFreq,
+      galagaHomingStrength: Math.min((level - 1) * 0.05, 0.35),
+      galagaWaveMinSize: adjustedWaveMinSize,
+      galagaWaveMaxSize: adjustedWaveMaxSize,
+      galagaMaxSimultaneousWaves: multipliers.maxSimultaneousWaves
     };
   }
 
@@ -119,5 +153,21 @@ export class LevelManager {
   getPointsMultiplier(): number {
     const config = this.getLevelConfig();
     return config.alienPointsMultiplier;
+  }
+
+  /**
+   * Get the current difficulty preset
+   * @returns Current DifficultyPreset
+   */
+  getDifficulty(): DifficultyPreset {
+    return this.difficulty;
+  }
+
+  /**
+   * Set a new difficulty preset
+   * @param difficulty The new difficulty preset
+   */
+  setDifficulty(difficulty: DifficultyPreset): void {
+    this.difficulty = difficulty;
   }
 }

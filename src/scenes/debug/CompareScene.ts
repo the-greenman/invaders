@@ -5,8 +5,8 @@ import { DebugBaseScene } from './DebugBaseScene';
 /**
  * Compare Scene
  *
- * Launches GameScene and SpriteDebugScene side by side for visual comparison.
- * Left: GameScene, Right: SpriteDebugScene.
+ * Launches SpaceInvadersScene and SpriteDebugScene side by side for visual comparison.
+ * Left: SpaceInvadersScene, Right: SpriteDebugScene.
  */
 export class CompareScene extends DebugBaseScene {
   constructor() {
@@ -19,10 +19,11 @@ export class CompareScene extends DebugBaseScene {
     const halfWidth = GAME_WIDTH / 2;
 
     // Launch both scenes with constrained viewports
-    this.scene.launch('GameScene', {
+    this.scene.launch('SpaceInvadersScene', {
       viewport: { x: 0, y: 0, width: halfWidth, height: GAME_HEIGHT },
       useWebcam: false,
-      disableBackToMenu: true
+      disableBackToMenu: true,
+      startMode: 'SPACE_INVADERS'
     });
     this.scene.launch('SpriteDebugScene', {
       viewport: { x: halfWidth, y: 0, width: halfWidth, height: GAME_HEIGHT },
@@ -43,7 +44,7 @@ export class CompareScene extends DebugBaseScene {
 
     // Stop children when this scene shuts down
     this.events.on('shutdown', () => {
-      this.scene.stop('GameScene');
+      this.scene.stop('SpaceInvadersScene');
       this.scene.stop('SpriteDebugScene');
     });
 

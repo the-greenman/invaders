@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { POINTS, ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_BODY_SCALE } from '../constants';
 import { Bomb } from './Bomb';
+import { AttackPath } from '../systems/AttackPath';
 
 /**
  * Alien Entity
@@ -9,13 +10,39 @@ import { Bomb } from './Bomb';
  * Handles movement, animation, and collision detection.
  *
  * Extends Phaser.GameObjects.Sprite with physics body.
+ *
+ * FOR GALAGA MODE (GAME 2):
+ * - Supports state machine for attack wave behavior
+ * - Tracks formation position for return-to-formation
+ * - Follows attack paths during wave attacks
  */
+
+/**
+ * Alien State Machine (Galaga Mode)
+ *
+ *
+ * - IN_FORMATION: Moving with the grid formation
+ * - ATTACKING: Following an attack path curve
+ * - RETURNING: Navigating back to formation position
+ * - DESTROYED: Dead, no longer active
+ */
+export enum AlienState {
+  IN_FORMATION = 'IN_FORMATION',
+  ATTACKING = 'ATTACKING',
+  RETURNING = 'RETURNING',
+  DESTROYED = 'DESTROYED'
+}
 
 export class Alien extends Phaser.GameObjects.Sprite {
   private points: number;
   private alienType: number; // 0, 1, or 2 for different alien types
   private gridPosition: { row: number; col: number };
   private alive: boolean = true;
+
+  // Galaga Mode (Game 2) State Machine
+  private alienState: AlienState = AlienState.IN_FORMATION;
+  private formationPosition: { x: number; y: number } = { x: 0, y: 0 };
+  private attackPath: AttackPath | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -89,26 +116,30 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * 3. Play sound effect
    * 4. Return points value
    */
-  destroy(): number {
+  destroy(fromScene?: boolean): number {
     if (!this.alive) return 0;
 
     this.alive = false;
     
-    // Play explosion effect
-    const explosion = this.scene.add.circle(this.x, this.y, 16, 0xff0000);
-    explosion.setAlpha(0.8);
-    this.scene.tweens.add({
-      targets: explosion,
-      alpha: 0,
-      scale: 3,
-      duration: 300,
-      onComplete: () => explosion.destroy()
-    });
+    // Play explosion effect only if NOT destroyed by scene shutdown
+    const sceneAny = this.scene as any;
+    const isSceneActive = typeof sceneAny?.sys?.isActive === 'function' ? !!sceneAny.sys.isActive() : true;
+    if (!fromScene && this.scene && this.scene.add && this.scene.tweens && isSceneActive) {
+      const explosion = this.scene.add.circle(this.x, this.y, 16, 0xff0000);
+      explosion.setAlpha(0.8);
+      this.scene.tweens.add({
+        targets: explosion,
+        alpha: 0,
+        scale: 2,
+        duration: 300,
+        onComplete: () => explosion.destroy()
+      });
+    }
     
     // Could play sound here
     // this.scene.sound.play('explosion');
     
-    super.destroy();
+    super.destroy(fromScene);
     return this.points;
   }
 
@@ -152,5 +183,110 @@ export class Alien extends Phaser.GameObjects.Sprite {
    */
   getGridPosition(): { row: number; col: number } {
     return this.gridPosition;
+  }
+
+  // ============================================================================
+  // Galaga Mode (Game 2) - State Machine Methods
+  // ============================================================================
+
+  /**
+   * Get alien's current state
+   * @returns Current AlienState
+   *
+   * This is used by GalagaGrid and WaveManager to determine behavior
+   */
+  getState(): AlienState {
+    return this.alienState;
+  }
+
+  /**
+   * Set alien's state
+   * @param newState - The state to transition to
+   *
+   * State transitions:
+   * - IN_FORMATION → ATTACKING (when launching wave)
+   * - ATTACKING → RETURNING (when attack path complete)
+   * - RETURNING → IN_FORMATION (when arrived at formation)
+   * - Any → DESTROYED (when killed)
+   */
+  setAlienState(newState: AlienState): void {
+    this.alienState = newState;
+    if (newState === AlienState.DESTROYED) {
+      this.alive = false;
+    }
+  }
+
+  /**
+   * Set formation position (where alien should return to)
+   * @param x - Formation X coordinate
+   * @param y - Formation Y coordinate
+   *
+   * Called by WaveManager before launching wave to record home position
+   */
+  setFormationPosition(x: number, y: number): void {
+    this.formationPosition = { x, y };
+  }
+
+  /**
+   * Get formation position
+   * @returns Formation coordinates {x, y}
+   *
+   * Used by WaveManager when navigating alien back to formation
+   */
+  getFormationPosition(): { x: number; y: number } {
+    return this.formationPosition;
+  }
+
+  /**
+   * Set attack path for wave attack
+   * @param path - AttackPath instance (DiveBomb, Loop, Weave, etc.)
+   *
+   * Called by WaveManager when launching wave
+   * Path must be started with path.start(x, y) before assigning
+   */
+  setAttackPath(path: AttackPath): void {
+    this.attackPath = path;
+  }
+
+  /**
+   * Get current attack path
+   * @returns AttackPath or null
+   *
+   * Used by WaveManager to check if path is complete
+   */
+  getAttackPath(): AttackPath | null {
+    return this.attackPath;
+  }
+
+  /**
+   * Follow attack path (update position along curve)
+   * @param delta - Time since last frame in ms
+   *
+   * Called by WaveManager.update() when alien state is ATTACKING
+   * Gets current position from path and moves alien there
+   *
+   * ALGORITHM:
+   * 1. Get current position from attackPath.getCurrentPosition(delta)
+   * 2. Set alien position to path position
+   * 3. Update physics body with body.reset(x, y)
+   */
+  followPath(delta: number, targetX?: number, homingStrength: number = 0): void {
+    if (!this.alive || !this.attackPath || this.alienState !== AlienState.ATTACKING) {
+      return;
+    }
+
+    const pos = this.attackPath.getCurrentPosition(delta);
+    let x = pos.x;
+    if (typeof targetX === 'number' && homingStrength > 0) {
+      const maxSteer = 120 * (delta / 1000);
+      const steer = Phaser.Math.Clamp((targetX - x) * homingStrength, -maxSteer, maxSteer);
+      x += steer;
+    }
+
+    this.setPosition(x, pos.y);
+    const body = this.body as Phaser.Physics.Arcade.Body | undefined;
+    if (body) {
+      body.reset(x, pos.y);
+    }
   }
 }

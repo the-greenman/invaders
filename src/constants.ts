@@ -56,3 +56,23 @@ export const COLORS = {
   SHIELD: 0x00ff00,
   GREEN_TINT: 0x88ff88
 };
+
+// Game Mode System
+export const AUTO_SWITCH_INTERVAL = 4; // Switch modes after this many levels
+export const ENABLE_MANUAL_MODE_SWITCH = true; // Allow number keys to switch modes
+
+// Galaga Mode (Game 2) Settings
+export const GALAGA_FORMATION_SPEED = 60; // pixels per second (smooth movement)
+export const GALAGA_WAVE_MIN_INTERVAL = 2000; // ms between wave launches
+export const GALAGA_WAVE_MAX_INTERVAL = 5000; // ms between wave launches
+export const GALAGA_WAVE_MIN_SIZE = 2; // min aliens per wave
+export const GALAGA_WAVE_MAX_SIZE = 6; // max aliens per wave
+export const GALAGA_ATTACK_SPEED = 200; // pixels per second during attack
+export const GALAGA_RETURN_SPEED = 150; // pixels per second when returning to formation
+export const GALAGA_MAX_SIMULTANEOUS_WAVES = 3; // Performance limit
+
+// Controller Default Button Indices
+// These are the standard gamepad button mappings for most controllers
+export const DEFAULT_CONTROLLER_FIRE_BUTTON = 0; // A button / Cross button
+export const DEFAULT_CONTROLLER_BACK_BUTTON = 1; // B button / Circle button
+export const DEFAULT_CONTROLLER_START_BUTTON = 11; // Start button (sometimes 9)

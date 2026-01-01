@@ -16,6 +16,14 @@ export class PreloaderScene extends Phaser.Scene {
     super({ key: 'PreloaderScene' });
   }
 
+  init(): void {
+    // Disable gamepad for this scene to avoid Phaser bug where GamepadPlugin.stopListeners
+    // crashes on undefined pad references during scene shutdown when no gamepad is connected
+    if (this.input.gamepad) {
+      this.input.gamepad.enabled = false;
+    }
+  }
+
   preload(): void {
     // Set up loading bar UI
     this.createLoadingBar();
@@ -30,11 +38,14 @@ export class PreloaderScene extends Phaser.Scene {
   async create(): Promise<void> {
     // Setup shutdown event for cleanup
     this.events.on('shutdown', () => {
+      console.log('PreloaderScene: shutdown event received');
       this.cleanup();
     });
 
     // Create SVG alien textures
     await this.createSVGAlienTextures();
+
+    console.log('PreloaderScene: textures created, starting MenuScene');
 
     // Transition to MenuScene when loading complete
     this.scene.start('MenuScene');
@@ -396,6 +407,11 @@ export class PreloaderScene extends Phaser.Scene {
   }
 
   private cleanup(): void {
+    // Remove loader listeners
+    this.load.off('progress');
+    this.load.off('complete');
+    this.load.off('loaderror');
+
     // Clear references
     this.loadingBar = null;
     this.progressText = null;

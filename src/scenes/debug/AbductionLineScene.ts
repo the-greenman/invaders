@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { AlienGrid } from '../../entities/AlienGrid';
+import { SpaceInvadersGrid } from '../../entities/SpaceInvadersGrid';
 import { ABDUCTION_THRESHOLD_Y, GAME_HEIGHT, GAME_WIDTH } from '../../constants';
 import { DebugBaseScene } from './DebugBaseScene';
 
@@ -8,8 +8,9 @@ import { DebugBaseScene } from './DebugBaseScene';
  *
  * Shows the abduction threshold line and an alien grid to see when the game over triggers.
  */
+  
 export class AbductionLineScene extends DebugBaseScene {
-  private grid!: AlienGrid;
+  private grid!: SpaceInvadersGrid;
   private info!: Phaser.GameObjects.Text;
 
   constructor() {
@@ -43,7 +44,7 @@ export class AbductionLineScene extends DebugBaseScene {
     });
 
     // Alien grid with debug logging
-    this.grid = new AlienGrid(this, 100, 100, 3, 7, 600);
+    this.grid = new SpaceInvadersGrid(this, 100, 100, 3, 7, 600);
     this.grid.setDebug(true);
     this.grid.dumpState('init');
 

@@ -2,8 +2,13 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from './constants';
 import { PreloaderScene } from './scenes/PreloaderScene';
 import { MenuScene } from './scenes/MenuScene';
+import { DifficultySelectScene } from './scenes/DifficultySelectScene';
 import { WebcamScene } from './scenes/WebcamScene';
-import { GameScene } from './scenes/GameScene';
+import { SpaceInvadersScene } from './scenes/modes/SpaceInvadersScene';
+import { GalagaScene } from './scenes/modes/GalagaScene';
+import { ModeTransitionScene } from './scenes/ModeTransitionScene';
+import { SpaceInvadersIntroScene } from './scenes/SpaceInvadersIntroScene';
+import { GalagaIntroScene } from './scenes/GalagaIntroScene';
 import { GameOverScene } from './scenes/GameOverScene';
 import { AbductionScene } from './scenes/AbductionScene';
 import { HighScoreScene } from './scenes/HighScoreScene';
@@ -19,6 +24,7 @@ import { StoredFacesScene } from './scenes/debug/StoredFacesScene';
 import { AbductionLineScene } from './scenes/debug/AbductionLineScene';
 import { BombTestScene } from './scenes/debug/BombTestScene';
 import { MobileDebugScene } from './scenes/debug/MobileDebugScene';
+import { PathTestScene } from './scenes/debug/PathTestScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -39,7 +45,14 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   scene: [
     PreloaderScene,
     MenuScene,
+    DifficultySelectScene,
+    ModeTransitionScene,
+    SpaceInvadersIntroScene,
+    GalagaIntroScene,
+    SpaceInvadersScene,
+    GalagaScene,
     DebugMenuScene,
+    PathTestScene,
     PlayerTestScene,
     ArmadaTestScene,
     CollisionTestScene,
@@ -53,7 +66,6 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     MobileDebugScene,
     WebcamScene,
     HighScoreScene,
-    GameScene,
     AbductionScene,
     GameOverScene
   ],

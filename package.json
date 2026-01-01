@@ -6,16 +6,27 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest watch"
   },
   "dependencies": {
-    "phaser": "^3.80.0",
+    "@mediapipe/camera_utils": "^0.3.0",
     "@mediapipe/face_detection": "^0.4.0",
-    "@mediapipe/camera_utils": "^0.3.0"
+    "phaser": "3.80.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
+    "jsdom": "^27.4.0",
+    "phaser3spectorjs": "^0.0.8",
     "typescript": "^5.2.2",
     "vite": "^5.0.0",
-    "@types/node": "^20.0.0"
+    "vitest": "^4.0.16"
   }
 }

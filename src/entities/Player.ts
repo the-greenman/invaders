@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_BODY_SCALE, GAME_WIDTH } from '../constants';
+import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_BODY_SCALE, GAME_WIDTH, GAME_HEIGHT } from '../constants';
 import { Bullet } from './Bullet';
 import { LocalStorage } from '../utils/localStorage';
 import { TouchControlManager } from '../managers/TouchControlManager';
@@ -21,8 +21,14 @@ export class Player extends Phaser.GameObjects.Sprite {
   private lastShotTime: number = 0;
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevShootPressed: boolean = false;
-  private fireButtonIndex: number = 0;
+  private fireButtonIndex!: number;
   private touchControls: TouchControlManager | null = null;
+
+  private lastSettingsPollTime: number = 0;
+
+  // Stored gamepad event handlers for cleanup
+  private gamepadConnectedHandler?: (pad: Phaser.Input.Gamepad.Gamepad) => void;
+  private gamepadDisconnectedHandler?: (pad: Phaser.Input.Gamepad.Gamepad) => void;
 
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string = 'player') {
     super(scene, x, y, textureKey);
@@ -39,7 +45,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.spaceKey = scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)!;
 
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
+    this.fireButtonIndex = settings.controllerFireButton!;
 
     // Gamepad setup
     this.setupGamepad();
@@ -66,20 +72,24 @@ export class Player extends Phaser.GameObjects.Sprite {
       console.log('Player: No gamepads found on init. Total:', this.scene.input.gamepad.total);
     }
 
-    // Listen for new connections
-    this.scene.input.gamepad.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+    // Store handler references for cleanup
+    this.gamepadConnectedHandler = (pad: Phaser.Input.Gamepad.Gamepad) => {
       if (!this.gamepad) {
         this.gamepad = pad;
         console.log('Player: Gamepad connected event:', pad.id);
       }
-    });
+    };
 
-    this.scene.input.gamepad.on('disconnected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+    this.gamepadDisconnectedHandler = (pad: Phaser.Input.Gamepad.Gamepad) => {
       if (this.gamepad === pad) {
         this.gamepad = null;
         console.log('Player: Gamepad disconnected event:', pad.id);
       }
-    });
+    };
+
+    // Listen for new connections
+    this.scene.input.gamepad.on('connected', this.gamepadConnectedHandler);
+    this.scene.input.gamepad.on('disconnected', this.gamepadDisconnectedHandler);
   }
 
   /**
@@ -93,6 +103,17 @@ export class Player extends Phaser.GameObjects.Sprite {
    */
   update(delta: number): void {
     if (!this.active) return;
+
+    // Allow controller bindings to take effect without restarting the scene.
+    // (ControllerDebugScene can change localStorage while this Player instance is alive.)
+    if (this.scene.time && this.scene.time.now - this.lastSettingsPollTime > 500) {
+      const settings = LocalStorage.getSettings();
+      const configured = settings.controllerFireButton;
+      if (typeof configured === 'number' && configured !== this.fireButtonIndex) {
+        this.fireButtonIndex = configured;
+      }
+      this.lastSettingsPollTime = this.scene.time.now;
+    }
 
     // Lazy acquisition: if no gamepad yet, check if one is available
     if (!this.gamepad && this.scene.input.gamepad && this.scene.input.gamepad.total > 0) {
@@ -144,7 +165,9 @@ export class Player extends Phaser.GameObjects.Sprite {
     body.setVelocityX(moveX * PLAYER_SPEED);
 
     // Handle shooting
-    const padShoot = this.gamepad ? this.gamepad.buttons[this.fireButtonIndex]?.pressed : false;
+    const padShoot = (this.gamepad && this.fireButtonIndex >= 0)
+      ? this.gamepad.buttons[this.fireButtonIndex]?.pressed
+      : false;
     const touchShoot = this.touchControls ? this.touchControls.consumeShootRequest() : false;
 
     if (this.spaceKey.isDown && this.canShoot) {
@@ -210,8 +233,8 @@ export class Player extends Phaser.GameObjects.Sprite {
    * 2. Reset shooting cooldown
    * 3. Reset visual state
    */
-  reset(): void {
-    this.setPosition(400, 550);
+  reset(x: number = GAME_WIDTH / 2, y: number = GAME_HEIGHT - 50): void {
+    this.setPosition(x, y);
     (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
     this.canShoot = true;
     this.lastShotTime = 0;
@@ -221,10 +244,14 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   destroy(fromScene?: boolean): void {
-    // Cleanup listeners
+    // Cleanup gamepad listeners
     if (this.scene && this.scene.input && this.scene.input.gamepad) {
-      this.scene.input.gamepad.off('connected');
-      this.scene.input.gamepad.off('disconnected');
+      if (this.gamepadConnectedHandler) {
+        this.scene.input.gamepad.off('connected', this.gamepadConnectedHandler);
+      }
+      if (this.gamepadDisconnectedHandler) {
+        this.scene.input.gamepad.off('disconnected', this.gamepadDisconnectedHandler);
+      }
     }
     super.destroy(fromScene);
   }

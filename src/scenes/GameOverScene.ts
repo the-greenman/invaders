@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { ScoreManager } from '../managers/ScoreManager';
 import { LocalStorage } from '../utils/localStorage';
+import { GameMode } from '../types/GameMode';
+import { DifficultyPreset } from '../types/DifficultyPreset';
 
 /**
  * Game Over Scene
@@ -13,6 +15,8 @@ import { LocalStorage } from '../utils/localStorage';
 export class GameOverScene extends Phaser.Scene {
   private score: number = 0;
   private level: number = 1;
+  private gameMode?: GameMode;
+  private difficulty?: DifficultyPreset;
   private isHighScore: boolean = false;
   private scoreManager: ScoreManager | null = null;
   
@@ -31,9 +35,9 @@ export class GameOverScene extends Phaser.Scene {
   private prevDown: boolean = false;
   private prevFire: boolean = false;
   private lastStickMove: number = 0;
-  private fireButtonIndex: number = 0;
-  private startButtonIndex: number = 11;
-  private backButtonIndex: number = 10;
+  private fireButtonIndex!: number;
+  private startButtonIndex!: number;
+  private backButtonIndex!: number;
 
   constructor() {
     super({ key: 'GameOverScene' });
@@ -41,14 +45,21 @@ export class GameOverScene extends Phaser.Scene {
 
   create(): void {
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
-    this.startButtonIndex = settings.controllerStartButton ?? 11;
-    this.backButtonIndex = settings.controllerBackButton ?? 10;
+    this.fireButtonIndex = settings.controllerFireButton!;
+    this.startButtonIndex = settings.controllerStartButton!;
+    this.backButtonIndex = settings.controllerBackButton!;
 
-    // Get scene data from GameScene
-    const data = this.scene.settings.data as { score?: number; level?: number };
+    // Get scene data from game scene (standardized format)
+    const data = this.scene.settings.data as {
+      score?: number;
+      level?: number;
+      gameMode?: GameMode;
+      difficulty?: DifficultyPreset;
+    };
     this.score = data.score || 0;
     this.level = data.level || 1;
+    this.gameMode = data.gameMode;
+    this.difficulty = data.difficulty;
     
     this.createBackground();
     this.createUI();
@@ -58,7 +69,20 @@ export class GameOverScene extends Phaser.Scene {
     // Initial gamepad check
     if (this.input.gamepad && this.input.gamepad.total > 0) {
       this.gamepad = this.input.gamepad.getPad(0);
+      
+      // Initialize previous state to prevent immediate trigger if button is held
+      if (this.gamepad) {
+        const isFire = this.gamepad.buttons[this.fireButtonIndex]?.pressed || this.gamepad.buttons[this.startButtonIndex]?.pressed;
+        const isBack = this.gamepad.buttons[this.backButtonIndex]?.pressed;
+        this.prevFire = !!(isFire || isBack);
+      }
     }
+    
+    // Add a small input lock delay
+    this.input.enabled = false;
+    this.time.delayedCall(500, () => {
+      this.input.enabled = true;
+    });
 
     // Setup shutdown event for cleanup
     this.events.on('shutdown', () => {

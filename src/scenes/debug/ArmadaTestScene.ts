@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import { AlienGrid } from '../../entities/AlienGrid';
+import { SpaceInvadersGrid } from '../../entities/SpaceInvadersGrid';
 import { GAME_WIDTH } from '../../constants';
 import { DebugBaseScene } from './DebugBaseScene';
 
 export class ArmadaTestScene extends DebugBaseScene {
-  private grid!: AlienGrid;
+  private grid!: SpaceInvadersGrid;
   private info!: Phaser.GameObjects.Text;
   private debugOn: boolean = true;
 
@@ -23,7 +23,7 @@ export class ArmadaTestScene extends DebugBaseScene {
     });
 
     // rows, cols, speed derived from typical defaults
-    this.grid = new AlienGrid(this, 100, 100, 5, 11, 800);
+    this.grid = new SpaceInvadersGrid(this, 100, 100, 5, 11, 800);
     this.grid.setDebug(this.debugOn);
     this.grid.dumpState('initial');
 

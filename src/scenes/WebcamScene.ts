@@ -28,11 +28,20 @@ export class WebcamScene extends Phaser.Scene {
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevFirePressed: boolean = false;
   private prevStartPressed: boolean = false;
-  private fireButtonIndex: number = 0;
-  private startButtonIndex: number = 11;
+  private fireButtonIndex!: number;
+  private startButtonIndex!: number;
+  private difficulty: string = 'MEDIUM';
 
   constructor() {
     super({ key: 'WebcamScene' });
+  }
+
+  init(data: { difficulty?: string }): void {
+    // Receive difficulty from DifficultySelectScene
+    if (data.difficulty) {
+      this.difficulty = data.difficulty;
+      console.log('[WebcamScene] Received difficulty:', this.difficulty);
+    }
   }
 
   preload(): void {
@@ -41,16 +50,17 @@ export class WebcamScene extends Phaser.Scene {
 
   create(): void {
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
-    this.startButtonIndex = settings.controllerStartButton ?? 11;
+    this.fireButtonIndex = settings.controllerFireButton!;
+    this.startButtonIndex = settings.controllerStartButton!;
 
     this.createBackground();
     this.createUI();
     this.setupEventListeners();
     this.initializeWebcam();
-    
+
     // Setup shutdown event for cleanup
-    this.events.on('shutdown', () => {
+    this.events.once('shutdown', () => {
+      this.cleanupWebcam();
       this.cleanup();
     });
   }
@@ -162,11 +172,6 @@ export class WebcamScene extends Phaser.Scene {
         this.captureFace();
       }
     });
-
-    // Cleanup on scene shutdown
-    this.events.on('shutdown', () => {
-      this.cleanupWebcam();
-    });
   }
 
   private async initializeWebcam(): Promise<void> {
@@ -243,8 +248,15 @@ export class WebcamScene extends Phaser.Scene {
   }
 
   private startGameWithWebcam(): void {
-    // Start game with webcam faces
-    this.scene.start('GameScene', { level: 1, score: 0, useWebcam: true });
+    // Start game with webcam faces and difficulty
+    // Default to Space Invaders mode for webcam games
+    this.scene.start('SpaceInvadersScene', { 
+      level: 1, 
+      score: 0, 
+      useWebcam: true,
+      difficulty: this.difficulty,
+      startMode: 'SPACE_INVADERS'
+    });
   }
 
   /**
