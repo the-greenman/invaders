@@ -9,9 +9,9 @@ export class HighScoreScene extends Phaser.Scene {
   private scrollY: number = 0;
   private maxScroll: number = 0;
   private startDragY: number | null = null;
-  private backButtonIndex: number = 10;
-  private fireButtonIndex: number = 0;
-  private startButtonIndex: number = 11;
+  private backButtonIndex!: number;
+  private fireButtonIndex!: number;
+  private startButtonIndex!: number;
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
 
   constructor() {
@@ -20,9 +20,9 @@ export class HighScoreScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     const settings = LocalStorage.getSettings();
-    this.backButtonIndex = settings.controllerBackButton ?? 10;
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
-    this.startButtonIndex = settings.controllerStartButton ?? 11;
+    this.backButtonIndex = settings.controllerBackButton!;
+    this.fireButtonIndex = settings.controllerFireButton!;
+    this.startButtonIndex = settings.controllerStartButton!;
 
     this.createBackground();
     await this.buildList();

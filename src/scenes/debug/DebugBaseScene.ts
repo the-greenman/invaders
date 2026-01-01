@@ -3,12 +3,12 @@ import { LocalStorage } from '../../utils/localStorage';
 
 export abstract class DebugBaseScene extends Phaser.Scene {
   protected gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
-  protected backButtonIndex: number = 1;
+  protected backButtonIndex!: number;
   protected prevBack: boolean = false;
 
   protected initDebugBase(): void {
     const settings = LocalStorage.getSettings();
-    this.backButtonIndex = settings.controllerBackButton ?? 1;
+    this.backButtonIndex = settings.controllerBackButton!;
 
     if (this.input.gamepad && this.input.gamepad.total > 0) {
       this.gamepad = this.input.gamepad.getPad(0);

@@ -70,3 +70,9 @@ export const GALAGA_WAVE_MAX_SIZE = 6; // max aliens per wave
 export const GALAGA_ATTACK_SPEED = 200; // pixels per second during attack
 export const GALAGA_RETURN_SPEED = 150; // pixels per second when returning to formation
 export const GALAGA_MAX_SIMULTANEOUS_WAVES = 3; // Performance limit
+
+// Controller Default Button Indices
+// These are the standard gamepad button mappings for most controllers
+export const DEFAULT_CONTROLLER_FIRE_BUTTON = 0; // A button / Cross button
+export const DEFAULT_CONTROLLER_BACK_BUTTON = 1; // B button / Circle button
+export const DEFAULT_CONTROLLER_START_BUTTON = 11; // Start button (sometimes 9)

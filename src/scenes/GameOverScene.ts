@@ -35,9 +35,9 @@ export class GameOverScene extends Phaser.Scene {
   private prevDown: boolean = false;
   private prevFire: boolean = false;
   private lastStickMove: number = 0;
-  private fireButtonIndex: number = 0;
-  private startButtonIndex: number = 11;
-  private backButtonIndex: number = 10;
+  private fireButtonIndex!: number;
+  private startButtonIndex!: number;
+  private backButtonIndex!: number;
 
   constructor() {
     super({ key: 'GameOverScene' });
@@ -45,9 +45,9 @@ export class GameOverScene extends Phaser.Scene {
 
   create(): void {
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
-    this.startButtonIndex = settings.controllerStartButton ?? 11;
-    this.backButtonIndex = settings.controllerBackButton ?? 10;
+    this.fireButtonIndex = settings.controllerFireButton!;
+    this.startButtonIndex = settings.controllerStartButton!;
+    this.backButtonIndex = settings.controllerBackButton!;
 
     // Get scene data from game scene (standardized format)
     const data = this.scene.settings.data as {

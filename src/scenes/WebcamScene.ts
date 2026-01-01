@@ -28,8 +28,8 @@ export class WebcamScene extends Phaser.Scene {
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevFirePressed: boolean = false;
   private prevStartPressed: boolean = false;
-  private fireButtonIndex: number = 0;
-  private startButtonIndex: number = 11;
+  private fireButtonIndex!: number;
+  private startButtonIndex!: number;
   private difficulty: string = 'MEDIUM';
 
   constructor() {
@@ -50,8 +50,8 @@ export class WebcamScene extends Phaser.Scene {
 
   create(): void {
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
-    this.startButtonIndex = settings.controllerStartButton ?? 11;
+    this.fireButtonIndex = settings.controllerFireButton!;
+    this.startButtonIndex = settings.controllerStartButton!;
 
     this.createBackground();
     this.createUI();

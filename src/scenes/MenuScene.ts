@@ -39,9 +39,9 @@ export class MenuScene extends Phaser.Scene {
   private prevUpPressed: boolean = false;
   private prevDownPressed: boolean = false;
   private lastStickMove: number = 0;
-  private fireButtonIndex: number = 0;
-  private backButtonIndex: number = 10;
-  private startButtonIndex: number = 11;
+  private fireButtonIndex!: number;
+  private backButtonIndex!: number;
+  private startButtonIndex!: number;
   private privacyText: Phaser.GameObjects.Text | null = null;
 
   // Background Aliens
@@ -77,9 +77,9 @@ export class MenuScene extends Phaser.Scene {
   async create(): Promise<void> {
     console.log('MenuScene: create start');
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
-    this.backButtonIndex = settings.controllerBackButton ?? 10;
-    this.startButtonIndex = settings.controllerStartButton ?? 11;
+    this.fireButtonIndex = settings.controllerFireButton!;
+    this.backButtonIndex = settings.controllerBackButton!;
+    this.startButtonIndex = settings.controllerStartButton!;
 
     this.createBackground();
     // this.setupCrawl(); // Add crawl behind title/buttons

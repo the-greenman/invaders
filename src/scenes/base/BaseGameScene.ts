@@ -77,7 +77,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
   private lastDebugLog: number = 0;
   protected alienFaceTextures: string[] = [];
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
-  private backButtonIndex: number = 10;
+  private backButtonIndex!: number;
   private muteButtonIndex: number = 4;
   private prevBackPressed: boolean = false;
   private prevMutePressed: boolean = false;
@@ -270,7 +270,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
     }
 
     const settings = LocalStorage.getSettings();
-    this.backButtonIndex = settings.controllerBackButton ?? 1;
+    this.backButtonIndex = settings.controllerBackButton!;
 
     // Initialize all game entities in correct order
     console.log('[BaseGameScene] About to call initializeGameEntities()...');

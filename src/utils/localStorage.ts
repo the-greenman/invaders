@@ -1,5 +1,10 @@
 import { StoredFace, HighScore, GameSettings } from '../types';
-import { MAX_STORED_FACES } from '../constants';
+import {
+  MAX_STORED_FACES,
+  DEFAULT_CONTROLLER_FIRE_BUTTON,
+  DEFAULT_CONTROLLER_BACK_BUTTON,
+  DEFAULT_CONTROLLER_START_BUTTON
+} from '../constants';
 
 /**
  * localStorage Utility Module
@@ -175,12 +180,25 @@ export class LocalStorage {
   static getSettings(): GameSettings {
     try {
       const data = localStorage.getItem(KEYS.SETTINGS);
-      if (!data) return { muted: false, difficulty: 'normal', controllerFireButton: 0, controllerBackButton: 1, controllerStartButton: 11 };
+      const defaults: GameSettings = {
+        muted: false,
+        difficulty: 'normal',
+        controllerFireButton: DEFAULT_CONTROLLER_FIRE_BUTTON,
+        controllerBackButton: DEFAULT_CONTROLLER_BACK_BUTTON,
+        controllerStartButton: DEFAULT_CONTROLLER_START_BUTTON
+      };
+      if (!data) return defaults;
       const parsed = JSON.parse(data);
-      return { muted: false, difficulty: 'normal', controllerFireButton: 0, controllerBackButton: 1, controllerStartButton: 11, ...parsed };
+      return { ...defaults, ...parsed };
     } catch (error) {
       console.error('Error parsing settings:', error);
-      return { muted: false, difficulty: 'normal', controllerFireButton: 0, controllerBackButton: 1, controllerStartButton: 11 };
+      return {
+        muted: false,
+        difficulty: 'normal',
+        controllerFireButton: DEFAULT_CONTROLLER_FIRE_BUTTON,
+        controllerBackButton: DEFAULT_CONTROLLER_BACK_BUTTON,
+        controllerStartButton: DEFAULT_CONTROLLER_START_BUTTON
+      };
     }
   }
 

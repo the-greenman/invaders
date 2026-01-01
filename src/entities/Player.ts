@@ -21,7 +21,7 @@ export class Player extends Phaser.GameObjects.Sprite {
   private lastShotTime: number = 0;
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevShootPressed: boolean = false;
-  private fireButtonIndex: number = 0;
+  private fireButtonIndex!: number;
   private touchControls: TouchControlManager | null = null;
 
   private lastSettingsPollTime: number = 0;
@@ -45,7 +45,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.spaceKey = scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)!;
 
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton ?? 0;
+    this.fireButtonIndex = settings.controllerFireButton!;
 
     // Gamepad setup
     this.setupGamepad();
