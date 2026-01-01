@@ -240,11 +240,13 @@ export class DifficultySelectScene extends Phaser.Scene {
 
     this.enterKey?.on('down', () => {
       console.log('ENTER key pressed, starting game with difficulty:', this.selectedDifficulty);
+      // Enter doesn't affect Konami code, so always works
       this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
     });
 
     this.escKey?.on('down', () => {
       console.log('ESC key pressed, going back to menu');
+      // ESC doesn't affect Konami code, so always works
       this.scene.start('MenuScene');
     });
 
@@ -261,6 +263,8 @@ export class DifficultySelectScene extends Phaser.Scene {
     });
 
     // Konami code: B and A keys
+    // Note: These keys ONLY trigger Konami code, they don't have other functions
+    // so we don't need to check progress here
     this.bKey?.on('down', () => {
       this.konamiCode.addInput('B');
     });
@@ -326,8 +330,11 @@ export class DifficultySelectScene extends Phaser.Scene {
         const isStartPressed = !!this.gamepad.buttons[this.startButtonIndex]?.pressed;
 
         if ((isFirePressed || isStartPressed) && !this.prevAPressed) {
-          this.konamiCode.addInput('A'); // Fire button is 'A' in Konami code
-          this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
+          const completed = this.konamiCode.addInput('A'); // Fire button is 'A' in Konami code
+          // Only select game if not entering Konami code or if code was just completed
+          if (this.konamiCode.getProgress() === 0 || completed) {
+            this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
+          }
         }
         this.prevAPressed = isFirePressed || isStartPressed;
 
@@ -335,7 +342,10 @@ export class DifficultySelectScene extends Phaser.Scene {
         const isBackPressed = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
         if (isBackPressed && !this.prevBPressed) {
           this.konamiCode.addInput('B'); // Back button is 'B' in Konami code
-          this.scene.start('MenuScene');
+          // Only go back if not entering Konami code
+          if (this.konamiCode.getProgress() === 0) {
+            this.scene.start('MenuScene');
+          }
         }
         this.prevBPressed = isBackPressed;
       }
