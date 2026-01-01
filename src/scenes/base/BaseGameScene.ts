@@ -223,8 +223,8 @@ export abstract class BaseGameScene extends Phaser.Scene {
   async create(): Promise<void> {
     console.log('[BaseGameScene] create() called for', this.constructor.name);
     
-    // Get scene data from previous scene
-    const data = this.scene.settings.data as { 
+    // Get scene data from previous scene (ensure it exists)
+    const data = (this.scene.settings.data || {}) as { 
       level?: number; 
       score?: number; 
       lives?: number; 

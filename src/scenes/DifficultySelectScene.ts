@@ -29,8 +29,8 @@ export class DifficultySelectScene extends Phaser.Scene {
   private prevBPressed: boolean = false;
   private fireButtonIndex: number = 0; // Fire/A button by default
   private backButtonIndex: number = 1; // B button by default
+  private startButtonIndex: number = 11; // Start button by default (usually 9 or 11)
 
-  // Keyboard keys (stored to properly clean up listeners)
   private upKey: Phaser.Input.Keyboard.Key | undefined;
   private downKey: Phaser.Input.Keyboard.Key | undefined;
   private enterKey: Phaser.Input.Keyboard.Key | undefined;
@@ -45,12 +45,14 @@ export class DifficultySelectScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.difficultyTexts = [];
     const { width, height } = this.cameras.main;
 
     // Load controller settings
     const settings = LocalStorage.getSettings();
     this.fireButtonIndex = settings.controllerFireButton ?? 0;
     this.backButtonIndex = settings.controllerBackButton ?? 1;
+    this.startButtonIndex = settings.controllerStartButton ?? 11;
 
     // Title
     this.add.text(width / 2, height * 0.15, 'SELECT DIFFICULTY', {
@@ -231,12 +233,14 @@ export class DifficultySelectScene extends Phaser.Scene {
         }
         this.prevDownPressed = isDown;
         
-        // Fire button to select (using configured button)
+        // Fire button or Start button to select
         const isFirePressed = !!this.gamepad.buttons[this.fireButtonIndex]?.pressed;
-        if (isFirePressed && !this.prevAPressed) {
+        const isStartPressed = !!this.gamepad.buttons[this.startButtonIndex]?.pressed;
+        
+        if ((isFirePressed || isStartPressed) && !this.prevAPressed) {
           this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
         }
-        this.prevAPressed = isFirePressed;
+        this.prevAPressed = isFirePressed || isStartPressed;
 
         // Back button to go back
         const isBackPressed = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
@@ -258,6 +262,8 @@ export class DifficultySelectScene extends Phaser.Scene {
     
     difficulties.forEach((diff, index) => {
       const text = this.difficultyTexts[index];
+      if (!text || !text.active) return;
+
       if (diff === this.selectedDifficulty) {
         text.setStyle({ color: '#ffff00', fontSize: '36px' });
       } else {

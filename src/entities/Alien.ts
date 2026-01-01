@@ -116,26 +116,30 @@ export class Alien extends Phaser.GameObjects.Sprite {
    * 3. Play sound effect
    * 4. Return points value
    */
-  destroy(): number {
+  destroy(fromScene?: boolean): number {
     if (!this.alive) return 0;
 
     this.alive = false;
     
-    // Play explosion effect
-    const explosion = this.scene.add.circle(this.x, this.y, 16, 0xff0000);
-    explosion.setAlpha(0.8);
-    this.scene.tweens.add({
-      targets: explosion,
-      alpha: 0,
-      scale: 3,
-      duration: 300,
-      onComplete: () => explosion.destroy()
-    });
+    // Play explosion effect only if NOT destroyed by scene shutdown
+    const sceneAny = this.scene as any;
+    const isSceneActive = typeof sceneAny?.sys?.isActive === 'function' ? !!sceneAny.sys.isActive() : true;
+    if (!fromScene && this.scene && this.scene.add && this.scene.tweens && isSceneActive) {
+      const explosion = this.scene.add.circle(this.x, this.y, 16, 0xff0000);
+      explosion.setAlpha(0.8);
+      this.scene.tweens.add({
+        targets: explosion,
+        alpha: 0,
+        scale: 2,
+        duration: 300,
+        onComplete: () => explosion.destroy()
+      });
+    }
     
     // Could play sound here
     // this.scene.sound.play('explosion');
     
-    super.destroy();
+    super.destroy(fromScene);
     return this.points;
   }
 

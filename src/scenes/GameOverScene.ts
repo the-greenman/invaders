@@ -69,7 +69,20 @@ export class GameOverScene extends Phaser.Scene {
     // Initial gamepad check
     if (this.input.gamepad && this.input.gamepad.total > 0) {
       this.gamepad = this.input.gamepad.getPad(0);
+      
+      // Initialize previous state to prevent immediate trigger if button is held
+      if (this.gamepad) {
+        const isFire = this.gamepad.buttons[this.fireButtonIndex]?.pressed || this.gamepad.buttons[this.startButtonIndex]?.pressed;
+        const isBack = this.gamepad.buttons[this.backButtonIndex]?.pressed;
+        this.prevFire = !!(isFire || isBack);
+      }
     }
+    
+    // Add a small input lock delay
+    this.input.enabled = false;
+    this.time.delayedCall(500, () => {
+      this.input.enabled = true;
+    });
 
     // Setup shutdown event for cleanup
     this.events.on('shutdown', () => {

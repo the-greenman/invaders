@@ -18,6 +18,22 @@ global.requestAnimationFrame = vi.fn((callback) => {
 });
 global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id));
 
+// jsdom throws for focus(); Phaser may call it
+if (typeof window !== 'undefined') {
+  try {
+    Object.defineProperty(window, 'focus', { value: vi.fn(), configurable: true });
+  } catch {
+    (window as any).focus = vi.fn();
+  }
+}
+if (typeof HTMLElement !== 'undefined') {
+  try {
+    Object.defineProperty(HTMLElement.prototype, 'focus', { value: vi.fn(), configurable: true });
+  } catch {
+    (HTMLElement.prototype as any).focus = vi.fn();
+  }
+}
+
 // Mock canvas with comprehensive 2D context
 const createCanvasContextMock = () => ({
   fillRect: vi.fn(),
@@ -53,7 +69,8 @@ const createCanvasContextMock = () => ({
   canvas: { width: 800, height: 600 }
 });
 
-HTMLCanvasElement.prototype.getContext = vi.fn(function(this: HTMLCanvasElement, contextType: string) {
+HTMLCanvasElement.prototype.getContext = vi.fn(function(this: HTMLCanvasElement, contextType: string, options?: any) {
+  // console.log(`[Mock] getContext called with type: ${contextType}`);
   if (contextType === '2d') {
     const ctx = createCanvasContextMock();
     // Ensure context.canvas points back to the element

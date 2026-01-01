@@ -242,8 +242,13 @@ export class GalagaScene extends BaseGameScene {
   }
 
   protected onGameOver(): void {
-    // Use default GameOverScene for Galaga
-    this.endGame();
+    // Use AbductionScene for Galaga game over (same as Space Invaders)
+    this.endGame({
+      gameOverScene: 'AbductionScene',
+      additionalData: {
+        playerTextureKey: this.playerTextureKey
+      }
+    });
   }
 
   protected updateMode(delta: number): void {
