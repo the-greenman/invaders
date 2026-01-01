@@ -5,7 +5,7 @@ describe('KonamiCode', () => {
   let konamiCode: KonamiCode;
 
   beforeEach(() => {
-    konamiCode = new KonamiCode();
+    konamiCode = new KonamiCode(1000); // 1 second timeout
   });
 
   describe('Initialization', () => {
@@ -162,6 +162,104 @@ describe('KonamiCode', () => {
       konamiCode.addInput('UP'); // Extra UP - should reset
 
       expect(konamiCode.getProgress()).toBe(0);
+    });
+  });
+
+  describe('Timeout', () => {
+    it('should reset sequence after timeout', () => {
+      const startTime = 1000;
+
+      // Start entering the code
+      konamiCode.addInput('UP', startTime);
+      konamiCode.addInput('UP', startTime + 100);
+      konamiCode.addInput('DOWN', startTime + 200);
+
+      expect(konamiCode.getProgress()).toBe(3);
+
+      // Wait longer than timeout (1000ms) and try to continue with wrong input
+      const timedOutInput = konamiCode.addInput('DOWN', startTime + 1500);
+
+      expect(timedOutInput).toBe(false);
+      expect(konamiCode.getProgress()).toBe(0); // Reset because DOWN isn't the start
+
+      // But if we press the correct start input after timeout, it should work
+      konamiCode.addInput('UP', startTime + 1600);
+      expect(konamiCode.getProgress()).toBe(1);
+    });
+
+    it('should not timeout if inputs are fast enough', () => {
+      const startTime = 1000;
+
+      // Enter code quickly (100ms between each)
+      konamiCode.addInput('UP', startTime);
+      konamiCode.addInput('UP', startTime + 100);
+      konamiCode.addInput('DOWN', startTime + 200);
+      konamiCode.addInput('DOWN', startTime + 300);
+      konamiCode.addInput('LEFT', startTime + 400);
+      konamiCode.addInput('RIGHT', startTime + 500);
+      konamiCode.addInput('LEFT', startTime + 600);
+      konamiCode.addInput('RIGHT', startTime + 700);
+      konamiCode.addInput('B', startTime + 800);
+      const completed = konamiCode.addInput('A', startTime + 900);
+
+      expect(completed).toBe(true);
+      expect(konamiCode.isCompleted()).toBe(true);
+    });
+
+    it('should check timeout manually with checkTimeout()', () => {
+      const startTime = 1000;
+
+      konamiCode.addInput('UP', startTime);
+      konamiCode.addInput('UP', startTime + 100);
+
+      expect(konamiCode.getProgress()).toBe(2);
+
+      // Check timeout before it expires
+      const timedOut1 = konamiCode.checkTimeout(startTime + 500);
+      expect(timedOut1).toBe(false);
+      expect(konamiCode.getProgress()).toBe(2); // Still there
+
+      // Check timeout after it expires
+      const timedOut2 = konamiCode.checkTimeout(startTime + 1500);
+      expect(timedOut2).toBe(true);
+      expect(konamiCode.getProgress()).toBe(0); // Reset
+    });
+
+    it('should not timeout after completion', () => {
+      const startTime = 1000;
+
+      // Complete the code
+      ['UP', 'UP', 'DOWN', 'DOWN', 'LEFT', 'RIGHT', 'LEFT', 'RIGHT', 'B', 'A'].forEach((input, i) => {
+        konamiCode.addInput(input as any, startTime + i * 100);
+      });
+
+      expect(konamiCode.isCompleted()).toBe(true);
+
+      // Try to timeout after completion
+      const timedOut = konamiCode.checkTimeout(startTime + 10000);
+      expect(timedOut).toBe(false);
+      expect(konamiCode.isCompleted()).toBe(true);
+    });
+
+    it('should allow custom timeout values', () => {
+      const customKonami = new KonamiCode(500); // 500ms timeout
+      const startTime = 1000;
+
+      customKonami.addInput('UP', startTime);
+      customKonami.addInput('UP', startTime + 100);
+
+      expect(customKonami.getProgress()).toBe(2);
+
+      // After 601ms from last input (more than 500ms timeout)
+      // Last input was at 1100, so 1100 + 501 = 1601
+      customKonami.addInput('DOWN', startTime + 601);
+
+      // Should timeout and reset, then try DOWN which isn't the start
+      expect(customKonami.getProgress()).toBe(0);
+
+      // Start fresh with correct input
+      customKonami.addInput('UP', startTime + 700);
+      expect(customKonami.getProgress()).toBe(1);
     });
   });
 });

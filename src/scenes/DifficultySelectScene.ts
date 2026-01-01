@@ -39,8 +39,8 @@ export class DifficultySelectScene extends Phaser.Scene {
   private bKey: Phaser.Input.Keyboard.Key | undefined;
   private aKey: Phaser.Input.Keyboard.Key | undefined;
 
-  // Konami Code easter egg
-  private konamiCode: KonamiCode = new KonamiCode();
+  // Konami Code easter egg (1 second timeout)
+  private konamiCode: KonamiCode = new KonamiCode(1000);
   private konamiText: Phaser.GameObjects.Text | null = null;
   private prevLeftPressed: boolean = false;
   private prevRightPressed: boolean = false;
@@ -280,12 +280,15 @@ export class DifficultySelectScene extends Phaser.Scene {
   }
 
   update(): void {
+    // Check if Konami code has timed out (ensures B/A buttons work again after timeout)
+    this.konamiCode.checkTimeout();
+
     // Handle controller input
     if (this.input.gamepad && this.input.gamepad.total > 0) {
       if (!this.gamepad || !this.gamepad.connected) {
         this.gamepad = this.input.gamepad.getPad(0);
       }
-      
+
       if (this.gamepad) {
         // D-pad or analog stick
         const dpadUp = this.gamepad.up;

@@ -3,6 +3,7 @@
  *
  * Tracks the classic Konami Code sequence: ↑ ↑ ↓ ↓ ← → ← → B A
  * Supports both keyboard and gamepad inputs
+ * Auto-resets if inputs timeout
  */
 
 export type KonamiInput =
@@ -21,18 +22,35 @@ export class KonamiCode {
   private currentSequence: KonamiInput[] = [];
   private completed: boolean = false;
   private onCompleteCallback?: () => void;
+  private lastInputTime: number = 0;
+  private inputTimeout: number; // milliseconds
+
+  /**
+   * Create a new KonamiCode tracker
+   * @param inputTimeout - Time in milliseconds before sequence resets (default: 1000ms)
+   */
+  constructor(inputTimeout: number = 1000) {
+    this.inputTimeout = inputTimeout;
+  }
 
   /**
    * Add an input to the sequence tracker
    * @param input - The input that was pressed
+   * @param currentTime - Current timestamp in milliseconds (optional, defaults to Date.now())
    * @returns true if the code was just completed, false otherwise
    */
-  addInput(input: KonamiInput): boolean {
+  addInput(input: KonamiInput, currentTime: number = Date.now()): boolean {
     // If already completed, don't track further inputs
     if (this.completed) {
       return false;
     }
 
+    // Check if the sequence has timed out
+    if (this.currentSequence.length > 0 && currentTime - this.lastInputTime > this.inputTimeout) {
+      this.currentSequence = [];
+    }
+
+    this.lastInputTime = currentTime;
     this.currentSequence.push(input);
 
     // Check if the current sequence matches the expected sequence so far
@@ -42,6 +60,7 @@ export class KonamiCode {
     if (!matches) {
       // Wrong input, reset the sequence
       this.currentSequence = [];
+      this.lastInputTime = 0;
       return false;
     }
 
@@ -63,6 +82,23 @@ export class KonamiCode {
   reset(): void {
     this.currentSequence = [];
     this.completed = false;
+    this.lastInputTime = 0;
+  }
+
+  /**
+   * Check if the sequence has timed out and reset if needed
+   * @param currentTime - Current timestamp in milliseconds
+   * @returns true if the sequence was reset due to timeout
+   */
+  checkTimeout(currentTime: number = Date.now()): boolean {
+    if (this.currentSequence.length > 0 &&
+        !this.completed &&
+        currentTime - this.lastInputTime > this.inputTimeout) {
+      this.currentSequence = [];
+      this.lastInputTime = 0;
+      return true;
+    }
+    return false;
   }
 
   /**
