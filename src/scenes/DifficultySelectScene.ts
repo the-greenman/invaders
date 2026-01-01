@@ -15,6 +15,7 @@ export class DifficultySelectScene extends Phaser.Scene {
   private selectedDifficulty: DifficultyPreset = DifficultyPreset.MEDIUM;
   private selectedIndex: number = 1; // Default to MEDIUM (index 1)
   private difficultyTexts: Phaser.GameObjects.Text[] = [];
+  private difficultyIndicator: Phaser.GameObjects.Text | null = null;
   private descriptions: { [key in DifficultyPreset]: string } = {
     [DifficultyPreset.EASY]: 'Slower enemies, fewer bombs, more points',
     [DifficultyPreset.MEDIUM]: 'Balanced gameplay for everyone',
@@ -62,6 +63,16 @@ export class DifficultySelectScene extends Phaser.Scene {
     this.fireButtonIndex = settings.controllerFireButton!;
     this.backButtonIndex = settings.controllerBackButton!;
     this.startButtonIndex = settings.controllerStartButton!;
+
+    // Difficulty indicator at the top
+    this.difficultyIndicator = this.add.text(width / 2, 30, '', {
+      fontSize: '24px',
+      fontFamily: 'Courier New',
+      color: '#ffff00',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 3
+    }).setOrigin(0.5);
 
     // Title
     this.add.text(width / 2, height * 0.15, 'SELECT DIFFICULTY', {
@@ -159,6 +170,9 @@ export class DifficultySelectScene extends Phaser.Scene {
 
     // Setup controls
     this.setupControls();
+
+    // Initialize the visual selection (including the difficulty indicator)
+    this.updateVisualSelection();
 
     // Setup shutdown handler to clean up keyboard listeners
     this.events.once('shutdown', () => {
@@ -362,7 +376,22 @@ export class DifficultySelectScene extends Phaser.Scene {
       DifficultyPreset.HARD,
       DifficultyPreset.EXTREME
     ];
-    
+
+    // Color mapping for difficulty levels
+    const difficultyColors: { [key in DifficultyPreset]: string } = {
+      [DifficultyPreset.EASY]: '#00ff00',      // Green
+      [DifficultyPreset.MEDIUM]: '#ffff00',    // Yellow
+      [DifficultyPreset.HARD]: '#ff8800',      // Orange
+      [DifficultyPreset.EXTREME]: '#ff0000'    // Red
+    };
+
+    // Update difficulty indicator at the top
+    if (this.difficultyIndicator) {
+      const color = difficultyColors[this.selectedDifficulty];
+      this.difficultyIndicator.setText(`Current: ${getDifficultyName(this.selectedDifficulty).toUpperCase()}`);
+      this.difficultyIndicator.setStyle({ color });
+    }
+
     difficulties.forEach((diff, index) => {
       const text = this.difficultyTexts[index];
       if (!text || !text.active) return;
