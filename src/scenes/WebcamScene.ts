@@ -57,9 +57,10 @@ export class WebcamScene extends Phaser.Scene {
     this.createUI();
     this.setupEventListeners();
     this.initializeWebcam();
-    
+
     // Setup shutdown event for cleanup
-    this.events.on('shutdown', () => {
+    this.events.once('shutdown', () => {
+      this.cleanupWebcam();
       this.cleanup();
     });
   }
@@ -170,11 +171,6 @@ export class WebcamScene extends Phaser.Scene {
       if (this.isInitialized && !this.isCapturing) {
         this.captureFace();
       }
-    });
-
-    // Cleanup on scene shutdown
-    this.events.on('shutdown', () => {
-      this.cleanupWebcam();
     });
   }
 

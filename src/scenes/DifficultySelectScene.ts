@@ -28,6 +28,12 @@ export class DifficultySelectScene extends Phaser.Scene {
   private prevBPressed: boolean = false;
   private backButtonIndex: number = 1; // B button by default
 
+  // Keyboard keys (stored to properly clean up listeners)
+  private upKey: Phaser.Input.Keyboard.Key | undefined;
+  private downKey: Phaser.Input.Keyboard.Key | undefined;
+  private enterKey: Phaser.Input.Keyboard.Key | undefined;
+  private escKey: Phaser.Input.Keyboard.Key | undefined;
+
   constructor() {
     super({ key: 'DifficultySelectScene' });
   }
@@ -130,19 +136,13 @@ export class DifficultySelectScene extends Phaser.Scene {
 
     // Setup controls
     this.setupControls();
-    
-    // Setup shutdown handler
+
+    // Setup shutdown handler to clean up keyboard listeners
     this.events.once('shutdown', () => {
-      // Remove keyboard listeners
-      const upKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
-      const downKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
-      const enterKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-      const escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-      
-      upKey?.removeAllListeners();
-      downKey?.removeAllListeners();
-      enterKey?.removeAllListeners();
-      escKey?.removeAllListeners();
+      this.upKey?.removeAllListeners();
+      this.downKey?.removeAllListeners();
+      this.enterKey?.removeAllListeners();
+      this.escKey?.removeAllListeners();
     });
   }
 
@@ -162,34 +162,34 @@ export class DifficultySelectScene extends Phaser.Scene {
 
   private setupControls(): void {
     console.log('Setting up keyboard controls...');
-    
-    // Create key objects
-    const upKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
-    const downKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
-    const enterKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    const escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-    
+
+    // Create and store key objects
+    this.upKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+    this.downKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+    this.enterKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    this.escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+
     // Keyboard controls
-    upKey?.on('down', () => {
+    this.upKey?.on('down', () => {
       console.log('UP key pressed');
       this.navigateDifficulty(-1);
     });
-    
-    downKey?.on('down', () => {
+
+    this.downKey?.on('down', () => {
       console.log('DOWN key pressed');
       this.navigateDifficulty(1);
     });
-    
-    enterKey?.on('down', () => {
+
+    this.enterKey?.on('down', () => {
       console.log('ENTER key pressed, starting game with difficulty:', this.selectedDifficulty);
       this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
     });
-    
-    escKey?.on('down', () => {
+
+    this.escKey?.on('down', () => {
       console.log('ESC key pressed, going back to menu');
       this.scene.start('MenuScene');
     });
-    
+
     // Initial gamepad check
     if (this.input.gamepad && this.input.gamepad.total > 0) {
       this.gamepad = this.input.gamepad.getPad(0);

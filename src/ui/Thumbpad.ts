@@ -28,6 +28,10 @@ export class Thumbpad {
   private horizontalAxis: number = 0; // -1 to 1
   private verticalAxis: number = 0; // -1 to 1 (for future use)
 
+  // Stored event handlers for cleanup
+  private pointerMoveHandler?: (pointer: Phaser.Input.Pointer) => void;
+  private pointerUpHandler?: (pointer: Phaser.Input.Pointer) => void;
+
   constructor(scene: Phaser.Scene, x: number, y: number, radius: number = 60) {
     this.scene = scene;
     this.x = x;
@@ -110,15 +114,14 @@ export class Thumbpad {
       }
     });
 
-    // Global pointer move - track dragging
-    this.scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+    // Store handler references for cleanup
+    this.pointerMoveHandler = (pointer: Phaser.Input.Pointer) => {
       if (this.isDragging && this.activePointerId === pointer.id) {
         this.updateThumbPosition(pointer.x, pointer.y);
       }
-    });
+    };
 
-    // Global pointer up - stop dragging
-    const pointerUpHandler = (pointer: Phaser.Input.Pointer) => {
+    this.pointerUpHandler = (pointer: Phaser.Input.Pointer) => {
       if (this.activePointerId === pointer.id) {
         this.isDragging = false;
         this.activePointerId = null;
@@ -126,8 +129,12 @@ export class Thumbpad {
       }
     };
 
-    this.scene.input.on('pointerup', pointerUpHandler);
-    this.scene.input.on('pointerupoutside', pointerUpHandler);
+    // Global pointer move - track dragging
+    this.scene.input.on('pointermove', this.pointerMoveHandler);
+
+    // Global pointer up - stop dragging
+    this.scene.input.on('pointerup', this.pointerUpHandler);
+    this.scene.input.on('pointerupoutside', this.pointerUpHandler);
   }
 
   private updateThumbPosition(pointerX: number, pointerY: number): void {
@@ -216,6 +223,16 @@ export class Thumbpad {
    * Clean up resources
    */
   destroy(): void {
+    // Remove scene input listeners
+    if (this.pointerMoveHandler) {
+      this.scene.input.off('pointermove', this.pointerMoveHandler);
+    }
+    if (this.pointerUpHandler) {
+      this.scene.input.off('pointerup', this.pointerUpHandler);
+      this.scene.input.off('pointerupoutside', this.pointerUpHandler);
+    }
+
+    // Destroy game objects
     this.baseCircle?.destroy();
     this.thumbCircle?.destroy();
     this.zone?.destroy();

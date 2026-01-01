@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "phaser": "^3.80.0",
+    "phaser": "3.80.0",
     "@mediapipe/face_detection": "^0.4.0",
     "@mediapipe/camera_utils": "^0.3.0"
   },

@@ -53,15 +53,29 @@ export class MenuScene extends Phaser.Scene {
   private crawlPlane: Phaser.GameObjects.Mesh | null = null;
   private crawlContentHeight: number = 0;
 
+  // Stored event handlers for cleanup
+  private keyUpHandler?: () => void;
+  private keyDownHandler?: () => void;
+  private keyEnterHandler?: () => void;
+  private keyDHandler?: () => void;
+  private gamepadConnectedHandler?: (pad: Phaser.Input.Gamepad.Gamepad) => void;
+
   constructor() {
     super({ key: 'MenuScene' });
+    console.log('MenuScene: constructor');
+  }
+
+  init(): void {
+    console.log('MenuScene: init');
   }
 
   preload(): void {
+    console.log('MenuScene: preload');
     // Menu assets are already loaded in PreloaderScene
   }
 
   async create(): Promise<void> {
+    console.log('MenuScene: create start');
     const settings = LocalStorage.getSettings();
     this.fireButtonIndex = settings.controllerFireButton ?? 0;
     this.backButtonIndex = settings.controllerBackButton ?? 10;
@@ -190,29 +204,35 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private setupKeyboardControls(): void {
-    this.input.keyboard?.on('keydown-UP', () => {
+    // Store handler references for cleanup
+    this.keyUpHandler = () => {
       this.selectedButton = (this.selectedButton - 1 + this.buttons.length) % this.buttons.length;
       this.updateButtonHighlight();
-    });
+    };
 
-    this.input.keyboard?.on('keydown-DOWN', () => {
+    this.keyDownHandler = () => {
       this.selectedButton = (this.selectedButton + 1) % this.buttons.length;
       this.updateButtonHighlight();
-    });
+    };
 
-    this.input.keyboard?.on('keydown-ENTER', () => {
+    this.keyEnterHandler = () => {
       this.activateSelectedButton();
-    });
+    };
 
-    // Quick access to Debug Menu
-    this.input.keyboard?.on('keydown-D', () => {
+    this.keyDHandler = () => {
       this.scene.start('DebugMenuScene');
-    });
+    };
 
-    // Gamepad support (fire to start webcam)
-    this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+    this.gamepadConnectedHandler = (pad: Phaser.Input.Gamepad.Gamepad) => {
       this.gamepad = pad;
-    });
+    };
+
+    // Attach listeners
+    this.input.keyboard?.on('keydown-UP', this.keyUpHandler);
+    this.input.keyboard?.on('keydown-DOWN', this.keyDownHandler);
+    this.input.keyboard?.on('keydown-ENTER', this.keyEnterHandler);
+    this.input.keyboard?.on('keydown-D', this.keyDHandler);
+    this.input.gamepad?.on('connected', this.gamepadConnectedHandler);
   }
 
   private setupButtonAnimations(): void {
@@ -645,9 +665,25 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private cleanup(): void {
-    // Clean up keyboard listeners
-    this.input.keyboard?.removeAllKeys();
-    
+    // Remove keyboard event listeners
+    if (this.keyUpHandler) {
+      this.input.keyboard?.off('keydown-UP', this.keyUpHandler);
+    }
+    if (this.keyDownHandler) {
+      this.input.keyboard?.off('keydown-DOWN', this.keyDownHandler);
+    }
+    if (this.keyEnterHandler) {
+      this.input.keyboard?.off('keydown-ENTER', this.keyEnterHandler);
+    }
+    if (this.keyDHandler) {
+      this.input.keyboard?.off('keydown-D', this.keyDHandler);
+    }
+
+    // Remove gamepad listener
+    if (this.gamepadConnectedHandler) {
+      this.input.gamepad?.off('connected', this.gamepadConnectedHandler);
+    }
+
     // Clear references
     this.buttons = [];
     this.titleText = null;

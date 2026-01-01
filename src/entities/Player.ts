@@ -26,6 +26,10 @@ export class Player extends Phaser.GameObjects.Sprite {
 
   private lastSettingsPollTime: number = 0;
 
+  // Stored gamepad event handlers for cleanup
+  private gamepadConnectedHandler?: (pad: Phaser.Input.Gamepad.Gamepad) => void;
+  private gamepadDisconnectedHandler?: (pad: Phaser.Input.Gamepad.Gamepad) => void;
+
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string = 'player') {
     super(scene, x, y, textureKey);
     scene.add.existing(this);
@@ -68,20 +72,24 @@ export class Player extends Phaser.GameObjects.Sprite {
       console.log('Player: No gamepads found on init. Total:', this.scene.input.gamepad.total);
     }
 
-    // Listen for new connections
-    this.scene.input.gamepad.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+    // Store handler references for cleanup
+    this.gamepadConnectedHandler = (pad: Phaser.Input.Gamepad.Gamepad) => {
       if (!this.gamepad) {
         this.gamepad = pad;
         console.log('Player: Gamepad connected event:', pad.id);
       }
-    });
+    };
 
-    this.scene.input.gamepad.on('disconnected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+    this.gamepadDisconnectedHandler = (pad: Phaser.Input.Gamepad.Gamepad) => {
       if (this.gamepad === pad) {
         this.gamepad = null;
         console.log('Player: Gamepad disconnected event:', pad.id);
       }
-    });
+    };
+
+    // Listen for new connections
+    this.scene.input.gamepad.on('connected', this.gamepadConnectedHandler);
+    this.scene.input.gamepad.on('disconnected', this.gamepadDisconnectedHandler);
   }
 
   /**
@@ -236,10 +244,14 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   destroy(fromScene?: boolean): void {
-    // Cleanup listeners
+    // Cleanup gamepad listeners
     if (this.scene && this.scene.input && this.scene.input.gamepad) {
-      this.scene.input.gamepad.off('connected');
-      this.scene.input.gamepad.off('disconnected');
+      if (this.gamepadConnectedHandler) {
+        this.scene.input.gamepad.off('connected', this.gamepadConnectedHandler);
+      }
+      if (this.gamepadDisconnectedHandler) {
+        this.scene.input.gamepad.off('disconnected', this.gamepadDisconnectedHandler);
+      }
     }
     super.destroy(fromScene);
   }
