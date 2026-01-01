@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GalagaGrid } from '../entities/GalagaGrid';
 import { Alien, AlienState } from '../entities/Alien';
 import { AttackPath, createRandomAttackPath } from './AttackPath';
+import { Random } from '../utils/RandomProvider';
 import {
   GALAGA_WAVE_MIN_INTERVAL,
   GALAGA_WAVE_MAX_INTERVAL,
@@ -119,7 +120,7 @@ export class WaveManager {
 
     const now = Date.now();
     const timeSinceLastWave = now - this.lastWaveTime;
-    const interval = Phaser.Math.Between(
+    const interval = Random.between(
       this.config.minInterval!,
       this.config.maxInterval!
     );
@@ -134,7 +135,7 @@ export class WaveManager {
    */
   private launchWave(): void {
     // 1. Determine wave size (random between MIN/MAX from config)
-    const waveSize = Phaser.Math.Between(
+    const waveSize = Random.between(
       this.config.minSize!,
       this.config.maxSize!
     );
@@ -189,7 +190,7 @@ export class WaveManager {
     const selected: Alien[] = [];
     const n = Math.min(count, available.length);
     for (let i = 0; i < n; i++) {
-      const randomIndex = Phaser.Math.Between(0, available.length - 1);
+      const randomIndex = Random.between(0, available.length - 1);
       selected.push(available.splice(randomIndex, 1)[0]);
     }
     return selected;

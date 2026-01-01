@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { DifficultyPreset, getDifficultyName } from '../types/DifficultyPreset';
 import { GameMode } from '../types/GameMode';
+import { LocalStorage } from '../utils/localStorage';
 
 /**
  * Difficulty Selection Scene
@@ -26,6 +27,7 @@ export class DifficultySelectScene extends Phaser.Scene {
   private prevDownPressed: boolean = false;
   private prevAPressed: boolean = false;
   private prevBPressed: boolean = false;
+  private fireButtonIndex: number = 0; // Fire/A button by default
   private backButtonIndex: number = 1; // B button by default
 
   // Keyboard keys (stored to properly clean up listeners)
@@ -44,7 +46,12 @@ export class DifficultySelectScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.cameras.main;
-    
+
+    // Load controller settings
+    const settings = LocalStorage.getSettings();
+    this.fireButtonIndex = settings.controllerFireButton ?? 0;
+    this.backButtonIndex = settings.controllerBackButton ?? 1;
+
     // Title
     this.add.text(width / 2, height * 0.15, 'SELECT DIFFICULTY', {
       fontSize: '48px',
@@ -127,7 +134,7 @@ export class DifficultySelectScene extends Phaser.Scene {
     });
 
     // Controller instructions
-    this.add.text(width / 2, height * 0.85, '↑↓ Navigate  •  A/Enter Select  •  B/ESC Back', {
+    this.add.text(width / 2, height * 0.85, '↑↓ Navigate  •  FIRE/Enter Select  •  BACK/ESC Back', {
       fontSize: '18px',
       fontFamily: 'Courier New',
       color: '#666666',
@@ -224,19 +231,19 @@ export class DifficultySelectScene extends Phaser.Scene {
         }
         this.prevDownPressed = isDown;
         
-        // A button to select
-        const isAPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed;
-        if (isAPressed && !this.prevAPressed) {
+        // Fire button to select (using configured button)
+        const isFirePressed = !!this.gamepad.buttons[this.fireButtonIndex]?.pressed;
+        if (isFirePressed && !this.prevAPressed) {
           this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
         }
-        this.prevAPressed = isAPressed;
-        
-        // B button to go back
-        const isBPressed = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
-        if (isBPressed && !this.prevBPressed) {
+        this.prevAPressed = isFirePressed;
+
+        // Back button to go back
+        const isBackPressed = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
+        if (isBackPressed && !this.prevBPressed) {
           this.scene.start('MenuScene');
         }
-        this.prevBPressed = isBPressed;
+        this.prevBPressed = isBackPressed;
       }
     }
   }

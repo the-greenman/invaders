@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../constants';
+import { Random } from '../utils/RandomProvider';
 
 /**
  * Attack Path System - Curves for Galaga Wave Attacks
@@ -101,11 +102,11 @@ export class DiveBombPath extends AttackPath {
     super.start(startX, startY);
 
     // Control point: offset from start for curve
-    this.controlX = startX + Phaser.Math.Between(-100, 100);
+    this.controlX = startX + Random.between(-100, 100);
     this.controlY = startY + 400;
 
     // Target: near bottom of screen
-    this.targetX = startX + Phaser.Math.Between(-100, 100);
+    this.targetX = startX + Random.between(-100, 100);
     this.targetY = GAME_HEIGHT + 50; // Just off screen
   }
 
@@ -266,11 +267,11 @@ export function createRandomAttackPath(): AttackPath {
   const weights = [0.3, 0.15, 0.25, 0.2, 0.1]; // Probability distribution
 
   // Weighted random selection
-  const random = Math.random();
+  const r = Random.random();
   let cumulative = 0;
   for (let i = 0; i < weights.length; i++) {
     cumulative += weights[i];
-    if (random < cumulative) {
+    if (r < cumulative) {
       return new patterns[i]();
     }
   }

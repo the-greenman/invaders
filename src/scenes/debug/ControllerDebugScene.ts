@@ -49,6 +49,7 @@ export class ControllerDebugScene extends Phaser.Scene {
   }
 
   create(): void {
+    console.log('[ControllerDebug] create() called');
     const { width } = this.cameras.main;
     this.add.text(width / 2, 50, 'CONTROLLER DEBUG', {
       fontSize: '28px',
@@ -95,12 +96,14 @@ export class ControllerDebugScene extends Phaser.Scene {
       this.pad = this.input.gamepad.gamepads.find(p => p && p.connected) || null;
       
       this.input.gamepad.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+        console.log(`[ControllerDebug] Gamepad connected: ${pad.id}`);
         this.pad = pad;
         this.infoText.setText(`Controller Connected: ${pad.id} | FIRE: B${this.fireButtonIndex}`);
       });
       
       this.input.gamepad.on('disconnected', (pad: Phaser.Input.Gamepad.Gamepad) => {
         if (this.pad === pad) {
+          console.log(`[ControllerDebug] Gamepad disconnected: ${pad.id}`);
           this.pad = null;
           this.infoText.setText('Controller Disconnected');
         }
@@ -115,6 +118,7 @@ export class ControllerDebugScene extends Phaser.Scene {
     }
 
     this.events.on('shutdown', () => {
+      console.log('[ControllerDebug] shutdown called');
       this.input.keyboard?.removeAllListeners();
       if (this.input.gamepad) {
         this.input.gamepad.removeAllListeners();
@@ -123,6 +127,7 @@ export class ControllerDebugScene extends Phaser.Scene {
   }
 
   private startExclusive(targetSceneKey: string): void {
+    console.log(`[ControllerDebug] Switching to ${targetSceneKey}`);
     const scenes = this.scene.manager.getScenes(true) as Phaser.Scene[];
     scenes.forEach((s: Phaser.Scene) => {
       const key = s.scene.key;
@@ -153,8 +158,13 @@ export class ControllerDebugScene extends Phaser.Scene {
 
   private updateActionHighlight(): void {
     this.actionTexts.forEach((t, i) => {
+      if (!t || !t.active) return; // Safety check
       const selected = i === this.selectedActionIndex;
-      t.setColor(selected ? '#ffff00' : '#ffffff');
+      try {
+        t.setColor(selected ? '#ffff00' : '#ffffff');
+      } catch (e) {
+        console.warn('[ControllerDebug] Failed to set color for action text', i, e);
+      }
     });
   }
 
