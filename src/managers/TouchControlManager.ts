@@ -2,6 +2,24 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../constants';
 import { Thumbpad } from '../ui/Thumbpad';
 
+type ThumbpadFactory = (scene: Phaser.Scene, x: number, y: number, radius: number) => Thumbpad;
+
+type TouchControlOptions = {
+  /**
+   * Force-enable or disable touch controls regardless of detection.
+   * Defaults to auto-detect.
+   */
+  forceEnable?: boolean;
+  /**
+   * Optional custom touch detector (useful for tests).
+   */
+  detectTouch?: () => boolean;
+  /**
+   * Custom thumbpad factory to inject fakes in tests.
+   */
+  thumbpadFactory?: ThumbpadFactory;
+};
+
 /**
  * Touch Control Manager
  *
@@ -11,6 +29,7 @@ import { Thumbpad } from '../ui/Thumbpad';
 export class TouchControlManager {
   private scene: Phaser.Scene;
   private enabled: boolean = false;
+  private readonly thumbpadFactory: ThumbpadFactory;
 
   // Touch input state
   private shootRequested: boolean = false;
@@ -23,13 +42,17 @@ export class TouchControlManager {
   // Button zones
   private fireZone?: Phaser.GameObjects.Zone;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, options: TouchControlOptions = {}) {
     this.scene = scene;
+    this.thumbpadFactory = options.thumbpadFactory ?? ((touchScene, x, y, radius) => new Thumbpad(touchScene, x, y, radius));
 
+    const detectTouch = options.detectTouch ?? (() => this.isTouchDevice());
+    const detectedTouch = detectTouch();
+    this.enabled = typeof options.forceEnable === 'boolean' ? options.forceEnable : detectedTouch;
     // Auto-enable on touch devices
-    this.enabled = this.isTouchDevice();
     console.log('[TouchControlManager] init', {
-      isTouchDevice: this.enabled,
+      isTouchDevice: detectedTouch,
+      enabled: this.enabled,
       maxTouchPoints: (navigator && typeof navigator.maxTouchPoints === 'number') ? navigator.maxTouchPoints : 'n/a',
       ontouchstartInWindow: typeof window !== 'undefined' && 'ontouchstart' in window
     });
@@ -64,7 +87,7 @@ export class TouchControlManager {
     // Left-handed thumbpad for movement
     const thumbpadX = 80;
     const thumbpadY = GAME_HEIGHT - 100;
-    this.thumbpad = new Thumbpad(this.scene, thumbpadX, thumbpadY, 60);
+    this.thumbpad = this.thumbpadFactory(this.scene, thumbpadX, thumbpadY, 60);
 
     // Fire button (right side)
     this.fireButton = this.scene.add.graphics();

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { LocalStorage } from '../../utils/localStorage';
 import { GameMode } from '../../types/GameMode';
+import { DifficultyPreset } from '../../types/DifficultyPreset';
 
 type DebugMenuItem = {
   label: string;
@@ -26,6 +27,8 @@ export class DebugMenuScene extends Phaser.Scene {
     { label: 'Abduction Line', scene: 'AbductionLineScene', shortcut: { display: '0', phaserKeydownEvent: 'keydown-ZERO' } },
     { label: 'Bomb Drop Test', scene: 'BombTestScene', shortcut: { display: 'B', phaserKeydownEvent: 'keydown-B' } },
     { label: 'Path Test (Attack Paths)', scene: 'PathTestScene', shortcut: { display: 'P', phaserKeydownEvent: 'keydown-P' } },
+    { label: 'Radar Intro (Narrative)', scene: 'RadarIntroScene', shortcut: { display: 'R', phaserKeydownEvent: 'keydown-R' } },
+    { label: 'Invaders → Galaga Transition', scene: 'GalagaSkyTransitionScene', shortcut: { display: 'G', phaserKeydownEvent: 'keydown-G' }, data: { fromMode: GameMode.SPACE_INVADERS, toMode: GameMode.GALAGA, level: 1, score: 0, useWebcam: false, lives: 3, difficulty: DifficultyPreset.MEDIUM, advanceLevel: false, showDefenderPreview: true } },
     // Balance Testing Quick Starts (7.2)
     { label: 'Start SI Level 1', scene: 'SpaceInvadersScene', shortcut: { display: 'Q', phaserKeydownEvent: 'keydown-Q' }, data: { level: 1, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },
     { label: 'Start SI Level 5', scene: 'SpaceInvadersScene', shortcut: { display: 'W', phaserKeydownEvent: 'keydown-W' }, data: { level: 5, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },

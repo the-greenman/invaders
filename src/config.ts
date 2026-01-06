@@ -7,6 +7,7 @@ import { WebcamScene } from './scenes/WebcamScene';
 import { SpaceInvadersScene } from './scenes/modes/SpaceInvadersScene';
 import { GalagaScene } from './scenes/modes/GalagaScene';
 import { ModeTransitionScene } from './scenes/ModeTransitionScene';
+import { RadarIntroScene } from './scenes/RadarIntroScene';
 import { SpaceInvadersIntroScene } from './scenes/SpaceInvadersIntroScene';
 import { GalagaIntroScene } from './scenes/GalagaIntroScene';
 import { GameOverScene } from './scenes/GameOverScene';
@@ -25,6 +26,7 @@ import { AbductionLineScene } from './scenes/debug/AbductionLineScene';
 import { BombTestScene } from './scenes/debug/BombTestScene';
 import { MobileDebugScene } from './scenes/debug/MobileDebugScene';
 import { PathTestScene } from './scenes/debug/PathTestScene';
+import { GalagaSkyTransitionScene } from './scenes/GalagaSkyTransitionScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -46,7 +48,9 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     PreloaderScene,
     MenuScene,
     DifficultySelectScene,
+    RadarIntroScene,
     ModeTransitionScene,
+    GalagaSkyTransitionScene,
     SpaceInvadersIntroScene,
     GalagaIntroScene,
     SpaceInvadersScene,

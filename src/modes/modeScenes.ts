@@ -2,7 +2,7 @@ import { GameMode } from '../types/GameMode';
 
 // Optional: specific transition scenes per (from -> to)
 const transitionSceneMap: Partial<Record<string, string>> = {
-  // Example: 'SPACE_INVADERS->GALAGA': 'SpaceToGalagaTransitionScene',
+  'SPACE_INVADERS->GALAGA': 'GalagaSkyTransitionScene'
 };
 
 // Intro scene per target mode
@@ -12,7 +12,9 @@ const modeIntroSceneMap: Partial<Record<GameMode, string>> = {
 };
 
 export function getTransitionSceneKey(fromMode: GameMode, toMode: GameMode): string | null {
-  const key = `${fromMode}->${toMode}`;
+  const fromKey = GameMode[fromMode];
+  const toKey = GameMode[toMode];
+  const key = `${fromKey}->${toKey}`;
   return transitionSceneMap[key] || null;
 }
 

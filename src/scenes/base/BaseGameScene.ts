@@ -14,6 +14,7 @@ import { LocalStorage } from '../../utils/localStorage';
 import { GameMode, getGameModeName } from '../../types/GameMode';
 import { DifficultyPreset } from '../../types/DifficultyPreset';
 import { GAME_WIDTH, GAME_HEIGHT, SHIELD_COUNT, PLAYER_CORE_RADIUS, PLAYER_HEIGHT, PLAYER_WIDTH, ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, ABDUCTION_THRESHOLD_Y, AUTO_SWITCH_INTERVAL, ENABLE_MANUAL_MODE_SWITCH } from '../../constants';
+import { getTransitionSceneKey } from '../../modes/modeScenes';
 
 /**
  * Base Game Scene - Abstract class for all game modes
@@ -194,6 +195,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
     // 4. Create player (uses textures from step 3)
     console.log('[BaseGameScene] Creating player...');
     this.createPlayer();
+    this.attachTouchControlsToPlayer();
 
     // 5. Create enemies (uses textures from step 3)
     console.log('[BaseGameScene] Creating enemies...');
@@ -463,10 +465,15 @@ export abstract class BaseGameScene extends Phaser.Scene {
       this.scoreManager.addPoints(this.score);
     }
 
-    // Set touch controls on player if available
-    if (this.player && this.touchControlManager) {
-      this.player.setTouchControls(this.touchControlManager);
-    }
+    this.attachTouchControlsToPlayer();
+  }
+
+  /**
+   * Attach touch controls to the player once both exist.
+   */
+  protected attachTouchControlsToPlayer(): void {
+    if (!this.player || !this.touchControlManager) return;
+    this.player.setTouchControls(this.touchControlManager);
   }
 
   protected setupInput(): void {
@@ -810,7 +817,9 @@ export abstract class BaseGameScene extends Phaser.Scene {
     // Reset level counter when switching modes
     this.levelsSinceLastSwitch = 0;
     
-    this.scene.start('ModeTransitionScene', {
+    const transitionSceneKey = getTransitionSceneKey(this.currentGameMode, newMode) ?? 'ModeTransitionScene';
+
+    this.scene.start(transitionSceneKey, {
       fromMode: this.currentGameMode,
       toMode: newMode,
       level: this.level,
@@ -827,7 +836,8 @@ export abstract class BaseGameScene extends Phaser.Scene {
       return;
     }
     console.log(`[${this.constructor.name}] Force switch to ${getGameModeName(mode)}`);
-    this.scene.start('ModeTransitionScene', {
+    const transitionSceneKey = getTransitionSceneKey(this.currentGameMode, mode) ?? 'ModeTransitionScene';
+    this.scene.start(transitionSceneKey, {
       fromMode: this.currentGameMode,
       toMode: mode,
       level: this.level,

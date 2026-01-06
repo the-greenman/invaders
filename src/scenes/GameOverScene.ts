@@ -314,7 +314,10 @@ export class GameOverScene extends Phaser.Scene {
 
   private restartGame(): void {
     // Restart game from webcam scene to capture fresh face
-    this.scene.start('WebcamScene');
+    this.scene.start('WebcamScene', {
+      difficulty: this.difficulty,
+      skipIntro: true
+    });
   }
 
   private returnToMenu(): void {

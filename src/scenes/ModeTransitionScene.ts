@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GameMode, getGameModeName } from '../types/GameMode';
 import { DifficultyPreset } from '../types/DifficultyPreset';
 
-interface ModeTransitionData {
+export interface ModeTransitionData {
   fromMode: GameMode;
   toMode: GameMode;
   level: number;
@@ -11,6 +11,7 @@ interface ModeTransitionData {
   lives: number;
   difficulty?: DifficultyPreset;
   advanceLevel?: boolean; // if true, advance to next level before switching
+  showDefenderPreview?: boolean;
 }
 
 export class ModeTransitionScene extends Phaser.Scene {

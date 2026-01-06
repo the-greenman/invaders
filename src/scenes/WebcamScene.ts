@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { FaceManager } from '../managers/FaceManager';
 import { LocalStorage } from '../utils/localStorage';
+import { GameMode } from '../types/GameMode';
+import { DifficultyPreset } from '../types/DifficultyPreset';
 
 /**
  * Webcam Scene
@@ -30,18 +32,25 @@ export class WebcamScene extends Phaser.Scene {
   private prevStartPressed: boolean = false;
   private fireButtonIndex!: number;
   private startButtonIndex!: number;
-  private difficulty: string = 'MEDIUM';
+  private difficulty: DifficultyPreset = DifficultyPreset.MEDIUM;
+  private skipIntro: boolean = false;
 
   constructor() {
     super({ key: 'WebcamScene' });
   }
 
-  init(data: { difficulty?: string }): void {
+  init(data: { difficulty?: DifficultyPreset; skipIntro?: boolean } = {}): void {
     // Receive difficulty from DifficultySelectScene
     if (data.difficulty) {
       this.difficulty = data.difficulty;
       console.log('[WebcamScene] Received difficulty:', this.difficulty);
+    } else {
+      const stored = localStorage.getItem('gameDifficulty');
+      if (stored && Object.values(DifficultyPreset).includes(stored as DifficultyPreset)) {
+        this.difficulty = stored as DifficultyPreset;
+      }
     }
+    this.skipIntro = !!data.skipIntro;
   }
 
   preload(): void {
@@ -250,12 +259,22 @@ export class WebcamScene extends Phaser.Scene {
   private startGameWithWebcam(): void {
     // Start game with webcam faces and difficulty
     // Default to Space Invaders mode for webcam games
-    this.scene.start('SpaceInvadersScene', { 
-      level: 1, 
-      score: 0, 
+    const payload = {
+      level: 1,
+      score: 0,
       useWebcam: true,
       difficulty: this.difficulty,
-      startMode: 'SPACE_INVADERS'
+      startMode: GameMode.SPACE_INVADERS
+    };
+
+    if (this.skipIntro) {
+      this.scene.start('SpaceInvadersScene', payload);
+      return;
+    }
+
+    this.scene.start('RadarIntroScene', {
+      nextScene: 'SpaceInvadersScene',
+      payload
     });
   }
 

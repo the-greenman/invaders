@@ -1,38 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TouchControlManager } from '../../../src/managers/TouchControlManager';
-import { Thumbpad } from '../../../src/ui/Thumbpad';
-
-// Hoist the mock instance so it's available in the mock factory
-const { mockThumbpadInstance } = vi.hoisted(() => {
-  return {
-    mockThumbpadInstance: {
-      getHorizontalAxis: vi.fn().mockReturnValue(0),
-      getVerticalAxis: vi.fn().mockReturnValue(0),
-      setVisible: vi.fn(),
-      destroy: vi.fn()
-    }
-  };
-});
-
-// Mock dependencies
-vi.mock('../../../src/ui/Thumbpad', () => {
-  return {
-    Thumbpad: vi.fn().mockImplementation(function() {
-      return mockThumbpadInstance;
-    })
-  };
-});
 
 describe('TouchControlManager', () => {
   let manager: TouchControlManager;
   let scene: any;
+  let mockThumbpadInstance: any;
+  let thumbpadFactory: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    // Reset mock return values
-    mockThumbpadInstance.getHorizontalAxis.mockReturnValue(0);
-    mockThumbpadInstance.getVerticalAxis.mockReturnValue(0);
+
+    mockThumbpadInstance = {
+      getHorizontalAxis: vi.fn().mockReturnValue(0),
+      getVerticalAxis: vi.fn().mockReturnValue(0),
+      setVisible: vi.fn(),
+      destroy: vi.fn()
+    };
+
+    thumbpadFactory = vi.fn().mockReturnValue(mockThumbpadInstance);
 
     scene = {
       input: {
@@ -67,20 +52,17 @@ describe('TouchControlManager', () => {
       }
     };
 
-    // Force touch device detection
-    // We can't easily mock private methods or navigator properties in jsdom sometimes,
-    // but the constructor calls `isTouchDevice()`.
-    // We'll mock the prototype method to force true
-    vi.spyOn(TouchControlManager.prototype as any, 'isTouchDevice').mockReturnValue(true);
-
-    manager = new TouchControlManager(scene);
+    manager = new TouchControlManager(scene, {
+      forceEnable: true,
+      thumbpadFactory
+    });
   });
 
   describe('Initialization', () => {
     it('should initialize controls if touch device', () => {
       expect(manager.isEnabled()).toBe(true);
       expect(scene.input.addPointer).toHaveBeenCalledWith(4);
-      expect(Thumbpad).toHaveBeenCalled();
+      expect(thumbpadFactory).toHaveBeenCalled();
       expect(scene.add.graphics).toHaveBeenCalled(); // Fire button
     });
   });
