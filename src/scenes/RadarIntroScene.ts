@@ -71,7 +71,7 @@ export class RadarIntroScene extends Phaser.Scene {
       color: '#00ff00'
     });
 
-    this.infoText = this.add.text(width / 2, height - 28, 'Tap or press SPACE/ENTER to initialize sonar audio', {
+    this.infoText = this.add.text(width / 2, height - 28, 'Tap or press SPACE/ENTER/ANY KEY to initialize sonar audio', {
       fontFamily: 'Courier New',
       fontSize: '14px',
       color: '#006600'
@@ -81,7 +81,7 @@ export class RadarIntroScene extends Phaser.Scene {
     this.time.delayedCall(3800, () => {
       this.readyToLeave = true;
       if (this.infoText) {
-        this.infoText.setText('Tap or press SPACE/ENTER/A/Start to continue');
+        this.infoText.setText('Tap or press any key/A/Start to continue');
         this.infoText.setColor('#00ff00');
       }
     });
@@ -98,6 +98,8 @@ export class RadarIntroScene extends Phaser.Scene {
     this.input.on('pointerdown', attemptAdvance);
     this.input.keyboard?.on('keydown-SPACE', attemptAdvance);
     this.input.keyboard?.on('keydown-ENTER', attemptAdvance);
+    // Fallback: any key to advance
+    this.input.keyboard?.on('keydown', attemptAdvance);
     this.input.gamepad?.on('down', attemptAdvance);
 
     // Debug overlay toggle
