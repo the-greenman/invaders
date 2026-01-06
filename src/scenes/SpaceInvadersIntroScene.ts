@@ -67,6 +67,7 @@ export class SpaceInvadersIntroScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown-SPACE', advance);
     this.input.keyboard?.once('keydown-ENTER', advance);
     this.input.gamepad?.once('down', advance);
+    this.time.delayedCall(10000, advance);
   }
 
   private startNext(): void {

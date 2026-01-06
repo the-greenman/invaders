@@ -101,6 +101,7 @@ export class RadarIntroScene extends Phaser.Scene {
     // Fallback: any key to advance
     this.input.keyboard?.on('keydown', attemptAdvance);
     this.input.gamepad?.on('down', attemptAdvance);
+    this.time.delayedCall(10000, attemptAdvance);
 
     // Debug overlay toggle
     this.input.keyboard?.on('keydown-D', () => {
