@@ -38,6 +38,7 @@ export class GameOverScene extends Phaser.Scene {
   private fireButtonIndex!: number;
   private startButtonIndex!: number;
   private backButtonIndex!: number;
+  private autoReturnTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super({ key: 'GameOverScene' });
@@ -65,6 +66,7 @@ export class GameOverScene extends Phaser.Scene {
     this.createUI();
     this.setupInput();
     this.setupAnimations();
+    this.autoReturnTimer = this.time.delayedCall(30000, () => this.returnToMenu());
     
     // Initial gamepad check
     if (this.input.gamepad && this.input.gamepad.total > 0) {
@@ -313,6 +315,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
+    this.autoReturnTimer?.remove(false);
     // Restart game from webcam scene to capture fresh face
     this.scene.start('WebcamScene', {
       difficulty: this.difficulty,
@@ -321,11 +324,14 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private returnToMenu(): void {
+    this.autoReturnTimer?.remove(false);
     // Return to main menu
     this.scene.start('MenuScene');
   }
 
   private cleanup(): void {
+    this.autoReturnTimer?.remove(false);
+    this.autoReturnTimer = undefined;
     // Clean up keyboard listeners
     this.input.keyboard?.removeAllKeys();
     
