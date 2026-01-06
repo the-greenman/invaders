@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ModeTransitionData } from './ModeTransitionScene';
 import { GameMode } from '../types/GameMode';
 import { resumeGameAudio } from '../utils/audio';
+import { GAME_WIDTH, GAME_HEIGHT } from '../constants';
 
 type Cloud = {
   sprite: Phaser.GameObjects.Ellipse;
@@ -13,6 +14,7 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
   private dataIn!: ModeTransitionData;
   private clouds: Cloud[] = [];
   private started: boolean = false;
+  private horizon?: Phaser.GameObjects.Line;
 
   constructor() {
     super({ key: 'GalagaSkyTransitionScene' });
@@ -39,17 +41,17 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
 
     const subtitle = this.add.text(width / 2, height * 0.43, 'Engines burning hot — climbing above the clouds.', {
       fontFamily: 'Courier New',
-      fontSize: '18px',
+      fontSize: '20px',
       color: '#aaddff'
     }).setOrigin(0.5);
 
     const detail = this.add.text(
       width / 2,
       height * 0.55,
-      'Phew, you got through those aliens and blast into the sky.\nOh no, there are more! Get ready!',
+      'Phew, you blast past the invaders.\nBut there are more waiting in the clouds!',
       {
         fontFamily: 'Courier New',
-        fontSize: '16px',
+        fontSize: '20px',
         color: '#cceeef',
         align: 'center'
       }
@@ -58,16 +60,18 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
     this.tweens.add({ targets: [title, subtitle, detail], alpha: { from: 0, to: 1 }, duration: 500 });
 
     const horizonY = height * 0.75;
-    this.add.line(0, 0, 0, horizonY, width, horizonY, 0x334466, 0.6).setOrigin(0, 0);
-    if (this.dataIn.showDefenderPreview) {
-      this.spawnDefender(horizonY);
-    }
+    this.horizon = this.add.line(0, 0, 0, horizonY, width, horizonY, 0x334466, 0.8).setOrigin(0, 0);
+    this.tweens.add({
+      targets: this.horizon,
+      y: horizonY + 80,
+      alpha: { from: 0.8, to: 0.4 },
+      duration: 2200,
+      ease: 'Sine.easeIn'
+    });
 
-    this.add.text(width / 2, height * 0.6, 'More invaders... get ready!', {
-      fontFamily: 'Courier New',
-      fontSize: '18px',
-      color: '#ffeeaa'
-    }).setOrigin(0.5);
+    if (this.dataIn.showDefenderPreview) {
+      this.spawnDefender();
+    }
 
     const prompt = this.add.text(width / 2, height * 0.68, 'Press SPACE/ENTER, A/Start, or tap to continue', {
       fontFamily: 'Courier New',
@@ -101,15 +105,15 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
     });
   }
 
-  private spawnDefender(horizonY: number): void {
+  private spawnDefender(): void {
     const { width, height } = this.scale;
     const textureKey = this.textures.exists('player') ? 'player' : undefined;
-    const x = width / 2;
-    const startY = horizonY + 40;
-    const targetY = height * 0.35;
+    const x = GAME_WIDTH / 2;
+    const startY = GAME_HEIGHT - 50;
+    const targetY = height * 0.3;
 
     const ship = textureKey
-      ? this.add.sprite(x, startY, textureKey).setScale(0.8)
+      ? this.add.sprite(x, startY, textureKey).setScale(1)
       : this.add.triangle(x, startY, 0, 40, 40, -40, -40, -40, 0xffffff, 0.5);
 
     this.tweens.add({
@@ -146,7 +150,7 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
 
     return {
       sprite,
-      speed: Phaser.Math.FloatBetween(20, 55),
+      speed: Phaser.Math.FloatBetween(-40, -20), // move downward to simulate climbing
       drift: Phaser.Math.FloatBetween(-10, 12)
     };
   }
