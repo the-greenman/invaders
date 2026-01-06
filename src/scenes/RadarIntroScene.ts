@@ -35,6 +35,9 @@ export class RadarIntroScene extends Phaser.Scene {
   private lastPing: number = 0;
   private debugEnabled: boolean = false;
   private debugText?: Phaser.GameObjects.Text;
+  private attemptAdvanceHandler?: () => void;
+  private readyTimer?: Phaser.Time.TimerEvent;
+  private autoAdvanceTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super({ key: 'RadarIntroScene' });
@@ -45,6 +48,8 @@ export class RadarIntroScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.resetState();
+
     const { width, height } = this.scale;
     this.centerX = width / 2;
     this.centerY = height / 2;
@@ -78,7 +83,7 @@ export class RadarIntroScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.time.delayedCall(900, () => this.spawnFormation());
-    this.time.delayedCall(3800, () => {
+    this.readyTimer = this.time.delayedCall(3800, () => {
       this.readyToLeave = true;
       if (this.infoText) {
         this.infoText.setText('Tap or press any key/A/Start to continue');
@@ -89,7 +94,7 @@ export class RadarIntroScene extends Phaser.Scene {
       }
     });
 
-    const attemptAdvance = () => {
+    this.attemptAdvanceHandler = () => {
       this.userInteracted = true;
       this.ensureAudioContext();
       resumeGameAudio(this);
@@ -98,13 +103,13 @@ export class RadarIntroScene extends Phaser.Scene {
       }
     };
 
-    this.input.on('pointerdown', attemptAdvance);
-    this.input.keyboard?.on('keydown-SPACE', attemptAdvance);
-    this.input.keyboard?.on('keydown-ENTER', attemptAdvance);
+    this.input.on('pointerdown', this.attemptAdvanceHandler);
+    this.input.keyboard?.on('keydown-SPACE', this.attemptAdvanceHandler);
+    this.input.keyboard?.on('keydown-ENTER', this.attemptAdvanceHandler);
     // Fallback: any key to advance
-    this.input.keyboard?.on('keydown', attemptAdvance);
-    this.input.gamepad?.on('down', attemptAdvance);
-    this.time.delayedCall(10000, () => {
+    this.input.keyboard?.on('keydown', this.attemptAdvanceHandler);
+    this.input.gamepad?.on('down', this.attemptAdvanceHandler);
+    this.autoAdvanceTimer = this.time.delayedCall(10000, () => {
       this.readyToLeave = true;
       this.startNext();
     });
@@ -133,6 +138,32 @@ export class RadarIntroScene extends Phaser.Scene {
     this.drawBeam();
     this.updateAliens(time);
     this.updateDebug();
+  }
+
+  private resetState(): void {
+    this.aliens = [];
+    this.readyToLeave = false;
+    this.started = false;
+    this.userInteracted = false;
+    this.lastPing = 0;
+    this.attemptAdvanceHandler = undefined;
+    this.readyTimer?.remove(false);
+    this.autoAdvanceTimer?.remove(false);
+    this.readyTimer = undefined;
+    this.autoAdvanceTimer = undefined;
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanup, this);
+  }
+
+  private cleanup(): void {
+    if (this.attemptAdvanceHandler) {
+      this.input.off('pointerdown', this.attemptAdvanceHandler);
+      this.input.keyboard?.off('keydown-SPACE', this.attemptAdvanceHandler);
+      this.input.keyboard?.off('keydown-ENTER', this.attemptAdvanceHandler);
+      this.input.keyboard?.off('keydown', this.attemptAdvanceHandler);
+      this.input.gamepad?.off('down', this.attemptAdvanceHandler);
+    }
+    this.readyTimer?.remove(false);
+    this.autoAdvanceTimer?.remove(false);
   }
 
   private drawBackground(): void {
