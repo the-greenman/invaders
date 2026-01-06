@@ -53,6 +53,7 @@ export class MenuScene extends Phaser.Scene {
   private crawlRT: Phaser.GameObjects.RenderTexture | null = null;
   private crawlPlane: Phaser.GameObjects.Mesh | null = null;
   private crawlContentHeight: number = 0;
+  private closeEncountersTimer?: Phaser.Time.TimerEvent;
 
   // Stored event handlers for cleanup
   private keyUpHandler?: () => void;
@@ -97,6 +98,9 @@ export class MenuScene extends Phaser.Scene {
     this.events.on('shutdown', () => {
       this.cleanup();
     });
+
+    // Ambient Close Encounters chime at random intervals while idling on menu
+    this.scheduleCloseEncountersChime();
 
     // Expose crawl controls to console
     (window as any).crawl = {
@@ -686,6 +690,9 @@ export class MenuScene extends Phaser.Scene {
       this.input.gamepad?.off('connected', this.gamepadConnectedHandler);
     }
 
+    this.closeEncountersTimer?.remove(false);
+    this.closeEncountersTimer = undefined;
+
     // Clear references
     this.buttons = [];
     this.titleText = null;
@@ -697,5 +704,48 @@ export class MenuScene extends Phaser.Scene {
     this.crawlText = null;
     this.bgAliens.forEach(a => a.sprite.destroy());
     this.bgAliens = [];
+  }
+
+  // --- Ambient audio ---
+
+  private scheduleCloseEncountersChime(): void {
+    const delay = Phaser.Math.Between(60_000, 600_000); // 1 to 10 minutes
+    this.closeEncountersTimer?.remove(false);
+    this.closeEncountersTimer = this.time.delayedCall(delay, () => {
+      this.playCloseEncountersChime();
+      this.scheduleCloseEncountersChime();
+    });
+  }
+
+  private playCloseEncountersChime(): void {
+    resumeGameAudio(this);
+    const ctx = (this.sound as any)?.context as AudioContext | undefined;
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {/* ignore */});
+    }
+
+    const notes = [783.99, 880, 698.46, 392, 523.25]; // classic 5-tone motif (approx G5 A5 F5 G4 C5)
+    const now = ctx.currentTime;
+    const noteDuration = 0.35;
+    const gap = 0.05;
+
+    notes.forEach((freq, i) => {
+      const start = now + i * (noteDuration + gap);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.12, start + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + noteDuration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(start);
+      osc.stop(start + noteDuration + 0.1);
+    });
   }
 }

@@ -84,6 +84,9 @@ export class RadarIntroScene extends Phaser.Scene {
         this.infoText.setText('Tap or press any key/A/Start to continue');
         this.infoText.setColor('#00ff00');
       }
+      if (this.userInteracted && !this.started) {
+        this.startNext();
+      }
     });
 
     const attemptAdvance = () => {
@@ -101,7 +104,10 @@ export class RadarIntroScene extends Phaser.Scene {
     // Fallback: any key to advance
     this.input.keyboard?.on('keydown', attemptAdvance);
     this.input.gamepad?.on('down', attemptAdvance);
-    this.time.delayedCall(10000, attemptAdvance);
+    this.time.delayedCall(10000, () => {
+      this.readyToLeave = true;
+      this.startNext();
+    });
 
     // Debug overlay toggle
     this.input.keyboard?.on('keydown-D', () => {
