@@ -48,6 +48,8 @@ export class RadarIntroScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Clean up any existing event listeners first
+    this.cleanupEventListeners();
     this.resetState();
 
     const { width, height } = this.scale;
@@ -146,24 +148,27 @@ export class RadarIntroScene extends Phaser.Scene {
     this.started = false;
     this.userInteracted = false;
     this.lastPing = 0;
-    this.attemptAdvanceHandler = undefined;
     this.readyTimer?.remove(false);
     this.autoAdvanceTimer?.remove(false);
     this.readyTimer = undefined;
     this.autoAdvanceTimer = undefined;
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanup, this);
   }
 
-  private cleanup(): void {
+  private cleanupEventListeners(): void {
     if (this.attemptAdvanceHandler) {
       this.input.off('pointerdown', this.attemptAdvanceHandler);
       this.input.keyboard?.off('keydown-SPACE', this.attemptAdvanceHandler);
       this.input.keyboard?.off('keydown-ENTER', this.attemptAdvanceHandler);
       this.input.keyboard?.off('keydown', this.attemptAdvanceHandler);
       this.input.gamepad?.off('down', this.attemptAdvanceHandler);
+      this.attemptAdvanceHandler = undefined;
     }
     this.readyTimer?.remove(false);
     this.autoAdvanceTimer?.remove(false);
+  }
+
+  shutdown(): void {
+    this.cleanupEventListeners();
   }
 
   private drawBackground(): void {
