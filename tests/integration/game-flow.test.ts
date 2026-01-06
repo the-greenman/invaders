@@ -81,6 +81,9 @@ describe('Integration: Game Flow', () => {
     (gameOverScene as any).scene = { start: gameOverStartSpy };
     (gameOverScene as any).restartGame();
 
-    expect(gameOverStartSpy).toHaveBeenCalledWith('WebcamScene');
+    expect(gameOverStartSpy).toHaveBeenCalledWith(
+      'WebcamScene',
+      expect.objectContaining({ skipIntro: true })
+    );
   });
 });
