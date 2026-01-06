@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GameMode, getGameModeName } from '../types/GameMode';
+import { resumeGameAudio } from '../utils/audio';
 
 interface ModeIntroData {
   toMode: GameMode;
@@ -43,11 +44,29 @@ export class SpaceInvadersIntroScene extends Phaser.Scene {
       }
     ).setOrigin(0.5);
 
+    const prompt = this.add.text(this.scale.width / 2, this.scale.height / 2 + 70,
+      'Press SPACE/ENTER or tap to continue',
+      {
+        fontSize: '16px',
+        fontFamily: 'Courier New',
+        color: '#888888',
+        align: 'center'
+      }
+    ).setOrigin(0.5);
+
     title.setAlpha(0);
     story.setAlpha(0);
-    this.tweens.add({ targets: [title, story], alpha: 1, duration: 400, ease: 'Sine.easeIn' });
+    prompt.setAlpha(0);
+    this.tweens.add({ targets: [title, story, prompt], alpha: 1, duration: 400, ease: 'Sine.easeIn' });
 
-    this.time.delayedCall(1500, () => this.startNext(), undefined, this);
+    const advance = () => {
+      resumeGameAudio(this);
+      this.startNext();
+    };
+    this.input.once('pointerdown', advance);
+    this.input.keyboard?.once('keydown-SPACE', advance);
+    this.input.keyboard?.once('keydown-ENTER', advance);
+    this.input.gamepad?.once('down', advance);
   }
 
   private startNext(): void {

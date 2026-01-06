@@ -3,6 +3,7 @@ import { DifficultyPreset, getDifficultyName } from '../types/DifficultyPreset';
 import { GameMode } from '../types/GameMode';
 import { LocalStorage } from '../utils/localStorage';
 import { KonamiCode, KonamiInput } from '../utils/KonamiCode';
+import { resumeGameAudio } from '../utils/audio';
 
 /**
  * Difficulty Selection Scene
@@ -217,6 +218,7 @@ export class DifficultySelectScene extends Phaser.Scene {
   private selectAndStartGame(difficulty: DifficultyPreset, index: number): void {
     this.selectedDifficulty = difficulty;
     this.selectedIndex = index;
+    resumeGameAudio(this);
     
     // Save difficulty to localStorage
     localStorage.setItem('gameDifficulty', this.selectedDifficulty);

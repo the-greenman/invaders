@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GameMode, getGameModeName } from '../types/GameMode';
 import { DifficultyPreset } from '../types/DifficultyPreset';
+import { resumeGameAudio } from '../utils/audio';
 
 export interface ModeTransitionData {
   fromMode: GameMode;
@@ -48,13 +49,30 @@ export class ModeTransitionScene extends Phaser.Scene {
       }
     ).setOrigin(0.5);
 
-    // Small fade in/out effect
+    const prompt = this.add.text(this.scale.width / 2, this.scale.height / 2 + 70,
+      'Press SPACE/ENTER or tap to continue',
+      {
+        fontSize: '16px',
+        fontFamily: 'Courier New',
+        color: '#888888',
+        align: 'center'
+      }
+    ).setOrigin(0.5);
+
+    // Small fade in effect
     title.setAlpha(0);
     story.setAlpha(0);
-    this.tweens.add({ targets: [title, story], alpha: 1, duration: 400, ease: 'Sine.easeIn' });
+    prompt.setAlpha(0);
+    this.tweens.add({ targets: [title, story, prompt], alpha: 1, duration: 400, ease: 'Sine.easeIn' });
 
-    // After short delay, start GameScene in the new mode
-    this.time.delayedCall(1800, () => this.startNext(), undefined, this);
+    const advance = () => {
+      resumeGameAudio(this);
+      this.startNext();
+    };
+    this.input.once('pointerdown', advance);
+    this.input.keyboard?.once('keydown-SPACE', advance);
+    this.input.keyboard?.once('keydown-ENTER', advance);
+    this.input.gamepad?.once('down', advance);
   }
 
   private startNext(): void {

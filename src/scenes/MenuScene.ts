@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { LocalStorage } from '../utils/localStorage';
+import { resumeGameAudio } from '../utils/audio';
 import { FaceManager } from '../managers/FaceManager';
 import { ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, MAX_STORED_FACES } from '../constants';
 
@@ -352,6 +353,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private openWebcam(): void {
+    resumeGameAudio(this);
     // First go to difficulty selection, which will then start the game
     this.scene.start('DifficultySelectScene');
   }

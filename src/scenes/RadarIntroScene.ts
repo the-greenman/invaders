@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { resumeGameAudio } from '../utils/audio';
 
 type RadarIntroData = {
   nextScene?: string;
@@ -70,7 +71,7 @@ export class RadarIntroScene extends Phaser.Scene {
       color: '#00ff00'
     });
 
-    this.infoText = this.add.text(width / 2, height - 28, 'Tap or press SPACE/ENTER to initialize sonar', {
+    this.infoText = this.add.text(width / 2, height - 28, 'Tap or press SPACE/ENTER to initialize sonar audio', {
       fontFamily: 'Courier New',
       fontSize: '14px',
       color: '#006600'
@@ -79,28 +80,25 @@ export class RadarIntroScene extends Phaser.Scene {
     this.time.delayedCall(900, () => this.spawnFormation());
     this.time.delayedCall(3800, () => {
       this.readyToLeave = true;
-      if (this.userInteracted) {
-        this.startNext();
+      if (this.infoText) {
+        this.infoText.setText('Tap or press SPACE/ENTER/A/Start to continue');
+        this.infoText.setColor('#00ff00');
       }
     });
-    this.time.delayedCall(6500, () => this.startNext());
 
-    this.input.once('pointerdown', () => {
+    const attemptAdvance = () => {
       this.userInteracted = true;
       this.ensureAudioContext();
+      resumeGameAudio(this);
       if (this.readyToLeave) {
         this.startNext();
       }
-    });
+    };
 
-    this.input.keyboard?.once('keydown-SPACE', () => {
-      this.userInteracted = true;
-      if (this.readyToLeave) this.startNext();
-    });
-    this.input.keyboard?.once('keydown-ENTER', () => {
-      this.userInteracted = true;
-      if (this.readyToLeave) this.startNext();
-    });
+    this.input.on('pointerdown', attemptAdvance);
+    this.input.keyboard?.on('keydown-SPACE', attemptAdvance);
+    this.input.keyboard?.on('keydown-ENTER', attemptAdvance);
+    this.input.gamepad?.on('down', attemptAdvance);
 
     // Debug overlay toggle
     this.input.keyboard?.on('keydown-D', () => {
@@ -266,6 +264,19 @@ export class RadarIntroScene extends Phaser.Scene {
   }
 
   private ensureAudioContext(): void {
+    // Prefer Phaser's shared audio context if available
+    try {
+      const phaserCtx = (this.sound as any)?.context as AudioContext | undefined;
+      if (phaserCtx) {
+        if (phaserCtx.state === 'suspended') {
+          phaserCtx.resume().catch(() => {/* ignore */});
+        }
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
     if (this.audioCtx || typeof window === 'undefined') return;
     const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!Ctor) return;
@@ -280,26 +291,30 @@ export class RadarIntroScene extends Phaser.Scene {
   }
 
   private playPing(distanceRatio: number): void {
-    if (!this.audioCtx) return;
+    const ctx = (this.sound as any)?.context as AudioContext | undefined || this.audioCtx;
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {/* ignore */});
+    }
 
     const baseFreq = 420;
     const freq = baseFreq + (1 - distanceRatio) * 520;
 
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-    gain.gain.setValueAtTime(0, this.audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.08, this.audioCtx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
 
     osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
+    gain.connect(ctx.destination);
 
     osc.start();
-    osc.stop(this.audioCtx.currentTime + 0.2);
+    osc.stop(ctx.currentTime + 0.2);
   }
 
   private startNext(): void {

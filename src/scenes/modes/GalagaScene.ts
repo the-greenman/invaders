@@ -4,6 +4,7 @@ import { GalagaGrid } from '../../entities/GalagaGrid';
 import { Alien, AlienState } from '../../entities/Alien';
 import { GAME_WIDTH, GAME_HEIGHT, PLAYER_HEIGHT, AUTO_SWITCH_INTERVAL } from '../../constants';
 import { GameMode } from '../../types/GameMode';
+import { CountdownOverlay } from '../../ui/CountdownOverlay';
 
 /**
  * Galaga Scene
@@ -23,9 +24,15 @@ export class GalagaScene extends BaseGameScene {
   private clouds: Phaser.GameObjects.Graphics[] = [];
   private _hasCheckedInitialConditions: boolean = false;
   private _aliensReady: boolean = false;
+  private startCountdown?: CountdownOverlay;
 
   constructor() {
     super('GalagaScene');
+  }
+
+  async create(): Promise<void> {
+    await super.create();
+    this.beginStartCountdown();
   }
 
   // =========================================================================
@@ -276,6 +283,9 @@ export class GalagaScene extends BaseGameScene {
     // Reset aliens ready flag
     this._aliensReady = false;
 
+    this.startCountdown?.destroy();
+    this.startCountdown = undefined;
+
     // Clear alien grid
     if (this.alienGrid) {
       this.alienGrid.destroy();
@@ -295,6 +305,18 @@ export class GalagaScene extends BaseGameScene {
   // =========================================================================
   // GALAGA-SPECIFIC METHODS
   // =========================================================================
+
+  private beginStartCountdown(): void {
+    // Pause gameplay update loop until countdown completes
+    this.gameActive = false;
+    this.startCountdown = new CountdownOverlay(this, {
+      start: 3,
+      label: 'More invaders... get ready!',
+      onComplete: () => {
+        this.gameActive = true;
+      }
+    });
+  }
 
   private updateWaveCountDisplay(): void {
     if (this.waveCountText && this.waveCountText.active && this.alienGrid) {

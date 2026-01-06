@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { ModeTransitionData } from './ModeTransitionScene';
-import { GameMode, getGameModeName } from '../types/GameMode';
-import { DifficultyPreset } from '../types/DifficultyPreset';
+import { GameMode } from '../types/GameMode';
+import { resumeGameAudio } from '../utils/audio';
 
 type Cloud = {
   sprite: Phaser.GameObjects.Ellipse;
@@ -13,8 +13,6 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
   private dataIn!: ModeTransitionData;
   private clouds: Cloud[] = [];
   private started: boolean = false;
-  private countdownText?: Phaser.GameObjects.Text;
-  private countdownEvent?: Phaser.Time.TimerEvent;
 
   constructor() {
     super({ key: 'GalagaSkyTransitionScene' });
@@ -33,7 +31,7 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
       this.clouds.push(this.createCloud(Math.random() * width, Math.random() * height));
     }
 
-    const title = this.add.text(width / 2, height * 0.3, 'WAVE CLEARED', {
+    const title = this.add.text(width / 2, height * 0.3, 'UP THROUGH THE CLOUDS', {
       fontFamily: 'Courier New',
       fontSize: '28px',
       color: '#ffff66'
@@ -45,8 +43,10 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
       color: '#aaddff'
     }).setOrigin(0.5);
 
-    const detail = this.add.text(width / 2, height * 0.55,
-      `Next: ${getGameModeName(this.dataIn.toMode)}\nEnemy aces dive from the stratosphere.`,
+    const detail = this.add.text(
+      width / 2,
+      height * 0.55,
+      'Phew, you got through those aliens and blast into the sky.\nOh no, there are more! Get ready!',
       {
         fontFamily: 'Courier New',
         fontSize: '16px',
@@ -69,11 +69,21 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
       color: '#ffeeaa'
     }).setOrigin(0.5);
 
-    this.startCountdown(3);
+    const prompt = this.add.text(width / 2, height * 0.68, 'Press SPACE/ENTER, A/Start, or tap to continue', {
+      fontFamily: 'Courier New',
+      fontSize: '16px',
+      color: '#a0b8ff',
+      align: 'center'
+    }).setOrigin(0.5);
 
-    this.input.once('pointerdown', () => this.startNext());
-    this.input.keyboard?.once('keydown-SPACE', () => this.startNext());
-    this.input.keyboard?.once('keydown-ENTER', () => this.startNext());
+    const advance = () => {
+      resumeGameAudio(this);
+      this.startNext();
+    };
+    this.input.once('pointerdown', advance);
+    this.input.keyboard?.once('keydown-SPACE', advance);
+    this.input.keyboard?.once('keydown-ENTER', advance);
+    this.input.gamepad?.once('down', advance);
   }
 
   update(_: number, delta: number): void {
@@ -128,36 +138,6 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
     });
   }
 
-  private startCountdown(seconds: number): void {
-    if (this.countdownEvent) {
-      this.countdownEvent.remove(false);
-      this.countdownEvent = undefined;
-    }
-    const { width, height } = this.scale;
-    if (!this.countdownText) {
-      this.countdownText = this.add.text(width / 2, height * 0.68, '', {
-        fontFamily: 'Courier New',
-        fontSize: '32px',
-        color: '#ffffff'
-      }).setOrigin(0.5);
-    }
-
-    let remaining = seconds;
-    const tick = () => {
-      if (!this.countdownText) return;
-      this.countdownText.setText(remaining.toString());
-      remaining -= 1;
-      if (remaining <= 0) {
-        this.countdownText.setText('GO!');
-        this.time.delayedCall(500, () => this.startNext());
-        return;
-      }
-      this.countdownEvent = this.time.delayedCall(1000, tick);
-    };
-
-    tick();
-  }
-
   private createCloud(x: number, y: number): Cloud {
     const scale = Phaser.Math.FloatBetween(0.6, 1.4);
     const sprite = this.add.ellipse(x, y, 180 * scale, 80 * scale, 0xffffff, 0.18);
@@ -174,10 +154,6 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
   private startNext(): void {
     if (this.started) return;
     this.started = true;
-    if (this.countdownEvent) {
-      this.countdownEvent.remove(false);
-      this.countdownEvent = undefined;
-    }
 
     const { toMode, level, score, useWebcam, lives, difficulty, advanceLevel } = this.dataIn;
     const nextLevel = advanceLevel ? level + 1 : level;
