@@ -718,6 +718,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private playCloseEncountersChime(): void {
+    console.log('🎵 Playing Close Encounters 5-tone motif');
     resumeGameAudio(this);
     const ctx = (this.sound as any)?.context as AudioContext | undefined;
     if (!ctx) return;
