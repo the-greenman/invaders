@@ -60,6 +60,7 @@ export class MenuScene extends Phaser.Scene {
   private updateNotification: Phaser.GameObjects.Container | null = null;
   private versionCheckTimer?: Phaser.Time.TimerEvent;
   private updateAvailable: boolean = false;
+  private immediateUpdateNotice?: Phaser.GameObjects.Container;
 
   // Stored event handlers for cleanup
   private keyUpHandler?: () => void;
@@ -364,7 +365,7 @@ export class MenuScene extends Phaser.Scene {
   private activateSelectedButton(): void {
     switch (this.selectedButton) {
       case 0: // Webcam-first Start
-        this.openWebcam();
+        void this.openWebcam();
         break;
       case 1: // High scores
         this.scene.start('HighScoreScene');
@@ -372,8 +373,12 @@ export class MenuScene extends Phaser.Scene {
     }
   }
 
-  private openWebcam(): void {
+  private async openWebcam(): Promise<void> {
     resumeGameAudio(this);
+
+    const updateTriggered = await this.handlePreGameVersionCheck();
+    if (updateTriggered) return;
+
     // First go to difficulty selection, which will then start the game
     this.scene.start('DifficultySelectScene');
   }
@@ -721,6 +726,7 @@ export class MenuScene extends Phaser.Scene {
     this.crawlText = null;
     this.bgAliens.forEach(a => a.sprite.destroy());
     this.bgAliens = [];
+    this.immediateUpdateNotice?.destroy(true);
   }
 
   // --- Ambient audio ---
@@ -837,5 +843,40 @@ export class MenuScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
+  }
+
+  private async handlePreGameVersionCheck(): Promise<boolean> {
+    try {
+      console.log('[MenuScene] Pre-game version check…');
+      const result = await VersionChecker.checkForUpdate(APP_VERSION);
+      console.log('[MenuScene] Pre-game version check result:', result);
+      if (result.updateAvailable) {
+        this.showImmediateUpdateMessage(result.latestVersion || 'unknown');
+        return true;
+      }
+    } catch (error) {
+      console.log('[MenuScene] Pre-game version check failed:', error);
+    }
+    return false;
+  }
+
+  private showImmediateUpdateMessage(newVersion: string): void {
+    if (this.immediateUpdateNotice) return;
+
+    const { width, height } = this.cameras.main;
+    const container = this.add.container(width / 2, height / 2);
+    const bg = this.add.rectangle(0, 0, 480, 160, 0x000000, 0.9);
+    bg.setStrokeStyle(2, 0x00ff00);
+    const text = this.add.text(0, 0, `New version ${newVersion} found.\nUpdating...`, {
+      fontSize: '22px',
+      fontFamily: 'Courier New',
+      color: '#00ff00',
+      align: 'center'
+    }).setOrigin(0.5);
+    container.add([bg, text]);
+    container.setDepth(2000);
+    this.immediateUpdateNotice = container;
+
+    this.time.delayedCall(500, () => window.location.reload());
   }
 }
