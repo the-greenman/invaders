@@ -46,7 +46,19 @@ export class LocalStorage {
    * TODO: Implement localStorage.setItem for CURRENT_FACE key
    */
   static setCurrentFace(imageData: string): void {
-    localStorage.setItem(KEYS.CURRENT_FACE, imageData);
+    try {
+      localStorage.setItem(KEYS.CURRENT_FACE, imageData);
+    } catch (error) {
+      const isQuotaError = error instanceof Error &&
+        (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
+      if (isQuotaError) {
+        console.error('Storage quota exceeded. Unable to save face image.');
+        // Optionally clear old data to make room
+        this.clearFaces();
+      } else {
+        console.error('Error saving face:', error);
+      }
+    }
   }
 
   /**
@@ -97,7 +109,30 @@ export class LocalStorage {
       history.shift();
     }
 
-    localStorage.setItem(KEYS.FACE_HISTORY, JSON.stringify(history));
+    try {
+      localStorage.setItem(KEYS.FACE_HISTORY, JSON.stringify(history));
+    } catch (error) {
+      const isQuotaError = error instanceof Error &&
+        (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
+      if (isQuotaError) {
+        console.error('Storage quota exceeded. Unable to save face history.');
+        // Try to make room by removing more old faces
+        while (history.length > 1) {
+          history.shift();
+          try {
+            localStorage.setItem(KEYS.FACE_HISTORY, JSON.stringify(history));
+            return; // Successfully saved with fewer faces
+          } catch (retryError) {
+            // Continue removing faces
+          }
+        }
+        // If still failing, clear face history entirely
+        console.warn('Clearing all face history due to storage quota');
+        this.clearFaces();
+      } else {
+        console.error('Error saving face history:', error);
+      }
+    }
   }
 
   /**
@@ -105,7 +140,11 @@ export class LocalStorage {
    */
   static removeFaceById(id: string): void {
     const history = this.getFaceHistory().filter(face => face.id !== id);
-    localStorage.setItem(KEYS.FACE_HISTORY, JSON.stringify(history));
+    try {
+      localStorage.setItem(KEYS.FACE_HISTORY, JSON.stringify(history));
+    } catch (error) {
+      console.error('Error removing face from history:', error);
+    }
   }
 
   /**
@@ -147,7 +186,11 @@ export class LocalStorage {
     scores.push(score);
     scores.sort((a, b) => b.score - a.score);
     const topScores = scores.slice(0, 10);
-    localStorage.setItem(KEYS.HIGH_SCORES, JSON.stringify(topScores));
+    try {
+      localStorage.setItem(KEYS.HIGH_SCORES, JSON.stringify(topScores));
+    } catch (error) {
+      console.error('Error saving high score:', error);
+    }
   }
 
   /**
@@ -209,7 +252,11 @@ export class LocalStorage {
    * TODO: Save settings as JSON string to localStorage
    */
   static saveSettings(settings: GameSettings): void {
-    localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+    try {
+      localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
   }
 
   /**

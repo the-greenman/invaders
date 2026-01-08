@@ -170,11 +170,104 @@ describe('LocalStorage', () => {
     it('should clear all data', () => {
       LocalStorage.setCurrentFace('face');
       LocalStorage.addHighScore({ name: 'P', score: 100, level: 1, date: 0 });
-      
+
       LocalStorage.clearAll();
-      
+
       expect(LocalStorage.getCurrentFace()).toBeNull();
       expect(LocalStorage.getHighScores()).toEqual([]);
+    });
+  });
+
+  describe('Storage Quota Errors', () => {
+    it('should handle QuotaExceededError when setting current face', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Create an error with QuotaExceededError name
+      const quotaError = new Error('QuotaExceededError');
+      quotaError.name = 'QuotaExceededError';
+
+      // Mock setItem to throw on CURRENT_FACE key
+      const setItemMock = vi.fn((key: string, value: string) => {
+        if (key === 'classinvaders_current_face') {
+          throw quotaError;
+        }
+      });
+
+      const removeItemMock = vi.fn();
+
+      // Replace localStorage methods
+      const originalSetItem = localStorage.setItem;
+      const originalRemoveItem = localStorage.removeItem;
+      localStorage.setItem = setItemMock;
+      localStorage.removeItem = removeItemMock;
+
+      const largeImageData = 'data:image/png;base64,' + 'x'.repeat(10000);
+
+      // Should not throw
+      expect(() => LocalStorage.setCurrentFace(largeImageData)).not.toThrow();
+
+      // setItem should have been called with the current face key
+      expect(setItemMock).toHaveBeenCalledWith('classinvaders_current_face', largeImageData);
+
+      // Error should have been logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Storage quota exceeded. Unable to save face image.');
+
+      // clearFaces should have been called (removeItem for both keys)
+      expect(removeItemMock).toHaveBeenCalledWith('classinvaders_current_face');
+      expect(removeItemMock).toHaveBeenCalledWith('classinvaders_face_history');
+
+      // Restore
+      localStorage.setItem = originalSetItem;
+      localStorage.removeItem = originalRemoveItem;
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle QuotaExceededError when adding to face history', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const quotaError = new Error('QuotaExceededError');
+      quotaError.name = 'QuotaExceededError';
+
+      // Let first face succeed, then fail on second
+      let callCount = 0;
+      const setItemMock = vi.fn((key: string, value: string) => {
+        callCount++;
+        if (callCount > 1 && key === 'classinvaders_face_history') {
+          throw quotaError;
+        }
+        // Actually store the first one
+        if (key === 'classinvaders_face_history' && callCount === 1) {
+          localStorage['classinvaders_face_history'] = value;
+        }
+      });
+
+      const removeItemMock = vi.fn((key: string) => {
+        delete localStorage[key];
+      });
+
+      const originalSetItem = localStorage.setItem;
+      const originalRemoveItem = localStorage.removeItem;
+      localStorage.setItem = setItemMock;
+      localStorage.removeItem = removeItemMock;
+
+      const face1 = 'data:image/png;base64,face1';
+      const face2 = 'data:image/png;base64,' + 'x'.repeat(10000);
+
+      // First should succeed
+      expect(() => LocalStorage.addToFaceHistory(face1)).not.toThrow();
+
+      // Second should not throw - it will clear faces due to quota error
+      expect(() => LocalStorage.addToFaceHistory(face2)).not.toThrow();
+
+      // Error should have been logged
+      expect(consoleErrorSpy).toHaveBeenCalled();
+
+      // Restore
+      localStorage.setItem = originalSetItem;
+      localStorage.removeItem = originalRemoveItem;
+      consoleErrorSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
     });
   });
 });
