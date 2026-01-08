@@ -343,7 +343,10 @@ export class MenuScene extends Phaser.Scene {
 
     // Selection - any button except dpad works as fire
     const backPressed = GamepadHelper.isButtonPressed(this.gamepad, this.backButtonIndex);
-    const anyButtonPressed = GamepadHelper.isAnyButtonPressed(this.gamepad);
+    const anyButtonPressed = GamepadHelper.isAnyButtonPressed(
+      this.gamepad,
+      this.backButtonIndex >= 0 ? [this.backButtonIndex] : []
+    );
     const comboPressed = anyButtonPressed && backPressed;
 
     if (comboPressed && !this.prevComboPressed) {

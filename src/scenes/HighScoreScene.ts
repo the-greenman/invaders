@@ -12,6 +12,8 @@ export class HighScoreScene extends Phaser.Scene {
   private startDragY: number | null = null;
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevButtonPressed: boolean = false;
+  private inactivityTimer?: Phaser.Time.TimerEvent;
+  private resetInactivityHandler?: () => void;
 
   constructor() {
     super({ key: 'HighScoreScene' });
@@ -21,6 +23,16 @@ export class HighScoreScene extends Phaser.Scene {
     this.createBackground();
     await this.buildList();
     this.setupInput();
+    this.startInactivityTimeout();
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.inactivityTimer?.remove(false);
+      if (this.resetInactivityHandler) {
+        this.input.off('pointerdown', this.resetInactivityHandler);
+        this.input.keyboard?.off('keydown', this.resetInactivityHandler);
+        this.input.gamepad?.off('down', this.resetInactivityHandler);
+      }
+    });
   }
 
   update(): void {
@@ -121,6 +133,7 @@ export class HighScoreScene extends Phaser.Scene {
     });
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      this.resetInactivity();
       this.startDragY = p.y;
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
@@ -138,9 +151,11 @@ export class HighScoreScene extends Phaser.Scene {
     });
 
     this.input.keyboard?.on('keydown-ESC', () => {
+      this.resetInactivity();
       this.scene.start('MenuScene');
     });
     this.input.keyboard?.on('keydown-ENTER', () => {
+      this.resetInactivity();
       this.scene.start('MenuScene');
     });
 
@@ -171,8 +186,25 @@ export class HighScoreScene extends Phaser.Scene {
     const anyButtonPressed = GamepadHelper.isAnyButtonPressed(this.gamepad);
 
     if (anyButtonPressed && !this.prevButtonPressed) {
+      this.resetInactivity();
       this.scene.start('MenuScene');
     }
     this.prevButtonPressed = anyButtonPressed;
+  }
+
+  private startInactivityTimeout(): void {
+    const reset = () => this.resetInactivity();
+    this.resetInactivityHandler = reset;
+    this.input.on('pointerdown', reset);
+    this.input.keyboard?.on('keydown', reset);
+    this.input.gamepad?.on('down', reset);
+    this.resetInactivity();
+  }
+
+  private resetInactivity(): void {
+    this.inactivityTimer?.remove(false);
+    this.inactivityTimer = this.time.delayedCall(60000, () => {
+      this.scene.start('MenuScene');
+    });
   }
 }

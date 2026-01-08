@@ -59,6 +59,8 @@ export class DebugMenuScene extends Phaser.Scene {
   private backButtonIndex!: number;
 
   private initialUpdateEvent: Phaser.Time.TimerEvent | null = null;
+  private inactivityTimer?: Phaser.Time.TimerEvent;
+  private resetInactivityHandler?: () => void;
 
   constructor() {
     super({ key: 'DebugMenuScene' });
@@ -110,6 +112,8 @@ export class DebugMenuScene extends Phaser.Scene {
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown, this);
+
+    this.startInactivityTimeout();
   }
 
   update(): void {
@@ -177,6 +181,13 @@ export class DebugMenuScene extends Phaser.Scene {
     this.input.off('wheel', this.onWheel, this);
     this.input.keyboard?.removeAllListeners();
 
+    this.inactivityTimer?.remove(false);
+    if (this.resetInactivityHandler) {
+      this.input.off('pointerdown', this.resetInactivityHandler);
+      this.input.keyboard?.off('keydown', this.resetInactivityHandler);
+      this.input.gamepad?.off('down', this.resetInactivityHandler);
+    }
+
     this.textObjects.forEach((text) => text.destroy());
     this.textObjects = [];
   }
@@ -234,6 +245,21 @@ export class DebugMenuScene extends Phaser.Scene {
       this.startExclusive('MenuScene');
     }
     this.prevBack = isBack;
+  }
+
+  private startInactivityTimeout(): void {
+    const reset = () => {
+      this.inactivityTimer?.remove(false);
+      this.inactivityTimer = this.time.delayedCall(60000, () => {
+        this.startExclusive('MenuScene');
+      });
+    };
+
+    this.resetInactivityHandler = reset;
+    this.input.on('pointerdown', reset);
+    this.input.keyboard?.on('keydown', reset);
+    this.input.gamepad?.on('down', reset);
+    reset();
   }
 
   private moveSelection(delta: number): void {

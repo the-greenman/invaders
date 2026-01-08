@@ -243,6 +243,31 @@ describe('Player Entity', () => {
 
       expect(scene.events.emit).toHaveBeenCalledWith('fireBullet', 400, expect.any(Number));
     });
+
+    it('should not fire when only excluded buttons are pressed', () => {
+      const mockPad = {
+        connected: true,
+        axes: [{ getValue: vi.fn().mockReturnValue(0) }],
+        buttons: [
+          { pressed: false }, // configured fire (index 0)
+          { pressed: true },  // back/start substitute (excluded)
+          { pressed: false },
+          { pressed: false },
+          { pressed: false },
+          { pressed: false },
+          { pressed: false },
+          { pressed: false },
+          { pressed: false },
+          { pressed: true } // start button (index 9) excluded by default
+        ]
+      };
+      scene.input.gamepad.total = 1;
+      scene.input.gamepad.getPad.mockReturnValue(mockPad);
+
+      player.update(16);
+
+      expect(scene.events.emit).not.toHaveBeenCalledWith('fireBullet', 400, expect.any(Number));
+    });
   });
 
   describe('Damage', () => {

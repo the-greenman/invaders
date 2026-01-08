@@ -176,8 +176,14 @@ export class Player extends Phaser.GameObjects.Sprite {
       ? this.gamepad.buttons[this.fireButtonIndex]?.pressed
       : false;
     if (!padShoot && this.gamepad) {
-      // Allow any non-dpad/non-back button to fire
-      padShoot = GamepadHelper.isAnyButtonPressed(this.gamepad, this.backButtonIndex >= 0 ? [this.backButtonIndex] : []);
+      // Exclude any explicitly bound buttons (fire/back/start) from the fallback
+      const exclude: number[] = [];
+      if (this.backButtonIndex >= 0) exclude.push(this.backButtonIndex);
+      if (this.fireButtonIndex >= 0) exclude.push(this.fireButtonIndex);
+      // Start button is commonly index 9 on Xbox-style controllers
+      exclude.push(9);
+
+      padShoot = GamepadHelper.getAnyPressedButton(this.gamepad, exclude) !== -1;
     }
     const touchShoot = this.touchControls ? this.touchControls.consumeShootRequest() : false;
 
