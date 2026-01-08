@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { LocalStorage } from '../../utils/localStorage';
 import { GameMode } from '../../types/GameMode';
 import { DifficultyPreset } from '../../types/DifficultyPreset';
+import { GamepadHelper } from '../../utils/gamepadHelper';
 
 type DebugMenuItem = {
   label: string;
@@ -57,6 +58,7 @@ export class DebugMenuScene extends Phaser.Scene {
   private lastStickMove: number = 0;
 
   private backButtonIndex!: number;
+  private fireButtonIndex!: number;
 
   private initialUpdateEvent: Phaser.Time.TimerEvent | null = null;
   private inactivityTimer?: Phaser.Time.TimerEvent;
@@ -71,6 +73,7 @@ export class DebugMenuScene extends Phaser.Scene {
 
     const settings = LocalStorage.getSettings();
     this.backButtonIndex = settings.controllerBackButton!;
+    this.fireButtonIndex = settings.controllerFireButton!;
 
     const { width, height } = this.cameras.main;
 
@@ -232,15 +235,15 @@ export class DebugMenuScene extends Phaser.Scene {
     }
     this.prevDown = isDown;
 
-    // Select (A button)
-    const isFire = this.gamepad.A || this.gamepad.buttons[0]?.pressed;
+    // Select (configured fire button only)
+    const isFire = !!GamepadHelper.isButtonPressed(this.gamepad, this.fireButtonIndex);
     if (isFire && !this.prevFire) {
       this.launchScene(this.selectedIndex);
     }
     this.prevFire = isFire;
     
-    // Back (configured button index; default: button 2 / index 1)
-    const isBack = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
+    // Back (configured button index)
+    const isBack = !!GamepadHelper.isButtonPressed(this.gamepad, this.backButtonIndex);
     if (isBack && !this.prevBack) {
       this.startExclusive('MenuScene');
     }

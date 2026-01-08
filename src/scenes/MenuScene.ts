@@ -44,6 +44,7 @@ export class MenuScene extends Phaser.Scene {
   private prevDownPressed: boolean = false;
   private lastStickMove: number = 0;
   private backButtonIndex!: number;
+  private fireButtonIndex!: number;
   private privacyText: Phaser.GameObjects.Text | null = null;
 
   // Background Aliens
@@ -87,6 +88,7 @@ export class MenuScene extends Phaser.Scene {
     console.log('MenuScene: create start');
     const settings = LocalStorage.getSettings();
     this.backButtonIndex = settings.controllerBackButton!;
+    this.fireButtonIndex = settings.controllerFireButton!;
 
     this.createBackground();
     // this.setupCrawl(); // Add crawl behind title/buttons
@@ -153,6 +155,17 @@ export class MenuScene extends Phaser.Scene {
     
     // Update crawl
     this.updateCrawl(delta);
+  }
+
+  private startExclusive(targetSceneKey: string, data?: any): void {
+    const scenes = this.scene.manager.getScenes(true) as Phaser.Scene[];
+    scenes.forEach((s: Phaser.Scene) => {
+      const key = s.scene.key;
+      if (key !== targetSceneKey) {
+        this.scene.stop(key);
+      }
+    });
+    this.scene.start(targetSceneKey, data);
   }
 
   private createBackground(): void {
@@ -343,24 +356,21 @@ export class MenuScene extends Phaser.Scene {
 
     // Selection - any button except dpad works as fire
     const backPressed = GamepadHelper.isButtonPressed(this.gamepad, this.backButtonIndex);
-    const anyButtonPressed = GamepadHelper.isAnyButtonPressed(
-      this.gamepad,
-      this.backButtonIndex >= 0 ? [this.backButtonIndex] : []
-    );
-    const comboPressed = anyButtonPressed && backPressed;
+    const firePressed = GamepadHelper.isButtonPressed(this.gamepad, this.fireButtonIndex);
+    const comboPressed = firePressed && backPressed;
 
     if (comboPressed && !this.prevComboPressed) {
-      this.scene.start('DebugMenuScene');
+      this.startExclusive('DebugMenuScene');
       this.prevComboPressed = true;
-      this.prevFirePressed = anyButtonPressed;
+      this.prevFirePressed = firePressed;
       this.prevBackPressed = !!backPressed;
       return;
     }
 
-    if (anyButtonPressed && !this.prevFirePressed) {
+    if (firePressed && !this.prevFirePressed) {
       this.activateSelectedButton();
     }
-    this.prevFirePressed = anyButtonPressed;
+    this.prevFirePressed = firePressed;
     this.prevBackPressed = !!backPressed;
     this.prevComboPressed = comboPressed;
   }
