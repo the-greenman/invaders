@@ -4,6 +4,7 @@ import { GameMode } from '../types/GameMode';
 import { LocalStorage } from '../utils/localStorage';
 import { KonamiCode, KonamiInput } from '../utils/KonamiCode';
 import { resumeGameAudio } from '../utils/audio';
+import { GamepadHelper } from '../utils/gamepadHelper';
 
 /**
  * Difficulty Selection Scene
@@ -30,9 +31,7 @@ export class DifficultySelectScene extends Phaser.Scene {
   private prevDownPressed: boolean = false;
   private prevAPressed: boolean = false;
   private prevBPressed: boolean = false;
-  private fireButtonIndex!: number;
   private backButtonIndex!: number;
-  private startButtonIndex!: number;
 
   private upKey: Phaser.Input.Keyboard.Key | undefined;
   private downKey: Phaser.Input.Keyboard.Key | undefined;
@@ -61,9 +60,7 @@ export class DifficultySelectScene extends Phaser.Scene {
 
     // Load controller settings
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton!;
     this.backButtonIndex = settings.controllerBackButton!;
-    this.startButtonIndex = settings.controllerStartButton!;
 
     // Difficulty indicator at the top
     this.difficultyIndicator = this.add.text(width / 2, 30, '', {
@@ -343,22 +340,21 @@ export class DifficultySelectScene extends Phaser.Scene {
           this.konamiCode.addInput('RIGHT');
         }
         this.prevRightPressed = isRight;
-        
-        // Fire button or Start button to select
-        const isFirePressed = !!this.gamepad.buttons[this.fireButtonIndex]?.pressed;
-        const isStartPressed = !!this.gamepad.buttons[this.startButtonIndex]?.pressed;
 
-        if ((isFirePressed || isStartPressed) && !this.prevAPressed) {
-          const completed = this.konamiCode.addInput('A'); // Fire button is 'A' in Konami code
+        // Any button (except dpad and back) works as fire/select
+        const anyButtonPressed = GamepadHelper.isAnyButtonPressed(this.gamepad, [this.backButtonIndex]);
+
+        if (anyButtonPressed && !this.prevAPressed) {
+          const completed = this.konamiCode.addInput('A'); // Any fire button is 'A' in Konami code
           // Only select game if not entering Konami code or if code was just completed
           if (this.konamiCode.getProgress() === 0 || completed) {
             this.selectAndStartGame(this.selectedDifficulty, this.selectedIndex);
           }
         }
-        this.prevAPressed = isFirePressed || isStartPressed;
+        this.prevAPressed = anyButtonPressed;
 
         // Back button to go back
-        const isBackPressed = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
+        const isBackPressed = GamepadHelper.isButtonPressed(this.gamepad, this.backButtonIndex);
         if (isBackPressed && !this.prevBPressed) {
           this.konamiCode.addInput('B'); // Back button is 'B' in Konami code
           // Only go back if not entering Konami code

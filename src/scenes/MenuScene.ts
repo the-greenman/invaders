@@ -3,6 +3,7 @@ import { LocalStorage } from '../utils/localStorage';
 import { resumeGameAudio } from '../utils/audio';
 import { FaceManager } from '../managers/FaceManager';
 import { ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, MAX_STORED_FACES } from '../constants';
+import { GamepadHelper } from '../utils/gamepadHelper';
 
 interface BackgroundAlien {
   sprite: Phaser.GameObjects.Sprite;
@@ -40,9 +41,7 @@ export class MenuScene extends Phaser.Scene {
   private prevUpPressed: boolean = false;
   private prevDownPressed: boolean = false;
   private lastStickMove: number = 0;
-  private fireButtonIndex!: number;
   private backButtonIndex!: number;
-  private startButtonIndex!: number;
   private privacyText: Phaser.GameObjects.Text | null = null;
 
   // Background Aliens
@@ -79,9 +78,7 @@ export class MenuScene extends Phaser.Scene {
   async create(): Promise<void> {
     console.log('MenuScene: create start');
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton!;
     this.backButtonIndex = settings.controllerBackButton!;
-    this.startButtonIndex = settings.controllerStartButton!;
 
     this.createBackground();
     // this.setupCrawl(); // Add crawl behind title/buttons
@@ -323,24 +320,23 @@ export class MenuScene extends Phaser.Scene {
     }
     this.prevDownPressed = isDown;
 
-    // Selection
-    const firePressed = this.gamepad.buttons[this.fireButtonIndex]?.pressed;
-    const startPressed = this.gamepad.buttons[this.startButtonIndex]?.pressed;
-    const backPressed = this.backButtonIndex >= 0 ? this.gamepad.buttons[this.backButtonIndex]?.pressed : false;
-    const comboPressed = firePressed && backPressed;
+    // Selection - any button except dpad works as fire
+    const backPressed = GamepadHelper.isButtonPressed(this.gamepad, this.backButtonIndex);
+    const anyButtonPressed = GamepadHelper.isAnyButtonPressed(this.gamepad);
+    const comboPressed = anyButtonPressed && backPressed;
 
     if (comboPressed && !this.prevComboPressed) {
       this.scene.start('DebugMenuScene');
       this.prevComboPressed = true;
-      this.prevFirePressed = firePressed || startPressed;
+      this.prevFirePressed = anyButtonPressed;
       this.prevBackPressed = !!backPressed;
       return;
     }
 
-    if ((firePressed || startPressed) && !this.prevFirePressed) {
+    if (anyButtonPressed && !this.prevFirePressed) {
       this.activateSelectedButton();
     }
-    this.prevFirePressed = firePressed || startPressed;
+    this.prevFirePressed = anyButtonPressed;
     this.prevBackPressed = !!backPressed;
     this.prevComboPressed = comboPressed;
   }

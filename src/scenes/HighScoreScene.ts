@@ -3,27 +3,21 @@ import { LocalStorage } from '../utils/localStorage';
 import { HighScore } from '../types';
 import { FaceManager } from '../managers/FaceManager';
 import { ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS } from '../constants';
+import { GamepadHelper } from '../utils/gamepadHelper';
 
 export class HighScoreScene extends Phaser.Scene {
   private listContainer!: Phaser.GameObjects.Container;
   private scrollY: number = 0;
   private maxScroll: number = 0;
   private startDragY: number | null = null;
-  private backButtonIndex!: number;
-  private fireButtonIndex!: number;
-  private startButtonIndex!: number;
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevButtonPressed: boolean = false;
 
   constructor() {
     super({ key: 'HighScoreScene' });
   }
 
   async create(): Promise<void> {
-    const settings = LocalStorage.getSettings();
-    this.backButtonIndex = settings.controllerBackButton!;
-    this.fireButtonIndex = settings.controllerFireButton!;
-    this.startButtonIndex = settings.controllerStartButton!;
-
     this.createBackground();
     await this.buildList();
     this.setupInput();
@@ -173,10 +167,12 @@ export class HighScoreScene extends Phaser.Scene {
       this.scrollBy(axisY * 5);
     }
 
-    const fire = this.gamepad.buttons[this.fireButtonIndex]?.pressed || this.gamepad.buttons[this.startButtonIndex]?.pressed;
-    const back = this.gamepad.buttons[this.backButtonIndex]?.pressed;
-    if (fire || back) {
+    // Any button (except dpad) returns to menu
+    const anyButtonPressed = GamepadHelper.isAnyButtonPressed(this.gamepad);
+
+    if (anyButtonPressed && !this.prevButtonPressed) {
       this.scene.start('MenuScene');
     }
+    this.prevButtonPressed = anyButtonPressed;
   }
 }

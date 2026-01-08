@@ -3,6 +3,7 @@ import { ScoreManager } from '../managers/ScoreManager';
 import { LocalStorage } from '../utils/localStorage';
 import { GameMode } from '../types/GameMode';
 import { DifficultyPreset } from '../types/DifficultyPreset';
+import { GamepadHelper } from '../utils/gamepadHelper';
 
 /**
  * Game Over Scene
@@ -35,8 +36,6 @@ export class GameOverScene extends Phaser.Scene {
   private prevDown: boolean = false;
   private prevFire: boolean = false;
   private lastStickMove: number = 0;
-  private fireButtonIndex!: number;
-  private startButtonIndex!: number;
   private backButtonIndex!: number;
   private autoReturnTimer?: Phaser.Time.TimerEvent;
 
@@ -46,8 +45,6 @@ export class GameOverScene extends Phaser.Scene {
 
   create(): void {
     const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton!;
-    this.startButtonIndex = settings.controllerStartButton!;
     this.backButtonIndex = settings.controllerBackButton!;
 
     // Get scene data from game scene (standardized format)
@@ -74,9 +71,7 @@ export class GameOverScene extends Phaser.Scene {
       
       // Initialize previous state to prevent immediate trigger if button is held
       if (this.gamepad) {
-        const isFire = this.gamepad.buttons[this.fireButtonIndex]?.pressed || this.gamepad.buttons[this.startButtonIndex]?.pressed;
-        const isBack = this.gamepad.buttons[this.backButtonIndex]?.pressed;
-        this.prevFire = !!(isFire || isBack);
+        this.prevFire = GamepadHelper.isAnyButtonPressed(this.gamepad);
       }
     }
     
@@ -256,14 +251,19 @@ export class GameOverScene extends Phaser.Scene {
     }
     this.prevDown = isDown;
 
-    const isFire = this.gamepad.buttons[this.fireButtonIndex]?.pressed || this.gamepad.buttons[this.startButtonIndex]?.pressed;
-    const isBack = this.gamepad.buttons[this.backButtonIndex]?.pressed;
-    if (isFire && !this.prevFire) {
-      this.activateSelectedButton();
-    } else if (isBack && !this.prevFire) {
-      this.returnToMenu();
+    // Any button (except dpad) works as fire
+    const isBack = GamepadHelper.isButtonPressed(this.gamepad, this.backButtonIndex);
+    const anyButtonPressed = GamepadHelper.isAnyButtonPressed(this.gamepad);
+
+    if (anyButtonPressed && !this.prevFire) {
+      // Back button returns to menu, any other button activates selected button
+      if (isBack) {
+        this.returnToMenu();
+      } else {
+        this.activateSelectedButton();
+      }
     }
-    this.prevFire = !!(isFire || isBack);
+    this.prevFire = anyButtonPressed;
   }
 
   private setupAnimations(): void {

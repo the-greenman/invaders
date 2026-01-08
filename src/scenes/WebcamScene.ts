@@ -3,6 +3,7 @@ import { FaceManager } from '../managers/FaceManager';
 import { LocalStorage } from '../utils/localStorage';
 import { GameMode } from '../types/GameMode';
 import { DifficultyPreset } from '../types/DifficultyPreset';
+import { GamepadHelper } from '../utils/gamepadHelper';
 
 /**
  * Webcam Scene
@@ -29,9 +30,6 @@ export class WebcamScene extends Phaser.Scene {
   private pointerCaptureHandler?: (pointer: Phaser.Input.Pointer) => void;
   private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
   private prevFirePressed: boolean = false;
-  private prevStartPressed: boolean = false;
-  private fireButtonIndex!: number;
-  private startButtonIndex!: number;
   private difficulty: DifficultyPreset = DifficultyPreset.MEDIUM;
   private skipIntro: boolean = false;
 
@@ -58,10 +56,6 @@ export class WebcamScene extends Phaser.Scene {
   }
 
   create(): void {
-    const settings = LocalStorage.getSettings();
-    this.fireButtonIndex = settings.controllerFireButton!;
-    this.startButtonIndex = settings.controllerStartButton!;
-
     this.createBackground();
     this.createUI();
     this.setupEventListeners();
@@ -85,16 +79,15 @@ export class WebcamScene extends Phaser.Scene {
       }
     }
 
-    if (this.gamepad && this.gamepad.connected) {
-      const firePressed = this.gamepad.buttons[this.fireButtonIndex]?.pressed;
-      const startPressed = this.gamepad.buttons[this.startButtonIndex]?.pressed;
-      if ((firePressed || startPressed) && !this.prevFirePressed && !this.prevStartPressed) {
+    if (GamepadHelper.isConnected(this.gamepad)) {
+      const anyButtonPressed = GamepadHelper.isAnyButtonPressed(this.gamepad!);
+
+      if (anyButtonPressed && !this.prevFirePressed) {
         if (this.isInitialized && !this.isCapturing) {
           this.captureFace();
         }
       }
-      this.prevFirePressed = !!firePressed;
-      this.prevStartPressed = !!startPressed;
+      this.prevFirePressed = anyButtonPressed;
     }
   }
 
