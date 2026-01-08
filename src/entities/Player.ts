@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { PLAYER_SPEED, PLAYER_SHOOT_COOLDOWN, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_BODY_SCALE, GAME_WIDTH, GAME_HEIGHT } from '../constants';
 import { Bullet } from './Bullet';
 import { LocalStorage } from '../utils/localStorage';
+import { GamepadHelper } from '../utils/gamepadHelper';
 import { TouchControlManager } from '../managers/TouchControlManager';
 
 /**
@@ -25,6 +26,7 @@ export class Player extends Phaser.GameObjects.Sprite {
   private touchControls: TouchControlManager | null = null;
 
   private lastSettingsPollTime: number = 0;
+  private backButtonIndex: number = -1;
 
   // Stored gamepad event handlers for cleanup
   private gamepadConnectedHandler?: (pad: Phaser.Input.Gamepad.Gamepad) => void;
@@ -46,6 +48,7 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     const settings = LocalStorage.getSettings();
     this.fireButtonIndex = settings.controllerFireButton!;
+    this.backButtonIndex = settings.controllerBackButton ?? -1;
 
     // Gamepad setup
     this.setupGamepad();
@@ -112,6 +115,10 @@ export class Player extends Phaser.GameObjects.Sprite {
       if (typeof configured === 'number' && configured !== this.fireButtonIndex) {
         this.fireButtonIndex = configured;
       }
+      const configuredBack = settings.controllerBackButton;
+      if (typeof configuredBack === 'number' && configuredBack !== this.backButtonIndex) {
+        this.backButtonIndex = configuredBack;
+      }
       this.lastSettingsPollTime = this.scene.time.now;
     }
 
@@ -165,9 +172,13 @@ export class Player extends Phaser.GameObjects.Sprite {
     body.setVelocityX(moveX * PLAYER_SPEED);
 
     // Handle shooting
-    const padShoot = (this.gamepad && this.fireButtonIndex >= 0)
+    let padShoot = (this.gamepad && this.fireButtonIndex >= 0)
       ? this.gamepad.buttons[this.fireButtonIndex]?.pressed
       : false;
+    if (!padShoot && this.gamepad) {
+      // Allow any non-dpad/non-back button to fire
+      padShoot = GamepadHelper.isAnyButtonPressed(this.gamepad, this.backButtonIndex >= 0 ? [this.backButtonIndex] : []);
+    }
     const touchShoot = this.touchControls ? this.touchControls.consumeShootRequest() : false;
 
     if (this.spaceKey.isDown && this.canShoot) {

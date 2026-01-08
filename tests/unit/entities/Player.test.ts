@@ -225,6 +225,24 @@ describe('Player Entity', () => {
       
       vi.useRealTimers();
     });
+
+    it('should fire when any non-excluded gamepad button is pressed', () => {
+      const mockPad = {
+        connected: true,
+        axes: [{ getValue: vi.fn().mockReturnValue(0) }],
+        buttons: [
+          { pressed: false }, // configured fire (index 0)
+          { pressed: false },
+          { pressed: true } // alternate button should trigger fire
+        ]
+      };
+      scene.input.gamepad.total = 1;
+      scene.input.gamepad.getPad.mockReturnValue(mockPad);
+
+      player.update(16);
+
+      expect(scene.events.emit).toHaveBeenCalledWith('fireBullet', 400, expect.any(Number));
+    });
   });
 
   describe('Damage', () => {
