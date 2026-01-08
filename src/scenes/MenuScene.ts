@@ -769,6 +769,7 @@ export class MenuScene extends Phaser.Scene {
 
   private async checkForUpdates(): Promise<void> {
     // Check immediately on menu load
+    console.log('[MenuScene] Performing initial version check…');
     await this.performVersionCheck();
 
     // Then check every 5 minutes
@@ -782,6 +783,7 @@ export class MenuScene extends Phaser.Scene {
   private async performVersionCheck(): Promise<void> {
     try {
       const result = await VersionChecker.checkForUpdate(APP_VERSION);
+      console.log('[MenuScene] Version check result:', result);
 
       if (result.updateAvailable && !this.updateAvailable) {
         this.updateAvailable = true;
@@ -789,7 +791,7 @@ export class MenuScene extends Phaser.Scene {
       }
     } catch (error) {
       // Silently fail - don't interrupt user experience
-      console.log('Version check failed:', error);
+      console.log('[MenuScene] Version check failed:', error);
     }
   }
 
