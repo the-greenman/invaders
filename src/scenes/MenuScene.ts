@@ -822,16 +822,8 @@ export class MenuScene extends Phaser.Scene {
 
     this.updateNotification.add([bg, text, subtext]);
 
-    // Make interactive
-    bg.setInteractive({ useHandCursor: true });
-    bg.on('pointerdown', () => {
-      window.location.reload();
-    });
-
-    // Add keyboard shortcut
-    this.input.keyboard?.once('keydown-R', () => {
-      window.location.reload();
-    });
+    // Auto reload without user interaction (small delay to allow UI draw)
+    this.time.delayedCall(500, () => window.location.reload());
 
     // Pulse animation
     this.tweens.add({
