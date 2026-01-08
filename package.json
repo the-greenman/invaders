@@ -4,7 +4,10 @@
   "type": "module",
   "description": "Space Invaders game with webcam face capture",
   "scripts": {
+    "generate-version": "node scripts/generate-version.js",
+    "predev": "npm run generate-version",
     "dev": "vite",
+    "prebuild": "npm run generate-version",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",

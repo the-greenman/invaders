@@ -4,6 +4,8 @@ import { resumeGameAudio } from '../utils/audio';
 import { FaceManager } from '../managers/FaceManager';
 import { ALIEN_WIDTH, ALIEN_HEIGHT, ALIEN_CORE_RADIUS, COLORS, ALIEN_TINT_ALPHA, MAX_STORED_FACES } from '../constants';
 import { GamepadHelper } from '../utils/gamepadHelper';
+import { VersionChecker } from '../utils/versionChecker';
+import { APP_VERSION } from '../version';
 
 interface BackgroundAlien {
   sprite: Phaser.GameObjects.Sprite;
@@ -54,6 +56,11 @@ export class MenuScene extends Phaser.Scene {
   private crawlContentHeight: number = 0;
   private closeEncountersTimer?: Phaser.Time.TimerEvent;
 
+  // Version checking
+  private updateNotification: Phaser.GameObjects.Container | null = null;
+  private versionCheckTimer?: Phaser.Time.TimerEvent;
+  private updateAvailable: boolean = false;
+
   // Stored event handlers for cleanup
   private keyUpHandler?: () => void;
   private keyDownHandler?: () => void;
@@ -98,6 +105,9 @@ export class MenuScene extends Phaser.Scene {
 
     // Ambient Close Encounters chime at random intervals while idling on menu
     this.scheduleCloseEncountersChime();
+
+    // Check for updates periodically
+    this.checkForUpdates();
 
     // Expose crawl controls to console
     (window as any).crawl = {
@@ -687,6 +697,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     this.closeEncountersTimer?.remove(false);
+    this.versionCheckTimer?.remove(false);
     this.closeEncountersTimer = undefined;
 
     // Clear references
@@ -743,6 +754,84 @@ export class MenuScene extends Phaser.Scene {
 
       osc.start(start);
       osc.stop(start + noteDuration + 0.1);
+    });
+  }
+
+  private async checkForUpdates(): Promise<void> {
+    // Check immediately on menu load
+    await this.performVersionCheck();
+
+    // Then check every 5 minutes
+    this.versionCheckTimer = this.time.addEvent({
+      delay: 300000, // 5 minutes
+      callback: () => this.performVersionCheck(),
+      loop: true
+    });
+  }
+
+  private async performVersionCheck(): Promise<void> {
+    try {
+      const result = await VersionChecker.checkForUpdate(APP_VERSION);
+
+      if (result.updateAvailable && !this.updateAvailable) {
+        this.updateAvailable = true;
+        this.showUpdateNotification(result.latestVersion || 'unknown');
+      }
+    } catch (error) {
+      // Silently fail - don't interrupt user experience
+      console.log('Version check failed:', error);
+    }
+  }
+
+  private showUpdateNotification(newVersion: string): void {
+    if (this.updateNotification) return; // Already showing
+
+    const { width, height } = this.cameras.main;
+
+    // Create container for notification
+    this.updateNotification = this.add.container(width / 2, height - 60);
+
+    // Background
+    const bg = this.add.rectangle(0, 0, 500, 80, 0x003300, 0.95);
+    bg.setStrokeStyle(2, 0x00ff00);
+
+    // Text
+    const text = this.add.text(0, -15, `🎮 New version ${newVersion} available!`, {
+      fontSize: '18px',
+      fontFamily: 'Courier New',
+      color: '#00ff00',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    const subtext = this.add.text(0, 10, 'Click here or press R to reload', {
+      fontSize: '14px',
+      fontFamily: 'Courier New',
+      color: '#88ff88',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    this.updateNotification.add([bg, text, subtext]);
+
+    // Make interactive
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerdown', () => {
+      window.location.reload();
+    });
+
+    // Add keyboard shortcut
+    this.input.keyboard?.once('keydown-R', () => {
+      window.location.reload();
+    });
+
+    // Pulse animation
+    this.tweens.add({
+      targets: this.updateNotification,
+      scaleX: 1.05,
+      scaleY: 1.05,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
     });
   }
 }
