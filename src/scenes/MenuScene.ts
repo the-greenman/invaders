@@ -92,6 +92,7 @@ export class MenuScene extends Phaser.Scene {
     this.createTitle();
     this.createButtons();
     this.createPrivacyNotice();
+    this.createVersionDisplay();
     this.setupKeyboardControls();
     this.setupButtonAnimations();
 
@@ -278,6 +279,15 @@ export class MenuScene extends Phaser.Scene {
       color: '#00ff00',
       align: 'center'
     }).setOrigin(0.5);
+  }
+
+  private createVersionDisplay(): void {
+    const { height } = this.cameras.main;
+    this.add.text(10, height - 10, `v${APP_VERSION}`, {
+      fontSize: '12px',
+      fontFamily: 'Courier New',
+      color: '#00ff00'
+    }).setOrigin(0, 1).setAlpha(0.6);
   }
 
   private updateButtonHighlight(): void {
