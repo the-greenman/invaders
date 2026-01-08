@@ -1,6 +1,6 @@
 {
   "name": "classinvaders",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "description": "Space Invaders game with webcam face capture",
   "scripts": {
