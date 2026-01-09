@@ -45,10 +45,10 @@ export class PreloaderScene extends Phaser.Scene {
     // Create SVG alien textures
     await this.createSVGAlienTextures();
 
-    console.log('PreloaderScene: textures created, starting MenuScene');
+    console.log('PreloaderScene: textures created, starting SystemCheckScene');
 
-    // Transition to MenuScene when loading complete
-    this.scene.start('MenuScene');
+    // Transition to system check before menu
+    this.scene.start('SystemCheckScene');
   }
 
   private createLoadingBar(): void {

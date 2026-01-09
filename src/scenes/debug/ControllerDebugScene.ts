@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { LocalStorage } from '../../utils/localStorage';
+import { GamepadHelper } from '../../utils/gamepadHelper';
 
 /**
  * Controller Debug Scene
@@ -111,10 +112,10 @@ export class ControllerDebugScene extends Phaser.Scene {
     }
 
     // Seed state so held buttons don't instantly trigger an action on entry
-    if (this.pad && this.pad.connected) {
-      this.prevButtons = this.pad.buttons.map(b => b.pressed);
-      this.prevBack = !!this.pad.buttons[this.backButtonIndex]?.pressed;
-      this.prevSelect = !!(this.pad.A || this.pad.buttons[0]?.pressed);
+    if (GamepadHelper.isConnected(this.pad)) {
+      this.prevButtons = this.pad!.buttons.map(b => b.pressed);
+      this.prevBack = GamepadHelper.isButtonPressed(this.pad!, this.backButtonIndex);
+      this.prevSelect = GamepadHelper.isButtonPressed(this.pad!, 0); // Button 0 is typically 'A'
     }
 
     this.events.on('shutdown', () => {
@@ -328,9 +329,9 @@ export class ControllerDebugScene extends Phaser.Scene {
     const up = this.pad.up || axisY < -0.5;
     const down = this.pad.down || axisY > 0.5;
 
-    // Some pads may not map A to button 0; prefer Phaser's A alias, fall back to button 0 if present
-    const select = !!(this.pad.A || this.pad.buttons[0]?.pressed);
-    const back = !!this.pad.buttons[this.backButtonIndex]?.pressed;
+    // Use GamepadHelper for button checking
+    const select = GamepadHelper.isButtonPressed(this.pad, 0); // Button 0 is typically 'A'
+    const back = GamepadHelper.isButtonPressed(this.pad, this.backButtonIndex);
 
     // Back: cancel binding or exit
     if (back && !this.prevBack) {

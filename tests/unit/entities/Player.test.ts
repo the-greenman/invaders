@@ -78,7 +78,10 @@ vi.mock('phaser', () => {
 // Mock LocalStorage
 vi.mock('../../../src/utils/localStorage', () => ({
   LocalStorage: {
-    getSettings: vi.fn().mockReturnValue({ controllerFireButton: 0 })
+    getSettings: vi.fn().mockReturnValue({
+      controllerFireButton: 0,
+      controllerBackButton: 1  // Button 1 is the back button
+    })
   }
 }));
 

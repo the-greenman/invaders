@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from './constants';
 import { PreloaderScene } from './scenes/PreloaderScene';
+import { SystemCheckScene } from './scenes/SystemCheckScene';
 import { MenuScene } from './scenes/MenuScene';
 import { DifficultySelectScene } from './scenes/DifficultySelectScene';
 import { WebcamScene } from './scenes/WebcamScene';
@@ -46,6 +47,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   },
   scene: [
     PreloaderScene,
+    SystemCheckScene,
     MenuScene,
     DifficultySelectScene,
     RadarIntroScene,

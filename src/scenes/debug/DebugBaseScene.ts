@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { LocalStorage } from '../../utils/localStorage';
+import { GamepadHelper } from '../../utils/gamepadHelper';
 
 export abstract class DebugBaseScene extends Phaser.Scene {
   protected gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
@@ -16,8 +17,8 @@ export abstract class DebugBaseScene extends Phaser.Scene {
       this.gamepad = this.input.gamepad.getPad(0);
     }
 
-    if (this.gamepad && this.gamepad.connected) {
-      this.prevBack = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
+    if (GamepadHelper.isConnected(this.gamepad)) {
+      this.prevBack = GamepadHelper.isButtonPressed(this.gamepad!, this.backButtonIndex);
     }
 
     this.startInactivityTimeout();
@@ -38,13 +39,13 @@ export abstract class DebugBaseScene extends Phaser.Scene {
   protected pollBackToDebugMenu(): void {
     if (!this.input.gamepad) return;
 
-    if (!this.gamepad || !this.gamepad.connected) {
+    if (!GamepadHelper.isConnected(this.gamepad)) {
       this.gamepad = this.input.gamepad.getPad(0);
     }
 
-    if (!this.gamepad || !this.gamepad.connected) return;
+    if (!GamepadHelper.isConnected(this.gamepad)) return;
 
-    const isBack = !!this.gamepad.buttons[this.backButtonIndex]?.pressed;
+    const isBack = GamepadHelper.isButtonPressed(this.gamepad!, this.backButtonIndex);
     if (isBack && !this.prevBack) {
       this.startExclusive('DebugMenuScene');
     }
