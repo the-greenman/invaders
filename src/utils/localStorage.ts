@@ -52,9 +52,15 @@ export class LocalStorage {
       const isQuotaError = error instanceof Error &&
         (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
       if (isQuotaError) {
-        console.error('Storage quota exceeded. Unable to save face image.');
-        // Optionally clear old data to make room
+        console.error('Storage quota exceeded. Clearing old faces and retrying...');
+        // Clear old data to make room
         this.clearFaces();
+        // Retry saving after clearing
+        try {
+          localStorage.setItem(KEYS.CURRENT_FACE, imageData);
+        } catch (retryError) {
+          console.error('Failed to save face even after clearing storage:', retryError);
+        }
       } else {
         console.error('Error saving face:', error);
       }

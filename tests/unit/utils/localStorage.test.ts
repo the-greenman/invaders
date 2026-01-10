@@ -186,7 +186,7 @@ describe('LocalStorage', () => {
       const quotaError = new Error('QuotaExceededError');
       quotaError.name = 'QuotaExceededError';
 
-      // Mock setItem to throw on CURRENT_FACE key
+      // Mock setItem to throw on CURRENT_FACE key (both initial and retry)
       const setItemMock = vi.fn((key: string, value: string) => {
         if (key === 'classinvaders_current_face') {
           throw quotaError;
@@ -206,11 +206,12 @@ describe('LocalStorage', () => {
       // Should not throw
       expect(() => LocalStorage.setCurrentFace(largeImageData)).not.toThrow();
 
-      // setItem should have been called with the current face key
+      // setItem should have been called with the current face key (initial + retry = 2 times)
       expect(setItemMock).toHaveBeenCalledWith('classinvaders_current_face', largeImageData);
+      expect(setItemMock).toHaveBeenCalledTimes(2);
 
-      // Error should have been logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Storage quota exceeded. Unable to save face image.');
+      // Error should have been logged (initial quota error + retry failure)
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Storage quota exceeded. Clearing old faces and retrying...');
 
       // clearFaces should have been called (removeItem for both keys)
       expect(removeItemMock).toHaveBeenCalledWith('classinvaders_current_face');
@@ -268,6 +269,47 @@ describe('LocalStorage', () => {
       localStorage.removeItem = originalRemoveItem;
       consoleErrorSpy.mockRestore();
       consoleWarnSpy.mockRestore();
+    });
+
+    it('should retry saving current face after clearing quota', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const quotaError = new Error('QuotaExceededError');
+      quotaError.name = 'QuotaExceededError';
+
+      // Mock to fail first setItem for current_face, then succeed on retry
+      let setItemCallCount = 0;
+      const originalSetItem = localStorage.setItem.bind(localStorage);
+      const setItemMock = vi.fn((key: string, value: string) => {
+        if (key === 'classinvaders_current_face') {
+          setItemCallCount++;
+          if (setItemCallCount === 1) {
+            // First attempt fails with quota
+            throw quotaError;
+          }
+          // Second attempt (after clear) succeeds
+          originalSetItem(key, value);
+        } else {
+          originalSetItem(key, value);
+        }
+      });
+
+      localStorage.setItem = setItemMock;
+
+      const newFace = 'data:image/png;base64,newface';
+
+      // Should not throw and should save the new face after clearing
+      expect(() => LocalStorage.setCurrentFace(newFace)).not.toThrow();
+
+      // The new face should be saved (after retry)
+      expect(LocalStorage.getCurrentFace()).toBe(newFace);
+
+      // setItem should have been called twice (fail, then succeed)
+      expect(setItemCallCount).toBe(2);
+
+      // Restore
+      localStorage.setItem = originalSetItem;
+      consoleErrorSpy.mockRestore();
     });
   });
 });
