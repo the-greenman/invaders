@@ -195,8 +195,14 @@ export class WebcamScene extends Phaser.Scene {
       }
       const hasCamera = await this.hasWebcam();
       if (!hasCamera) {
-        // No camera available - offer to play without webcam
-        this.showPlayWithoutWebcamOption();
+        // No camera available - continue without webcam
+        console.log('[WebcamScene] No camera detected, playing without webcam');
+        this.updateStatus('No camera detected. Starting game without webcam...');
+        
+        // Wait a moment then start game without webcam
+        this.time.delayedCall(1500, () => {
+          this.startGameWithoutWebcam();
+        });
         return;
       }
       
@@ -417,42 +423,6 @@ export class WebcamScene extends Phaser.Scene {
     retryButton.on('pointerdown', () => {
       retryButton.destroy();
       this.initializeWebcam();
-    });
-  }
-
-  private showPlayWithoutWebcamOption(): void {
-    const { width, height } = this.cameras.main;
-    
-    // Clear existing buttons
-    this.captureButton?.destroy();
-    
-    // Update status
-    this.updateStatus('No camera detected. Play without webcam?');
-    
-    // Play without webcam button
-    const playButton = this.add.text(width / 2, height / 2 + 300, 'PLAY WITHOUT WEBCAM', {
-      fontSize: '20px',
-      fontFamily: 'Courier New',
-      color: '#00ff00',
-      backgroundColor: '#000000',
-      padding: { x: 15, y: 8 }
-    }).setOrigin(0.5).setInteractive();
-    
-    playButton.on('pointerdown', () => {
-      this.startGameWithoutWebcam();
-    });
-    
-    // Back to menu button
-    const backButton = this.add.text(width / 2, height / 2 + 350, 'BACK TO MENU', {
-      fontSize: '18px',
-      fontFamily: 'Courier New',
-      color: '#ffff00',
-      backgroundColor: '#000000',
-      padding: { x: 15, y: 8 }
-    }).setOrigin(0.5).setInteractive();
-    
-    backButton.on('pointerdown', () => {
-      this.returnToMenu();
     });
   }
 
