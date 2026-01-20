@@ -76,6 +76,9 @@ export class WebcamScene extends Phaser.Scene {
     if (this.input.gamepad && this.input.gamepad.total > 0) {
       if (!this.gamepad || !this.gamepad.connected) {
         this.gamepad = this.input.gamepad.getPad(0);
+        if (this.gamepad) {
+          console.log('[WebcamScene] Gamepad acquired:', this.gamepad.id);
+        }
       }
     }
 
@@ -83,8 +86,11 @@ export class WebcamScene extends Phaser.Scene {
       const anyButtonPressed = GamepadHelper.isAnyButtonPressed(this.gamepad!);
 
       if (anyButtonPressed && !this.prevFirePressed) {
+        console.log('[WebcamScene] Gamepad button pressed, triggering capture');
         if (this.isInitialized && !this.isCapturing) {
           this.captureFace();
+        } else {
+          console.log('[WebcamScene] Capture not ready:', { isInitialized: this.isInitialized, isCapturing: this.isCapturing });
         }
       }
       this.prevFirePressed = anyButtonPressed;
@@ -174,6 +180,12 @@ export class WebcamScene extends Phaser.Scene {
         this.captureFace();
       }
     });
+
+    // Gamepad connection listener
+    this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      console.log('[WebcamScene] Gamepad connected via event:', pad.id);
+      this.gamepad = pad;
+    });
   }
 
   private async initializeWebcam(): Promise<void> {
@@ -183,8 +195,8 @@ export class WebcamScene extends Phaser.Scene {
       }
       const hasCamera = await this.hasWebcam();
       if (!hasCamera) {
-        // Skip directly if no camera is available
-        this.scene.start('MenuScene');
+        // No camera available - offer to play without webcam
+        this.showPlayWithoutWebcamOption();
         return;
       }
       
@@ -216,34 +228,37 @@ export class WebcamScene extends Phaser.Scene {
       
     } catch (error) {
       console.error('Failed to initialize webcam:', error);
-      this.updateStatus('Error: ' + this.getErrorMessage(error));
+      this.updateStatus('Webcam failed: ' + this.getErrorMessage(error));
       
-      // Show retry button
-      this.showRetryButton();
+      // Show options to retry or play without webcam
+      this.showWebcamFailedOptions();
     }
   }
 
   private async captureFace(): Promise<void> {
     if (!this.isInitialized || this.isCapturing || !this.videoElement) {
+      console.log('[WebcamScene] Capture blocked:', { isInitialized: this.isInitialized, isCapturing: this.isCapturing, hasVideo: !!this.videoElement });
       return;
     }
-    
+
+    console.log('[WebcamScene] Starting face capture...');
     this.isCapturing = true;
     this.updateStatus('Capturing face...');
-    
+
     try {
       // Capture and save face using detection bbox + padding (matches debug)
       await FaceManager.captureAndSaveFace(this.videoElement, this.lastBBox ?? undefined, this.cropPadding);
-      
+      console.log('[WebcamScene] Face captured and saved successfully');
+
       this.updateStatus('Face captured successfully!');
-      
+
       // Wait a moment then transition to game
       this.time.delayedCall(1500, () => {
         this.startGameWithWebcam();
       });
-      
+
     } catch (error) {
-      console.error('Failed to capture face:', error);
+      console.error('[WebcamScene] Failed to capture face:', error);
       this.updateStatus('Capture failed: ' + this.getErrorMessage(error));
       this.isCapturing = false;
     }
@@ -402,6 +417,123 @@ export class WebcamScene extends Phaser.Scene {
     retryButton.on('pointerdown', () => {
       retryButton.destroy();
       this.initializeWebcam();
+    });
+  }
+
+  private showPlayWithoutWebcamOption(): void {
+    const { width, height } = this.cameras.main;
+    
+    // Clear existing buttons
+    this.captureButton?.destroy();
+    
+    // Update status
+    this.updateStatus('No camera detected. Play without webcam?');
+    
+    // Play without webcam button
+    const playButton = this.add.text(width / 2, height / 2 + 300, 'PLAY WITHOUT WEBCAM', {
+      fontSize: '20px',
+      fontFamily: 'Courier New',
+      color: '#00ff00',
+      backgroundColor: '#000000',
+      padding: { x: 15, y: 8 }
+    }).setOrigin(0.5).setInteractive();
+    
+    playButton.on('pointerdown', () => {
+      this.startGameWithoutWebcam();
+    });
+    
+    // Back to menu button
+    const backButton = this.add.text(width / 2, height / 2 + 350, 'BACK TO MENU', {
+      fontSize: '18px',
+      fontFamily: 'Courier New',
+      color: '#ffff00',
+      backgroundColor: '#000000',
+      padding: { x: 15, y: 8 }
+    }).setOrigin(0.5).setInteractive();
+    
+    backButton.on('pointerdown', () => {
+      this.returnToMenu();
+    });
+  }
+
+  private showWebcamFailedOptions(): void {
+    const { width, height } = this.cameras.main;
+    
+    // Clear existing buttons
+    this.captureButton?.destroy();
+    
+    // Update status
+    this.updateStatus('Webcam initialization failed.');
+    
+    // Retry button
+    const retryButton = this.add.text(width / 2 - 150, height / 2 + 300, 'RETRY', {
+      fontSize: '20px',
+      fontFamily: 'Courier New',
+      color: '#ffff00',
+      backgroundColor: '#000000',
+      padding: { x: 15, y: 8 }
+    }).setOrigin(0.5).setInteractive();
+    
+    retryButton.on('pointerdown', () => {
+      retryButton.destroy();
+      playButton.destroy();
+      backButton.destroy();
+      this.captureButton = this.add.text(width / 2, height / 2 + 300, 'CAPTURE FACE', {
+        fontSize: '20px',
+        fontFamily: 'Courier New',
+        color: '#00ff00',
+        backgroundColor: '#000000',
+        padding: { x: 15, y: 8 }
+      }).setOrigin(0.5).setInteractive();
+      this.setupEventListeners();
+      this.initializeWebcam();
+    });
+    
+    // Play without webcam button
+    const playButton = this.add.text(width / 2, height / 2 + 300, 'PLAY WITHOUT WEBCAM', {
+      fontSize: '20px',
+      fontFamily: 'Courier New',
+      color: '#00ff00',
+      backgroundColor: '#000000',
+      padding: { x: 15, y: 8 }
+    }).setOrigin(0.5).setInteractive();
+    
+    playButton.on('pointerdown', () => {
+      this.startGameWithoutWebcam();
+    });
+    
+    // Back to menu button
+    const backButton = this.add.text(width / 2 + 150, height / 2 + 300, 'BACK TO MENU', {
+      fontSize: '18px',
+      fontFamily: 'Courier New',
+      color: '#ffff00',
+      backgroundColor: '#000000',
+      padding: { x: 15, y: 8 }
+    }).setOrigin(0.5).setInteractive();
+    
+    backButton.on('pointerdown', () => {
+      this.returnToMenu();
+    });
+  }
+
+  private startGameWithoutWebcam(): void {
+    // Start game without webcam faces
+    const payload = {
+      level: 1,
+      score: 0,
+      useWebcam: false,
+      difficulty: this.difficulty,
+      startMode: GameMode.SPACE_INVADERS
+    };
+
+    if (this.skipIntro) {
+      this.scene.start('SpaceInvadersScene', payload);
+      return;
+    }
+
+    this.scene.start('RadarIntroScene', {
+      nextScene: 'SpaceInvadersScene',
+      payload
     });
   }
 
