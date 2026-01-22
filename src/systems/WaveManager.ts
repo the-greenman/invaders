@@ -9,7 +9,9 @@ import {
   GALAGA_WAVE_MIN_SIZE,
   GALAGA_WAVE_MAX_SIZE,
   GALAGA_MAX_SIMULTANEOUS_WAVES,
-  GALAGA_RETURN_SPEED
+  GALAGA_RETURN_SPEED,
+  ALIEN_SPACING_X,
+  ALIEN_SPACING_Y
 } from '../constants';
 
 /**
@@ -148,7 +150,7 @@ export class WaveManager {
 
     // 3. For each alien, assign path and set state
     for (const alien of selectedAliens) {
-      alien.setFormationPosition(alien.x, alien.y);
+      // No need to store formation position - it will be calculated dynamically
       const path = createRandomAttackPath();
       path.start(alien.x, alien.y);
       alien.setAttackPath(path);
@@ -205,11 +207,26 @@ export class WaveManager {
   }
 
   /**
+   * Calculate the current formation position for an alien based on the grid's current position
+   * This ensures aliens return to where the formation IS, not where it WAS when they launched
+   */
+  private getCurrentFormationPosition(alien: Alien): { x: number; y: number } {
+    const gridPos = alien.getGridPosition();
+    const gridContainer = this.grid as any; // GalagaGrid extends Container
+
+    // Calculate position based on grid's current location + alien's grid slot
+    const x = gridContainer.x + (gridPos.col * ALIEN_SPACING_X);
+    const y = gridContainer.y + (gridPos.row * ALIEN_SPACING_Y);
+
+    return { x, y };
+  }
+
+  /**
    * Update alien returning to formation
    */
   private updateReturnToFormation(alien: Alien, delta: number): void {
-    // Navigate back to formation position
-    const target = alien.getFormationPosition();
+    // Calculate current formation position dynamically based on grid position
+    const target = this.getCurrentFormationPosition(alien);
     const speed = GALAGA_RETURN_SPEED * (delta / 1000);
 
     const dx = target.x - alien.x;
