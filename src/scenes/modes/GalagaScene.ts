@@ -222,10 +222,21 @@ export class GalagaScene extends BaseGameScene {
   protected onLevelComplete(): void {
     console.log(`[GalagaScene] Level ${this.level} complete! levelsSinceLastSwitch: ${this.levelsSinceLastSwitch}`);
     this.gameActive = false;
-    
+
     // Increment level counter for auto-switch
     this.levelsSinceLastSwitch++;
-    
+
+    // Clear all bombs immediately to prevent player death during victory screen
+    this.clearAllBombs();
+
+    // Disable player collisions to prevent any remaining projectiles from hitting player
+    if (this.player) {
+      const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+      if (playerBody) {
+        playerBody.checkCollision.none = true;
+      }
+    }
+
     // Show completion text
     const completeText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'LEVEL COMPLETE!', {
       fontSize: '32px',
@@ -236,7 +247,7 @@ export class GalagaScene extends BaseGameScene {
     // Check for mode switch
     this.time.delayedCall(2000, () => {
       completeText.destroy();
-      
+
       if (this.shouldAutoSwitch()) {
         console.log(`[GalagaScene] Auto-switching to Space Invaders after ${this.levelsSinceLastSwitch} levels`);
         this.switchToMode(GameMode.SPACE_INVADERS);
@@ -329,6 +340,18 @@ export class GalagaScene extends BaseGameScene {
     // Advance to next level
     this.advanceLevel();
     this.gameActive = true;
+
+    // Re-enable player collisions
+    if (this.player) {
+      const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+      if (playerBody) {
+        playerBody.checkCollision.none = false;
+        playerBody.checkCollision.up = true;
+        playerBody.checkCollision.down = true;
+        playerBody.checkCollision.left = true;
+        playerBody.checkCollision.right = true;
+      }
+    }
 
     // Clear existing entities
     this.clearForNextLevel();

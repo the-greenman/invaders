@@ -130,17 +130,28 @@ export class SpaceInvadersScene extends BaseGameScene {
 
   protected onLevelComplete(): void {
     this.gameActive = false;
-    
+
     // Increment level counter for auto-switch
     this.levelsSinceLastSwitch++;
-    
+
+    // Clear all bombs immediately to prevent player death during victory screen
+    this.clearAllBombs();
+
+    // Disable player collisions to prevent any remaining projectiles from hitting player
+    if (this.player) {
+      const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+      if (playerBody) {
+        playerBody.checkCollision.none = true;
+      }
+    }
+
     // Show level complete message
     const completeText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'LEVEL COMPLETE!', {
       fontSize: '36px',
       fontFamily: 'Courier New',
       color: '#00ff00'
     }).setOrigin(0.5);
-    
+
     // Wait then either switch mode (auto) or start next level
     this.time.delayedCall(3000, () => {
       completeText.destroy();
@@ -217,6 +228,18 @@ export class SpaceInvadersScene extends BaseGameScene {
     // Advance to next level
     this.advanceLevel();
     this.gameActive = true;
+
+    // Re-enable player collisions
+    if (this.player) {
+      const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+      if (playerBody) {
+        playerBody.checkCollision.none = false;
+        playerBody.checkCollision.up = true;
+        playerBody.checkCollision.down = true;
+        playerBody.checkCollision.left = true;
+        playerBody.checkCollision.right = true;
+      }
+    }
 
     // Clear existing entities but keep physics groups and colliders
     this.clearForNextLevel();

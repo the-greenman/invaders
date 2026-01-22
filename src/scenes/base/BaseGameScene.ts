@@ -608,6 +608,25 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.updateScoreDisplay();
   }
 
+  /**
+   * Clear all active bombs
+   * Useful when transitioning between levels to prevent bombs from hitting player
+   */
+  protected clearAllBombs(): void {
+    if (this.bombs) {
+      this.bombs.children.entries.forEach((bomb: any) => {
+        if (bomb && bomb.active) {
+          bomb.setActive(false);
+          bomb.setVisible(false);
+          const body = bomb.body as Phaser.Physics.Arcade.Body;
+          if (body) {
+            body.enable = false;
+          }
+        }
+      });
+    }
+  }
+
   protected updateScoreDisplay(): void {
     if (this.scoreText) {
       this.scoreText.setText(`SCORE: ${this.score}`);
