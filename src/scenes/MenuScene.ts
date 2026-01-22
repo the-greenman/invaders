@@ -538,19 +538,24 @@ export class MenuScene extends Phaser.Scene {
 
   private async prepareAlienTextures(): Promise<void> {
     const history = LocalStorage.getFaceHistory();
-    console.log(`Menu: Found ${history.length} faces in history`);
+    const currentFace = LocalStorage.getCurrentFace();
+    const faces = [...history];
+    if (currentFace) {
+      faces.unshift({ id: 'current', imageData: currentFace, timestamp: Date.now() });
+    }
+    console.log(`Menu: Found ${faces.length} faces (history: ${history.length}, current: ${currentFace ? 1 : 0})`);
     // Always load default alien textures if available
     this.alienFaceTextures = [];
 
-    // If we have history, generate face textures
-    if (history.length > 0) {
+    // If we have faces, generate textures
+    if (faces.length > 0) {
       const meta = this.cache.json.get('alien1-face-meta');
       if (!meta) console.warn('Menu: alien1-face-meta not found in cache');
       const coreRadius = meta?.rx ?? ALIEN_CORE_RADIUS;
       const centerX = meta ? meta.relativeX * ALIEN_WIDTH : undefined;
       const centerY = meta ? meta.relativeY * ALIEN_HEIGHT : undefined;
 
-      for (const face of history) {
+      for (const face of faces) {
         const srcKey = `menu-face-src-${face.id}`;
         const targetKey = `menu-face-${face.id}`;
         try {

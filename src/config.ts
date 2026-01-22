@@ -28,6 +28,7 @@ import { BombTestScene } from './scenes/debug/BombTestScene';
 import { MobileDebugScene } from './scenes/debug/MobileDebugScene';
 import { PathTestScene } from './scenes/debug/PathTestScene';
 import { GalagaSkyTransitionScene } from './scenes/GalagaSkyTransitionScene';
+import { WebcamDebugScene } from './scenes/debug/WebcamDebugScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -67,6 +68,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     CompareScene,
     ControllerDebugScene,
     StoredFacesScene,
+    WebcamDebugScene,
     AbductionLineScene,
     BombTestScene,
     MobileDebugScene,

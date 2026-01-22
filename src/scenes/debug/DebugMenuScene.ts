@@ -21,6 +21,7 @@ export class DebugMenuScene extends Phaser.Scene {
     { label: 'Armada Movement', scene: 'ArmadaTestScene', shortcut: { display: '3', phaserKeydownEvent: 'keydown-THREE' } },
     { label: 'Bullet Collisions', scene: 'CollisionTestScene', shortcut: { display: '4', phaserKeydownEvent: 'keydown-FOUR' } },
     { label: 'Camera Capture to Sprite', scene: 'CameraTestScene', shortcut: { display: '5', phaserKeydownEvent: 'keydown-FIVE' } },
+    { label: 'Webcam Debug', scene: 'WebcamDebugScene', shortcut: { display: 'V', phaserKeydownEvent: 'keydown-V' } },
     { label: 'Sprite Debug (SVG & Faces)', scene: 'SpriteDebugScene', shortcut: { display: '6', phaserKeydownEvent: 'keydown-SIX' } },
     { label: 'Compare: Game vs Sprite Debug', scene: 'CompareScene', shortcut: { display: '7', phaserKeydownEvent: 'keydown-SEVEN' } },
     { label: 'Stored Faces', scene: 'StoredFacesScene', shortcut: { display: '8', phaserKeydownEvent: 'keydown-EIGHT' } },
