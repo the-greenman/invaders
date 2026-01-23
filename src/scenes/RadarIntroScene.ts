@@ -38,6 +38,8 @@ export class RadarIntroScene extends Phaser.Scene {
   private attemptAdvanceHandler?: () => void;
   private readyTimer?: Phaser.Time.TimerEvent;
   private autoAdvanceTimer?: Phaser.Time.TimerEvent;
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevButtonPressed: boolean = false;
 
   constructor() {
     super({ key: 'RadarIntroScene' });
@@ -110,11 +112,18 @@ export class RadarIntroScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ENTER', this.attemptAdvanceHandler);
     // Fallback: any key to advance
     this.input.keyboard?.on('keydown', this.attemptAdvanceHandler);
-    try {
-      this.input.gamepad?.on('down', this.attemptAdvanceHandler);
-    } catch (e) {
-      // Ignore gamepad errors - some browsers crash on gamepad API
+
+    // Initialize gamepad if connected
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      this.gamepad = this.input.gamepad.getPad(0);
+      if (this.gamepad) {
+        this.prevButtonPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed || false;
+      }
     }
+    this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      this.gamepad = pad;
+    });
+
     this.autoAdvanceTimer = this.time.delayedCall(10000, () => {
       this.readyToLeave = true;
       this.startNext();
@@ -136,6 +145,21 @@ export class RadarIntroScene extends Phaser.Scene {
   }
 
   update(time: number): void {
+    // Poll gamepad for button press
+    if (!this.gamepad || !this.gamepad.connected) {
+      if (this.input.gamepad && this.input.gamepad.total > 0) {
+        this.gamepad = this.input.gamepad.getPad(0);
+      }
+    }
+    
+    if (this.gamepad && this.gamepad.connected) {
+      const isPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed || false;
+      if (isPressed && !this.prevButtonPressed && this.attemptAdvanceHandler) {
+        this.attemptAdvanceHandler();
+      }
+      this.prevButtonPressed = isPressed;
+    }
+
     this.beamAngle += 0.03;
     if (this.beamAngle > Math.PI * 2) {
       this.beamAngle -= Math.PI * 2;

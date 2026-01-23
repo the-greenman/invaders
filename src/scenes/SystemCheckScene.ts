@@ -6,12 +6,21 @@ export class SystemCheckScene extends Phaser.Scene {
   private checks: SystemCheckResult[] = [];
   private started: boolean = false;
   private autoAdvanceTimer?: Phaser.Time.TimerEvent;
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevButtonPressed: boolean = false;
 
   constructor() {
     super({ key: 'SystemCheckScene' });
   }
 
   create(): void {
+    // Reset state for scene reuse
+    this.started = false;
+    this.prevButtonPressed = false;
+    this.gamepad = null;
+    this.lines = [];
+    this.checks = [];
+    
     const { width } = this.scale;
     this.cameras.main.setBackgroundColor(0x000000);
 
@@ -59,14 +68,36 @@ export class SystemCheckScene extends Phaser.Scene {
     const advance = () => this.advance();
     this.input.once('pointerdown', advance);
     this.input.keyboard?.once('keydown', advance);
-    try {
-      this.input.gamepad?.once('down', advance);
-    } catch (e) {
-      // Ignore gamepad errors - some browsers crash on gamepad API when no controller connected
+
+    // Initialize gamepad if connected
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      this.gamepad = this.input.gamepad.getPad(0);
+      if (this.gamepad) {
+        this.prevButtonPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed || false;
+      }
     }
+    this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      this.gamepad = pad;
+    });
 
     const totalDuration = 300 + this.checks.length * 400 + 800;
     this.autoAdvanceTimer = this.time.delayedCall(totalDuration, advance);
+  }
+
+  update(): void {
+    if (!this.gamepad || !this.gamepad.connected) {
+      if (this.input.gamepad && this.input.gamepad.total > 0) {
+        this.gamepad = this.input.gamepad.getPad(0);
+      }
+    }
+    
+    if (this.gamepad && this.gamepad.connected) {
+      const isPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed || false;
+      if (isPressed && !this.prevButtonPressed) {
+        this.advance();
+      }
+      this.prevButtonPressed = isPressed;
+    }
   }
 
   private advance(): void {

@@ -29,8 +29,12 @@ export class DebugMenuScene extends Phaser.Scene {
     { label: 'Abduction Line', scene: 'AbductionLineScene', shortcut: { display: '0', phaserKeydownEvent: 'keydown-ZERO' } },
     { label: 'Bomb Drop Test', scene: 'BombTestScene', shortcut: { display: 'B', phaserKeydownEvent: 'keydown-B' } },
     { label: 'Path Test (Attack Paths)', scene: 'PathTestScene', shortcut: { display: 'P', phaserKeydownEvent: 'keydown-P' } },
-    { label: 'Radar Intro (Narrative)', scene: 'RadarIntroScene', shortcut: { display: 'R', phaserKeydownEvent: 'keydown-R' } },
+    { label: 'Radar Intro (Narrative)', scene: 'RadarIntroScene', shortcut: { display: 'R', phaserKeydownEvent: 'keydown-R' }, data: { nextScene: 'MenuScene', payload: {} } },
+    { label: 'Space Invaders Intro', scene: 'SpaceInvadersIntroScene', data: { toMode: GameMode.SPACE_INVADERS, level: 1, score: 0, useWebcam: false, lives: 3 } },
+    { label: 'Galaga Intro', scene: 'GalagaIntroScene', data: { toMode: GameMode.GALAGA, level: 1, score: 0, useWebcam: false, lives: 3 } },
+    { label: 'Mode Transition (SI→Galaga)', scene: 'ModeTransitionScene', data: { fromMode: GameMode.SPACE_INVADERS, toMode: GameMode.GALAGA, level: 1, score: 0, useWebcam: false, lives: 3, difficulty: DifficultyPreset.MEDIUM, advanceLevel: false } },
     { label: 'Invaders → Galaga Transition', scene: 'GalagaSkyTransitionScene', shortcut: { display: 'G', phaserKeydownEvent: 'keydown-G' }, data: { fromMode: GameMode.SPACE_INVADERS, toMode: GameMode.GALAGA, level: 1, score: 0, useWebcam: false, lives: 3, difficulty: DifficultyPreset.MEDIUM, advanceLevel: false, showDefenderPreview: true } },
+    { label: 'System Check', scene: 'SystemCheckScene' },
     // Balance Testing Quick Starts (7.2)
     { label: 'Start SI Level 1', scene: 'SpaceInvadersScene', shortcut: { display: 'Q', phaserKeydownEvent: 'keydown-Q' }, data: { level: 1, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },
     { label: 'Start SI Level 5', scene: 'SpaceInvadersScene', shortcut: { display: 'W', phaserKeydownEvent: 'keydown-W' }, data: { level: 5, score: 0, useWebcam: false, startMode: GameMode.SPACE_INVADERS } },

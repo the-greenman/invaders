@@ -19,6 +19,8 @@ export class ModeTransitionScene extends Phaser.Scene {
   private dataIn!: ModeTransitionData;
   private hasAdvanced: boolean = false;
   private autoAdvanceTimer?: Phaser.Time.TimerEvent;
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevButtonPressed: boolean = false;
 
   constructor() {
     super({ key: 'ModeTransitionScene' });
@@ -29,6 +31,11 @@ export class ModeTransitionScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Reset state for scene reuse
+    this.hasAdvanced = false;
+    this.prevButtonPressed = false;
+    this.gamepad = null;
+    
     const { fromMode, toMode } = this.dataIn;
 
     const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 40,
@@ -71,16 +78,38 @@ export class ModeTransitionScene extends Phaser.Scene {
     this.input.once('pointerdown', advance);
     this.input.keyboard?.once('keydown-SPACE', advance);
     this.input.keyboard?.once('keydown-ENTER', advance);
-    try {
-      this.input.gamepad?.once('down', advance);
-    } catch (e) {
-      // Ignore gamepad errors - some browsers crash on gamepad API when no controller connected
-    }
     this.autoAdvanceTimer = this.time.delayedCall(10000, advance);
+
+    // Initialize gamepad if connected
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      this.gamepad = this.input.gamepad.getPad(0);
+      if (this.gamepad) {
+        this.prevButtonPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed || false;
+      }
+    }
+    this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      this.gamepad = pad;
+    });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.autoAdvanceTimer?.remove(false);
     });
+  }
+
+  update(): void {
+    if (!this.gamepad || !this.gamepad.connected) {
+      if (this.input.gamepad && this.input.gamepad.total > 0) {
+        this.gamepad = this.input.gamepad.getPad(0);
+      }
+    }
+    
+    if (this.gamepad && this.gamepad.connected) {
+      const isPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed || false;
+      if (isPressed && !this.prevButtonPressed) {
+        this.advance();
+      }
+      this.prevButtonPressed = isPressed;
+    }
   }
 
   private advance(): void {

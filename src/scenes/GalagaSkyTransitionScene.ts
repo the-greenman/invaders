@@ -17,6 +17,8 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
   private horizon?: Phaser.GameObjects.Line;
   private hasAdvanced: boolean = false;
   private autoAdvanceTimer?: Phaser.Time.TimerEvent;
+  private gamepad: Phaser.Input.Gamepad.Gamepad | null = null;
+  private prevButtonPressed: boolean = false;
 
   constructor() {
     super({ key: 'GalagaSkyTransitionScene' });
@@ -27,6 +29,13 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Reset state for scene reuse
+    this.hasAdvanced = false;
+    this.started = false;
+    this.prevButtonPressed = false;
+    this.gamepad = null;
+    this.clouds = [];
+    
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor(0x0a122d);
     this.add.rectangle(width / 2, height / 2, width, height, 0x0f1c3f, 0.6);
@@ -86,12 +95,18 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
     this.input.once('pointerdown', advance);
     this.input.keyboard?.once('keydown-SPACE', advance);
     this.input.keyboard?.once('keydown-ENTER', advance);
-    try {
-      this.input.gamepad?.once('down', advance);
-    } catch (e) {
-      // Ignore gamepad errors - some browsers crash on gamepad API when no controller connected
-    }
     this.autoAdvanceTimer = this.time.delayedCall(10000, advance);
+
+    // Initialize gamepad if connected
+    if (this.input.gamepad && this.input.gamepad.total > 0) {
+      this.gamepad = this.input.gamepad.getPad(0);
+      if (this.gamepad) {
+        this.prevButtonPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed || false;
+      }
+    }
+    this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      this.gamepad = pad;
+    });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.autoAdvanceTimer?.remove(false);
@@ -99,6 +114,21 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
   }
 
   update(_: number, delta: number): void {
+    // Poll gamepad for button press
+    if (!this.gamepad || !this.gamepad.connected) {
+      if (this.input.gamepad && this.input.gamepad.total > 0) {
+        this.gamepad = this.input.gamepad.getPad(0);
+      }
+    }
+    
+    if (this.gamepad && this.gamepad.connected) {
+      const isPressed = this.gamepad.A || this.gamepad.buttons[0]?.pressed || false;
+      if (isPressed && !this.prevButtonPressed) {
+        this.advance();
+      }
+      this.prevButtonPressed = isPressed;
+    }
+
     this.clouds.forEach(cloud => {
       cloud.sprite.y -= cloud.speed * (delta / 1000);
       cloud.sprite.x += cloud.drift * (delta / 1000);
