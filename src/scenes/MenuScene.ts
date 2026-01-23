@@ -86,6 +86,10 @@ export class MenuScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     console.log('MenuScene: create start');
+    
+    // Check storage health and run GC if needed
+    LocalStorage.checkStorageHealth();
+    
     const settings = LocalStorage.getSettings();
     this.backButtonIndex = settings.controllerBackButton!;
     this.fireButtonIndex = settings.controllerFireButton!;

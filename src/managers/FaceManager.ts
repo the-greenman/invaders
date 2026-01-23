@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { LocalStorage } from '../utils/localStorage';
 import { ImageProcessor } from '../utils/imageProcessor';
 import { COLORS } from '../constants';
+import { SpriteManager } from './SpriteManager';
 
 // TypeScript declarations for MediaPipe global objects (loaded via CDN)
 declare global {
@@ -136,6 +137,10 @@ export class FaceManager {
     }
     
     LocalStorage.setCurrentFace(imageData);
+    
+    // Invalidate sprite cache so next game uses the new face
+    SpriteManager.invalidatePlayerCache();
+    
     return imageData;
   }
 

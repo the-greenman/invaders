@@ -59,7 +59,11 @@ export class SystemCheckScene extends Phaser.Scene {
     const advance = () => this.advance();
     this.input.once('pointerdown', advance);
     this.input.keyboard?.once('keydown', advance);
-    this.input.gamepad?.once('down', advance);
+    try {
+      this.input.gamepad?.once('down', advance);
+    } catch (e) {
+      // Ignore gamepad errors - some browsers crash on gamepad API when no controller connected
+    }
 
     const totalDuration = 300 + this.checks.length * 400 + 800;
     this.autoAdvanceTimer = this.time.delayedCall(totalDuration, advance);

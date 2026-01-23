@@ -201,6 +201,23 @@ export class SpriteManager {
     this.alienSpriteCache.clear();
     this.animationCache.clear();
   }
+
+  /**
+   * Clear only the player sprite cache (call when new face is captured)
+   */
+  clearPlayerCache(): void {
+    this.playerSpriteCache.clear();
+  }
+
+  /**
+   * Static method to invalidate player cache across all instances
+   * Call this when a new face is captured to ensure fresh texture on next game
+   */
+  static invalidatePlayerCache(): void {
+    if (SpriteManager.instance) {
+      SpriteManager.instance.clearPlayerCache();
+    }
+  }
   
   // Private helper methods
   

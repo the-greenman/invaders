@@ -25,6 +25,17 @@ export class GalagaIntroScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Defensive check - if dataIn is missing, provide defaults
+    if (!this.dataIn) {
+      console.warn('[GalagaIntroScene] No data provided, using defaults');
+      this.dataIn = {
+        toMode: GameMode.GALAGA,
+        level: 1,
+        score: 0,
+        useWebcam: false,
+        lives: 3
+      };
+    }
     const { toMode } = this.dataIn;
 
     const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 40,
@@ -65,7 +76,11 @@ export class GalagaIntroScene extends Phaser.Scene {
     this.input.once('pointerdown', advance);
     this.input.keyboard?.once('keydown-SPACE', advance);
     this.input.keyboard?.once('keydown-ENTER', advance);
-    this.input.gamepad?.once('down', advance);
+    try {
+      this.input.gamepad?.once('down', advance);
+    } catch (e) {
+      // Ignore gamepad errors - some browsers crash on gamepad API when no controller connected
+    }
     this.autoAdvanceTimer = this.time.delayedCall(10000, advance);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {

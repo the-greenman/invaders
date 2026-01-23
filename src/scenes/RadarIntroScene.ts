@@ -110,7 +110,11 @@ export class RadarIntroScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ENTER', this.attemptAdvanceHandler);
     // Fallback: any key to advance
     this.input.keyboard?.on('keydown', this.attemptAdvanceHandler);
-    this.input.gamepad?.on('down', this.attemptAdvanceHandler);
+    try {
+      this.input.gamepad?.on('down', this.attemptAdvanceHandler);
+    } catch (e) {
+      // Ignore gamepad errors - some browsers crash on gamepad API
+    }
     this.autoAdvanceTimer = this.time.delayedCall(10000, () => {
       this.readyToLeave = true;
       this.startNext();

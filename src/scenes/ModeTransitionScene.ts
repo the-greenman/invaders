@@ -71,7 +71,11 @@ export class ModeTransitionScene extends Phaser.Scene {
     this.input.once('pointerdown', advance);
     this.input.keyboard?.once('keydown-SPACE', advance);
     this.input.keyboard?.once('keydown-ENTER', advance);
-    this.input.gamepad?.once('down', advance);
+    try {
+      this.input.gamepad?.once('down', advance);
+    } catch (e) {
+      // Ignore gamepad errors - some browsers crash on gamepad API when no controller connected
+    }
     this.autoAdvanceTimer = this.time.delayedCall(10000, advance);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {

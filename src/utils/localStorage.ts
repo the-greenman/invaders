@@ -28,6 +28,9 @@ const KEYS = {
   SETTINGS: 'classinvaders_settings'
 };
 
+// Maximum storage budget in bytes (aim for ~2MB to stay well under 5MB limit)
+const MAX_STORAGE_BYTES = 2 * 1024 * 1024;
+
 export class LocalStorage {
   /**
    * Get the current player's face image
@@ -192,10 +195,32 @@ export class LocalStorage {
     scores.push(score);
     scores.sort((a, b) => b.score - a.score);
     const topScores = scores.slice(0, 10);
+    
     try {
       localStorage.setItem(KEYS.HIGH_SCORES, JSON.stringify(topScores));
     } catch (error) {
-      console.error('Error saving high score:', error);
+      const isQuotaError = error instanceof Error &&
+        (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
+      if (isQuotaError) {
+        console.warn('Storage quota exceeded when saving high score. Running garbage collection...');
+        this.runGarbageCollection();
+        // Retry without face image if still failing
+        try {
+          localStorage.setItem(KEYS.HIGH_SCORES, JSON.stringify(topScores));
+        } catch (retryError) {
+          // Strip face images from older scores and retry
+          const strippedScores = topScores.map((s, i) => 
+            i >= 5 ? { ...s, faceImage: undefined } : s
+          );
+          try {
+            localStorage.setItem(KEYS.HIGH_SCORES, JSON.stringify(strippedScores));
+          } catch (finalError) {
+            console.error('Failed to save high score even after GC:', finalError);
+          }
+        }
+      } else {
+        console.error('Error saving high score:', error);
+      }
     }
   }
 
@@ -283,5 +308,85 @@ export class LocalStorage {
   static clearFaces(): void {
     localStorage.removeItem(KEYS.CURRENT_FACE);
     localStorage.removeItem(KEYS.FACE_HISTORY);
+  }
+
+  /**
+   * Get estimated storage usage in bytes for our keys
+   */
+  static getStorageUsage(): { total: number; breakdown: Record<string, number> } {
+    const breakdown: Record<string, number> = {};
+    let total = 0;
+    
+    for (const [name, key] of Object.entries(KEYS)) {
+      const value = localStorage.getItem(key);
+      const size = value ? new Blob([value]).size : 0;
+      breakdown[name] = size;
+      total += size;
+    }
+    
+    return { total, breakdown };
+  }
+
+  /**
+   * Run garbage collection to free up storage space
+   * Priority: 
+   * 1. Strip face images from older high scores (keep top 3)
+   * 2. Reduce face history
+   * 3. Clear old face history entries
+   */
+  static runGarbageCollection(): void {
+    console.log('[LocalStorage] Running garbage collection...');
+    const before = this.getStorageUsage();
+    console.log('[LocalStorage] Before GC:', before);
+
+    // Step 1: Strip face images from high scores beyond top 3
+    const scores = this.getHighScores();
+    let modified = false;
+    const cleanedScores = scores.map((score, index) => {
+      if (index >= 3 && score.faceImage) {
+        modified = true;
+        return { ...score, faceImage: undefined };
+      }
+      return score;
+    });
+    
+    if (modified) {
+      try {
+        localStorage.setItem(KEYS.HIGH_SCORES, JSON.stringify(cleanedScores));
+        console.log('[LocalStorage] Stripped face images from older high scores');
+      } catch (e) {
+        console.warn('[LocalStorage] Failed to save cleaned scores');
+      }
+    }
+
+    // Step 2: Reduce face history to half if over limit
+    const history = this.getFaceHistory();
+    if (history.length > MAX_STORED_FACES / 2) {
+      const reducedHistory = history.slice(-Math.floor(MAX_STORED_FACES / 2));
+      try {
+        localStorage.setItem(KEYS.FACE_HISTORY, JSON.stringify(reducedHistory));
+        console.log(`[LocalStorage] Reduced face history from ${history.length} to ${reducedHistory.length}`);
+      } catch (e) {
+        // If still failing, clear it entirely
+        localStorage.removeItem(KEYS.FACE_HISTORY);
+        console.log('[LocalStorage] Cleared face history entirely');
+      }
+    }
+
+    const after = this.getStorageUsage();
+    console.log('[LocalStorage] After GC:', after);
+    console.log(`[LocalStorage] Freed ${before.total - after.total} bytes`);
+  }
+
+  /**
+   * Check storage health and run GC if needed
+   * Call this periodically (e.g., on game start)
+   */
+  static checkStorageHealth(): void {
+    const { total } = this.getStorageUsage();
+    if (total > MAX_STORAGE_BYTES) {
+      console.warn(`[LocalStorage] Storage usage (${total} bytes) exceeds budget (${MAX_STORAGE_BYTES} bytes). Running GC...`);
+      this.runGarbageCollection();
+    }
   }
 }
