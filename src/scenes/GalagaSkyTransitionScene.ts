@@ -15,6 +15,8 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
   private clouds: Cloud[] = [];
   private started: boolean = false;
   private horizon?: Phaser.GameObjects.Line;
+  private hasAdvanced: boolean = false;
+  private autoAdvanceTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super({ key: 'GalagaSkyTransitionScene' });
@@ -80,15 +82,16 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
       align: 'center'
     }).setOrigin(0.5);
 
-    const advance = () => {
-      resumeGameAudio(this);
-      this.startNext();
-    };
+    const advance = () => this.advance();
     this.input.once('pointerdown', advance);
     this.input.keyboard?.once('keydown-SPACE', advance);
     this.input.keyboard?.once('keydown-ENTER', advance);
     this.input.gamepad?.once('down', advance);
-    this.time.delayedCall(10000, advance);
+    this.autoAdvanceTimer = this.time.delayedCall(10000, advance);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.autoAdvanceTimer?.remove(false);
+    });
   }
 
   update(_: number, delta: number): void {
@@ -104,6 +107,14 @@ export class GalagaSkyTransitionScene extends Phaser.Scene {
         cloud.sprite.x = this.scale.width + 80;
       }
     });
+  }
+
+  private advance(): void {
+    if (this.hasAdvanced) return;
+    this.hasAdvanced = true;
+    this.autoAdvanceTimer?.remove(false);
+    resumeGameAudio(this);
+    this.startNext();
   }
 
   private spawnDefender(): void {

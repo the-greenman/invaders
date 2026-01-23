@@ -13,6 +13,8 @@ interface ModeIntroData {
 
 export class GalagaIntroScene extends Phaser.Scene {
   private dataIn!: ModeIntroData;
+  private hasAdvanced: boolean = false;
+  private autoAdvanceTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super({ key: 'GalagaIntroScene' });
@@ -59,15 +61,24 @@ export class GalagaIntroScene extends Phaser.Scene {
     prompt.setAlpha(0);
     this.tweens.add({ targets: [title, story, prompt], alpha: 1, duration: 400, ease: 'Sine.easeIn' });
 
-    const advance = () => {
-      resumeGameAudio(this);
-      this.startNext();
-    };
+    const advance = () => this.advance();
     this.input.once('pointerdown', advance);
     this.input.keyboard?.once('keydown-SPACE', advance);
     this.input.keyboard?.once('keydown-ENTER', advance);
     this.input.gamepad?.once('down', advance);
-    this.time.delayedCall(10000, advance);
+    this.autoAdvanceTimer = this.time.delayedCall(10000, advance);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.autoAdvanceTimer?.remove(false);
+    });
+  }
+
+  private advance(): void {
+    if (this.hasAdvanced) return;
+    this.hasAdvanced = true;
+    this.autoAdvanceTimer?.remove(false);
+    resumeGameAudio(this);
+    this.startNext();
   }
 
   private startNext(): void {
